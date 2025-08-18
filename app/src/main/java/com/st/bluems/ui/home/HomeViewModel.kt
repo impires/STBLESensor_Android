@@ -22,7 +22,6 @@ import com.st.blue_sdk.common.Status
 import com.st.blue_sdk.models.ConnectionStatus
 import com.st.blue_sdk.models.Node
 import com.st.blue_sdk.models.NodeState
-import com.st.internal.BuildConfig
 import com.st.login.api.StLoginManager
 import com.st.preferences.StPreferences
 import com.st.user_profiling.model.LevelProficiency
