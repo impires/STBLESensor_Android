@@ -760,6 +760,7 @@ fun UCF(
     componentName: String,
     onBeforeUcf:() -> Unit,
     onAfterUcf:() -> Unit,
+    onErrorUcf:(String) -> Unit,
     onSendCommand: (CommandRequest?) -> Unit
 ) {
     val context = LocalContext.current
@@ -797,27 +798,38 @@ fun UCF(
                                 Log.d("JsonMLCFormat", e.stackTraceToString())
                                 null
                             }
-                        postProcFile = if(jsonMLCFormat!=null) {
-                            jsonMLCFormat.toPnPLOutputString(sensorName = componentName)
-                        } else {
-                            null
-                        }
+                        postProcFile = jsonMLCFormat?.toPnPLOutputString(sensorName = componentName)
 
                     }
                     onAfterUcf()
-                    postProcFile?.let { ucfCompressed ->
+
+                    if(postProcFile!=null) {
                         onSendCommand(
                             CommandRequest(
                                 commandType = commandType,
                                 commandName = commandName,
                                 request = mapOf(
                                     FILE_REQUEST to mapOf(
-                                        FILE_SIZE to ucfCompressed.length,
-                                        FILE_DATA to ucfCompressed
+                                        FILE_SIZE to postProcFile.length,
+                                        FILE_DATA to postProcFile
                                     )
                                 )
                             )
                         )
+                    } else {
+                        val errorText =
+                            when (fileExt) {
+                                FILE_UCF -> {
+                                    "Not Able to parse UCF File"
+                                }
+                                FILE_JSON -> {
+                                    "Not UCF for $componentName"
+                                }
+                                else -> {
+                                    "File Extension not supported"
+                                }
+                            }
+                      onErrorUcf(errorText)
                     }
                 }
             } else {

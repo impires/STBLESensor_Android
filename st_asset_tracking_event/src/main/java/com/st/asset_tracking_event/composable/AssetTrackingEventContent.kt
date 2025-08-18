@@ -3,15 +3,19 @@ package com.st.asset_tracking_event.composable
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,15 +25,12 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,24 +49,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.st.asset_tracking_event.AssetTrackingEventFViewModel
 import com.st.asset_tracking_event.R
 import com.st.blue_sdk.features.extended.asset_tracking_event.model.AssetTrackingEventData
 import com.st.blue_sdk.features.extended.asset_tracking_event.model.AssetTrackingEventType
-import com.st.ui.composables.BlueMsButton
 import com.st.ui.theme.ErrorText
 import com.st.ui.theme.Grey0
-import com.st.ui.theme.Grey10
 import com.st.ui.theme.Grey3
 import com.st.ui.theme.Grey6
 import com.st.ui.theme.LocalDimensions
-import com.st.ui.theme.NotActiveColor
 import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.PrimaryBlue
 import com.st.ui.theme.PrimaryYellow
-import com.st.ui.theme.SecondaryBlue
 import com.st.ui.theme.Shapes
 import com.st.ui.theme.SuccessText
 import com.st.ui.theme.WarningPressed
@@ -75,12 +71,15 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-
+import androidx.compose.material3.MultiChoiceSegmentedButtonRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.ui.draw.clip
 
 @Composable
 fun SegmentedMeter(
     modifier: Modifier = Modifier,
-    segmentColors: List<Color>,
+    segmentColors: List<Color> = listOf(SuccessText, PrimaryYellow, WarningPressed, ErrorText),
     currentLevel: Short,
 ) {
     Row(
@@ -112,7 +111,6 @@ fun SegmentedMeter(
 private fun SegmentedMeterPreview1() {
     PreviewBlueMSTheme {
         SegmentedMeter(
-            segmentColors = listOf(SuccessText, PrimaryYellow, WarningPressed, ErrorText),
             currentLevel = 1
         )
     }
@@ -123,7 +121,6 @@ private fun SegmentedMeterPreview1() {
 private fun SegmentedMeterPreview4() {
     PreviewBlueMSTheme {
         SegmentedMeter(
-            segmentColors = listOf(SuccessText, PrimaryYellow, WarningPressed, ErrorText),
             currentLevel = 4
         )
     }
@@ -134,7 +131,6 @@ private fun SegmentedMeterPreview4() {
 private fun SegmentedMeterPreview10() {
     PreviewBlueMSTheme {
         SegmentedMeter(
-            segmentColors = listOf(SuccessText, PrimaryYellow, WarningPressed, ErrorText),
             currentLevel = 10
         )
     }
@@ -167,7 +163,7 @@ fun AssetTrackingEventContent(
     var showShockInfoDialog by remember { mutableStateOf(false) }
     var selectedEvent by remember { mutableStateOf<Pair<Long, AssetTrackingEventData>?>(null) }
 
-    var openFilter by remember { mutableStateOf(false) }
+    //var openFilter by remember { mutableStateOf(false) }
 
     var showFallEvent by rememberSaveable { mutableStateOf(true) }
     var showShockEvent by rememberSaveable { mutableStateOf(true) }
@@ -185,20 +181,17 @@ fun AssetTrackingEventContent(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets.navigationBars,
         floatingActionButtonPosition = FabPosition.End,
-        floatingActionButton = {
-            FloatingActionButton(
-//                modifier = Modifier.padding(
-//                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-//                ),
-                containerColor = SecondaryBlue,
-                onClick = { openFilter = true }) {
-                Icon(
-                    tint = MaterialTheme.colorScheme.primary,
-                    imageVector = Icons.Default.FilterList,
-                    contentDescription = null
-                )
-            }
-        }
+//        floatingActionButton = {
+//            FloatingActionButton(
+//                containerColor = SecondaryBlue,
+//                onClick = { openFilter = true }) {
+//                Icon(
+//                    tint = MaterialTheme.colorScheme.primary,
+//                    imageVector = Icons.Default.FilterList,
+//                    contentDescription = null
+//                )
+//            }
+//        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -361,12 +354,6 @@ fun AssetTrackingEventContent(
 
                     SegmentedMeter(
                         modifier = Modifier.weight(1f),
-                        segmentColors = listOf(
-                            SuccessText,
-                            PrimaryYellow,
-                            WarningPressed,
-                            ErrorText
-                        ),
                         currentLevel = assetTrackingStatus!!.second.powerIndex
                     )
                 }
@@ -407,7 +394,9 @@ fun AssetTrackingEventContent(
             )
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(intrinsicSize = IntrinsicSize.Max).horizontalScroll(rememberScrollState()),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -418,10 +407,82 @@ fun AssetTrackingEventContent(
                     text = "Events:"
                 )
 
-                BlueMsButton(
-                    text = "Clear", onClick = { viewModel.clearEventList() }
-                    //iconPainter = painterResource(R.drawable.event_reset)
+                MultiChoiceSegmentedButtonRow(
+                    modifier = Modifier.fillMaxHeight(),
+                ) {
+
+                    SegmentedButton(
+                        modifier = Modifier.fillMaxHeight(),
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = 0,
+                            count = 2
+                        ),
+                        colors = SegmentedButtonDefaults.colors(
+                            activeContentColor = Grey0,
+                            activeContainerColor = PrimaryBlue
+                        ),
+                        checked = showFallEvent,
+                        onCheckedChange = {
+                            showFallEvent = !showFallEvent
+                        },
+                        icon = { SegmentedButtonDefaults.Icon(showFallEvent) },
+                        label = {
+                            Text(
+                                modifier = Modifier.padding(
+                                    top = LocalDimensions.current.paddingSmall,
+                                    bottom = LocalDimensions.current.paddingSmall
+                                ),
+                                text = "Fall"
+                            )
+                        }
+                    )
+
+                    SegmentedButton(
+                        modifier = Modifier.fillMaxHeight(),
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = 1,
+                            count = 2
+                        ),
+                        colors = SegmentedButtonDefaults.colors(
+                            activeContentColor = Grey0,
+                            activeContainerColor = PrimaryBlue
+                        ),
+                        checked = showShockEvent,
+                        onCheckedChange = {
+                            showShockEvent = !showShockEvent
+                        },
+                        icon = { SegmentedButtonDefaults.Icon(showShockEvent) },
+                        label = {
+                            Text(
+                                modifier = Modifier.padding(
+                                    top = LocalDimensions.current.paddingSmall,
+                                    bottom = LocalDimensions.current.paddingSmall
+                                ),
+                                text = "Shock"
+                            )
+                        }
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .clip(Shapes.small)
+                            .clickable {
+                                viewModel.clearEventList()
+                            }
+                            .background(color = PrimaryBlue)
+                            .padding(LocalDimensions.current.paddingNormal),
+                        painter = painterResource(R.drawable.event_reset),
+                        tint = Grey0,
+                        contentDescription = null
                 )
+            }
+
             }
 
             LazyColumn(
@@ -442,15 +503,14 @@ fun AssetTrackingEventContent(
                     )
                 }
 
-                itemsIndexed(items = trackingEventsDataFiltered) { index, item ->
+                itemsIndexed(items = trackingEventsDataFiltered) { _, item ->
                     AssetTrackingEventItem(
-                        modifier = Modifier.animateItem(),
                         timestamp = item.first,
                         event = item.second,
                         onShockInfoClick = {
                             selectedEvent = item
                             showShockInfoDialog = true
-                        },
+                        }
 //                        isTheLastElement = index == trackingEventsDataFiltered.size - 1
                     )
                 }
@@ -474,119 +534,125 @@ fun AssetTrackingEventContent(
         }
     }
 
-    if (openFilter) {
-        FilterSelectionDialog(
-            onDismissRequest = { openFilter = false },
-            showFallEvent = showFallEvent,
-            onFallCheckChanged = { showFallEvent = it },
-            showShockEvent = showShockEvent,
-            onShockCheckChanged = { showShockEvent = it })
-    }
+//    if (openFilter) {
+//        FilterSelectionDialog(
+//            onDismissRequest = { openFilter = false },
+//            showFallEvent = showFallEvent,
+//            onFallCheckChanged = { showFallEvent = it },
+//            showShockEvent = showShockEvent,
+//            onShockCheckChanged = { showShockEvent = it })
+//    }
 }
 
-@Composable
-private fun FilterSelectionDialog(
-    onDismissRequest: () -> Unit,
-    showFallEvent: Boolean,
-    onFallCheckChanged: (Boolean) -> Unit,
-    showShockEvent: Boolean,
-    onShockCheckChanged: (Boolean) -> Unit
-) {
-    Dialog(onDismissRequest = onDismissRequest) {
-        Surface(
-            shape = Shapes.medium
-        ) {
-            Column(
-                modifier = Modifier.padding(all = LocalDimensions.current.paddingNormal),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingNormal)
-            ) {
-                Text(
-                    text = "Filter Events",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryBlue
-                )
+//@Composable
+//private fun FilterSelectionDialog(
+//    onDismissRequest: () -> Unit,
+//    showFallEvent: Boolean,
+//    onFallCheckChanged: (Boolean) -> Unit,
+//    showShockEvent: Boolean,
+//    onShockCheckChanged: (Boolean) -> Unit
+//) {
+//    Dialog(onDismissRequest = onDismissRequest) {
+//        Surface(
+//            shape = Shapes.medium
+//        ) {
+//            Column(
+//                modifier = Modifier.padding(all = LocalDimensions.current.paddingNormal),
+//                horizontalAlignment = Alignment.CenterHorizontally,
+//                verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingNormal)
+//            ) {
+//                Text(
+//                    text = "Filter Events",
+//                    style = MaterialTheme.typography.titleLarge,
+//                    fontWeight = FontWeight.Bold,
+//                    color = PrimaryBlue
+//                )
+//
+//                HorizontalDivider(thickness = 1.dp, color = Grey3)
+//
+//                Text(
+//                    modifier = Modifier
+//                        .padding(
+//                            top = LocalDimensions.current.paddingMedium,
+//                            bottom = LocalDimensions.current.paddingMedium
+//                        )
+//                        .fillMaxWidth(),
+//                    textAlign = TextAlign.Center,
+//                    style = MaterialTheme.typography.bodyMedium,
+//                    color = PrimaryBlue,
+//                    text = "Select which events you want to see:"
+//                )
+//
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    verticalAlignment = Alignment.CenterVertically,
+//                    horizontalArrangement = Arrangement.SpaceEvenly
+//                ) {
+//                    EventTypeChip(
+//                        eventName = "Shock",
+//                        checked = showShockEvent,
+//                        onCheckedChange = { onShockCheckChanged(it) })
+//
+//                    EventTypeChip(
+//                        eventName = "Fall",
+//                        checked = showFallEvent,
+//                        onCheckedChange = { onFallCheckChanged(it) })
+//                }
+//
+//                Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingNormal))
+//
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
+//                ) {
+//                    BlueMsButton(
+//                        text = "Ok",
+//                        onClick = onDismissRequest
+//                    )
+//                }
+//            }
+//        }
+//    }
+//}
 
-                HorizontalDivider(thickness = 1.dp, color = Grey3)
 
-                Text(
-                    modifier = Modifier
-                        .padding(
-                            top = LocalDimensions.current.paddingMedium,
-                            bottom = LocalDimensions.current.paddingMedium
-                        )
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = PrimaryBlue,
-                    text = "Select which events you want to see:"
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    EventTypeChip(
-                        eventName = "Shock",
-                        checked = showShockEvent,
-                        onCheckedChange = { onShockCheckChanged(it) })
-
-                    EventTypeChip(
-                        eventName = "Fall",
-                        checked = showFallEvent,
-                        onCheckedChange = { onFallCheckChanged(it) })
-                }
-
-                Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingNormal))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
-                ) {
-                    BlueMsButton(
-                        text = "Ok",
-                        onClick = onDismissRequest
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun EventTypeChip(
-    modifier: Modifier = Modifier,
-    eventName: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit = { /** NOOP **/ }
-) {
-    Surface(
-        //modifier = modifier.padding(horizontal = LocalDimensions.current.paddingNormal),
-        modifier = modifier,
-        onClick = { onCheckedChange(checked.not()) },
-        shape = Shapes.medium,
-        color = if (checked) PrimaryBlue else NotActiveColor,
-        contentColor = MaterialTheme.colorScheme.primary
-    ) {
-        Text(
-            modifier = Modifier.padding(
-                top = LocalDimensions.current.paddingNormal,
-                bottom = LocalDimensions.current.paddingNormal,
-                start = LocalDimensions.current.paddingMedium,
-                end = LocalDimensions.current.paddingMedium
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (checked) Grey0 else Grey10,
-            text = eventName
-        )
-    }
-}
+//@Composable
+//fun EventTypeChip(
+//    modifier: Modifier = Modifier,
+//    eventName: String,
+//    checked: Boolean,
+//    onCheckedChange: (Boolean) -> Unit = { /** NOOP **/ }
+//) {
+//    Surface(
+//        //modifier = modifier.padding(horizontal = LocalDimensions.current.paddingNormal),
+//        modifier = modifier,
+//        onClick = { onCheckedChange(checked.not()) },
+//        shape = Shapes.medium,
+//        color = if (checked) PrimaryBlue else NotActiveColor,
+//        contentColor = MaterialTheme.colorScheme.primary
+//    ) {
+//        Text(
+//            modifier = Modifier.padding(
+//                top = LocalDimensions.current.paddingNormal,
+//                bottom = LocalDimensions.current.paddingNormal,
+//                start = LocalDimensions.current.paddingMedium,
+//                end = LocalDimensions.current.paddingMedium
+//            ),
+//            style = MaterialTheme.typography.bodyMedium,
+//            color = if (checked) Grey0 else Grey10,
+//            text = eventName
+//        )
+//    }
+//}
 
 fun Long.convertLongToTime(): String {
-    val localDate = Instant.ofEpochMilli(this)
-        .atZone(ZoneId.systemDefault()).toLocalDate()
-    val time = LocalTime.now()
-    return LocalDateTime.of(localDate, time).format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+    val instant = Instant.ofEpochMilli(this)
+    val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+    val formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+    var result: String
+    try {
+        result = dateTime.format(formatter)
+    } catch (e: Exception) {
+        result = this.toString()
+    }
+    return result
 }

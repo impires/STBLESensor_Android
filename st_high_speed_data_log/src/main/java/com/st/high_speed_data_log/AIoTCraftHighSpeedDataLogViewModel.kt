@@ -108,7 +108,7 @@ class AIoTCraftHighSpeedDataLogViewModel @Inject constructor(
     private val _streamData = MutableStateFlow<StreamData?>(value = null)
     private val _isLogging = MutableStateFlow(value = false)
     private val _isSDCardInserted = MutableStateFlow(value = false)
-    private val _isLoading = MutableStateFlow(value = true)
+    private val _isLoading = MutableStateFlow(value = false)
     private val _isConnectionLost = MutableStateFlow(value = false)
     private val _enableLog = MutableStateFlow(value = false)
     private val _statusMessage: MutableStateFlow<PnPLSpontaneousMessageType?> =
@@ -461,7 +461,7 @@ class AIoTCraftHighSpeedDataLogViewModel @Inject constructor(
         }.sortedBy { it.first.name }
 
     private suspend fun getModel(nodeId: String) {
-        _isLoading.update { true }
+        //_isLoading.update { true }
 
         componentWithInterface =
             blueManager.getDtmiModel(nodeId = nodeId, isBeta = stPreferences.isBetaApplication())
@@ -519,7 +519,7 @@ class AIoTCraftHighSpeedDataLogViewModel @Inject constructor(
                 )
             )
         } else {
-            _isLoading.update { true }
+           // _isLoading.update { true }
 
             pnplFeature?.let {
                 blueManager.writeFeatureCommand(
@@ -1107,7 +1107,7 @@ class AIoTCraftHighSpeedDataLogViewModel @Inject constructor(
     private suspend fun _sendCommand(nodeId: String, name: String, value: CommandRequest?) {
         pnplFeature?.let { pnplFeature ->
             value?.let {
-                _isLoading.value = true
+                //_isLoading.value = true
                 blueManager.writeFeatureCommand(
                     responseTimeout = 0,
                     nodeId = nodeId,

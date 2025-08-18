@@ -119,13 +119,12 @@ fun AIoTCraftHighSpeedDataLog(
     val currentSensorEnabled by viewModel.currentSensorEnabled.collectAsStateWithLifecycle()
     val streamData by viewModel.streamData.collectAsStateWithLifecycle()
     val enableLog by viewModel.enableLog.collectAsStateWithLifecycle()
-
     val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
+    var ucfError: String? by remember { mutableStateOf(value = null) }
 
     AIoTCraftHighSpeedDataLog(
         modifier = modifier,
         snackbarMessage = snackbarMessage,
-        nodeId = nodeId,
         sensors = sensors,
         streamSensors = streamSensors,
         tags = tags,
@@ -153,6 +152,9 @@ fun AIoTCraftHighSpeedDataLog(
         },
         onBeforeUcf = { viewModel.setEnableStopDemo(false) },
         onAfterUcf = {},
+        onErrorUcf = { error ->
+            ucfError = error
+        },
         onClearMessage = { viewModel.cleanMessage() },
         onSendCommand = { name, value ->
             if (isLoading.not()) {
@@ -186,6 +188,68 @@ fun AIoTCraftHighSpeedDataLog(
         PnPLInfoWarningSpontaneousMessage(
             messageType = statusMessage!!,
             onDismissRequest = { viewModel.cleanStatusMessage() })
+    }
+
+    ucfError?.let { error ->
+        BasicAlertDialog(onDismissRequest = { ucfError=null })
+        {
+            Surface(
+                modifier = Modifier
+                    //.wrapContentWidth()
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+                shape = Shapes.medium
+            ) {
+                Column(modifier = Modifier.padding(all = LocalDimensions.current.paddingMedium)) {
+                    Text(
+                        text = "Warning:",
+                        modifier = Modifier.padding(bottom = LocalDimensions.current.paddingNormal),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 24.sp,
+                        letterSpacing = 0.15.sp,
+                        color = ErrorText
+                    )
+                    Text(
+                        text = "Error Sending UCF:",
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.25.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        modifier = Modifier.padding(start = LocalDimensions.current.paddingMedium),
+                        text = error,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.25.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = LocalDimensions.current.paddingSmall,
+                                end = LocalDimensions.current.paddingSmall,
+                                top = LocalDimensions.current.paddingNormal
+                            ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.End
+                    ) {
+
+                        BlueMsButton(
+                            modifier = Modifier.padding(end = LocalDimensions.current.paddingSmall),
+                            text = "OK",
+                            onClick = {
+                                ucfError = null
+                            }
+                        )
+                    }
+                }
+            }
+        }
     }
 
     if (isConnectionLost) {
@@ -250,11 +314,10 @@ fun AIoTCraftHighSpeedDataLog(
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AIoTCraftHighSpeedDataLog(
     modifier: Modifier,
-    nodeId: String,
     snackbarMessage: String? = null,
     sensors: List<ComponentWithInterface> = emptyList(),
     streamSensors: List<ComponentWithInterface> = emptyList(),
@@ -274,6 +337,7 @@ fun AIoTCraftHighSpeedDataLog(
     onBeforeUcf: () -> Unit,
     onClearMessage: () -> Unit,
     onAfterUcf: () -> Unit,
+    onErrorUcf:(String) -> Unit,
     onSendCommand: (String, CommandRequest?) -> Unit,
     onTagChangeState: (String, Boolean) -> Unit = { _, _ -> /**NOOP**/ },
     onStartStopLog: (Boolean) -> Unit = { /**NOOP **/ },
@@ -451,9 +515,9 @@ fun AIoTCraftHighSpeedDataLog(
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.pullRefresh(state = pullRefreshState)) {
+        Box(modifier = Modifier.padding(paddingValues).pullRefresh(state = pullRefreshState)) {
             NavHost(
-                modifier = modifier.padding(paddingValues),
+                //modifier = modifier.padding(paddingValues),
                 navController = navController,
                 startDestination = "Sensors"
             ) {
@@ -468,8 +532,8 @@ fun AIoTCraftHighSpeedDataLog(
                             onValueChange = onValueChange,
                             onAfterUcf = onAfterUcf,
                             onBeforeUcf = onBeforeUcf,
+                            onErrorUcf = onErrorUcf,
                             onSendCommand = onSendCommand,
-
                         )
                     } else {
                         if (HsdlConfig.isVespucci.not()) {

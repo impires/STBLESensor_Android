@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.st.ext_config.R
-import com.st.ui.composables.Header
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.Grey6
@@ -56,17 +55,18 @@ fun BoardControlCard(
             .fillMaxWidth()
             .padding(all = LocalDimensions.current.paddingNormal),
         shape = Shapes.small,
-        shadowElevation = LocalDimensions.current.elevationNormal,
-        onClick = { isOpen = !isOpen }
+        shadowElevation = LocalDimensions.current.elevationNormal
+        //onClick = { isOpen = !isOpen }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(all = LocalDimensions.current.paddingNormal)
         ) {
-            Header(
+            HeaderCardExtConfig(
+                modifier = Modifier.clickable{isOpen = !isOpen},
                 isOpen = isOpen,
-                icon = Icons.Default.PowerSettingsNew,
+                imageVector = Icons.Default.PowerSettingsNew,
                 title = stringResource(id = R.string.st_extConfig_boardControl_cardTitle)
             )
 
@@ -128,7 +128,7 @@ fun BoardControlContentCard(
                     onOff()
                 }
             },
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             color = offTextColor,
             text = stringResource(id = R.string.st_extConfig_boardControl_off)
         )
@@ -143,7 +143,7 @@ fun BoardControlContentCard(
                 }
             },
             color = fwDownloadTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardControl_download)
         )
 
@@ -163,7 +163,7 @@ fun BoardControlContentCard(
                 }
             },
             color = swapTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardControl_swap)
         )
     }

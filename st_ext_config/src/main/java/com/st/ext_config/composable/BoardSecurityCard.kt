@@ -32,7 +32,6 @@ import com.st.ext_config.R
 import com.st.ext_config.ui.ext_config.ExtConfigViewModel
 import com.st.ui.composables.BlueMsButton
 import com.st.ui.composables.BlueMsButtonOutlined
-import com.st.ui.composables.Header
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.Grey6
@@ -70,17 +69,18 @@ fun BoardSecurityCard(
             .fillMaxWidth()
             .padding(all = LocalDimensions.current.paddingNormal),
         shape = Shapes.small,
-        shadowElevation = LocalDimensions.current.elevationNormal,
-        onClick = { isOpen = !isOpen }
+        shadowElevation = LocalDimensions.current.elevationNormal
+        //onClick = { isOpen = !isOpen }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(all = LocalDimensions.current.paddingNormal)
         ) {
-            Header(
+            HeaderCardExtConfig(
+                modifier = Modifier.clickable{isOpen = !isOpen},
                 isOpen = isOpen,
-                icon = Icons.Default.Security,
+                imageVector = Icons.Default.Security,
                 title = stringResource(id = R.string.st_extConfig_boardSecurity_cardTitle)
             )
 
@@ -174,7 +174,7 @@ fun BoardSecurityContentCard(
                 }
             },
             color = pinTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardSecurity_changePin)
         )
 
@@ -194,7 +194,7 @@ fun BoardSecurityContentCard(
                 }
             },
             color = clearTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardSecurity_clearDb)
         )
 

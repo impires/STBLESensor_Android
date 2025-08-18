@@ -37,8 +37,8 @@ android {
         applicationId = "com.st.bluems"
         minSdk = stMinSdk
         targetSdk = stTargetSdk
-        versionCode = 334
-        versionName = "5.2.10"
+        versionCode = 341
+        versionName = "5.2.12"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -77,10 +77,6 @@ android {
         buildConfig = true
         compose = true
         viewBinding = true
-    }
-
-    composeCompiler {
-        enableStrongSkippingMode = true
     }
 
     ksp {

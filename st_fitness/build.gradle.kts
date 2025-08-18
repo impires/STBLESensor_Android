@@ -61,9 +61,6 @@ android {
         viewBinding = true
     }
 
-    composeCompiler {
-        enableStrongSkippingMode = true
-    }
 }
 
 Loco {

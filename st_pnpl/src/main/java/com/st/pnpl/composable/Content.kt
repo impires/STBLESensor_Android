@@ -24,6 +24,7 @@ fun Content(
     onValueChange: (Pair<String, Any>) -> Unit,
     onBeforeUcf:() -> Unit,
     onAfterUcf:() -> Unit,
+    onErrorUcf:(String) -> Unit,
     componentName: String,
     onSendCommand: (CommandRequest?) -> Unit
 ) {
@@ -44,6 +45,7 @@ fun Content(
             content = content,
             onBeforeUcf = onBeforeUcf,
             onAfterUcf = onAfterUcf,
+            onErrorUcf = onErrorUcf,
             componentName = componentName,
             onSendCommand = onSendCommand
         )

@@ -135,7 +135,10 @@ open class KeycloakLoginProvider(
 
     override suspend fun getAuthData(): AuthData? {
 
-        if (needsAccessTokenRefresh()) {
+        val needsAccessTokenRefresh = needsAccessTokenRefresh()
+
+        needsAccessTokenRefresh?.let {
+            if (needsAccessTokenRefresh) {
             val refreshed = refreshAuthState()
             if (!refreshed) {
                 return null
@@ -149,11 +152,12 @@ open class KeycloakLoginProvider(
             authState.idToken!!,
             authState.accessTokenExpirationTime.toString()
         )
-
+        }
+        return null
     }
 
-    private fun needsAccessTokenRefresh(): Boolean {
-        val expiresAt: Long = mAuthStateManager.current.accessTokenExpirationTime ?: return true
+    private fun needsAccessTokenRefresh(): Boolean? {
+        val expiresAt: Long = mAuthStateManager.current.accessTokenExpirationTime ?: return null
         return expiresAt <= System.currentTimeMillis()
     }
 

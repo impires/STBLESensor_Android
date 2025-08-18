@@ -108,14 +108,17 @@ fun NeaiClassificationDemoContent(
             enableStop = false
             enableStart = true
         }
+
         PhaseType.Classification -> {
             enableStop = true
             enableStart = false
         }
+
         PhaseType.Busy -> {
             enableStop = false
             enableStart = true
         }
+
         PhaseType.Null -> {}
     }
 
@@ -124,10 +127,12 @@ fun NeaiClassificationDemoContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(start = LocalDimensions.current.paddingNormal,
+            .padding(
+                start = LocalDimensions.current.paddingNormal,
                 end = LocalDimensions.current.paddingNormal,
                 top = LocalDimensions.current.paddingNormal,
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingMedium)
     ) {
@@ -595,7 +600,11 @@ private fun setMostProbClass(
         if (viewModel.useDefaultNames) {
             "$mostProbClass"
         } else {
+            if ((mostProb < 1) || (mostProb > viewModel.customNames.size)) {
+                "UNKNOWN"
+            } else {
             viewModel.customNames[mostProb - 1]
+        }
         }
     } else {
         "UNKNOWN"

@@ -45,17 +45,18 @@ fun BoardCustomCommandsCard(
                 .fillMaxWidth()
                 .padding(all = LocalDimensions.current.paddingNormal),
             shape = Shapes.small,
-            shadowElevation = LocalDimensions.current.elevationNormal,
-            onClick = { isOpen = !isOpen }
+            shadowElevation = LocalDimensions.current.elevationNormal
+            //onClick = { isOpen = !isOpen }
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(all = LocalDimensions.current.paddingNormal)
             ) {
-                Header(
+                HeaderCardExtConfig(
+                    modifier = Modifier.clickable{isOpen = !isOpen},
                     isOpen = isOpen,
-                    icon = Icons.Default.Build,
+                    imageVector = Icons.Default.Build,
                     title = stringResource(id = R.string.st_extConfig_customCommands_cardTitle)
                 )
 
@@ -241,13 +242,13 @@ fun BoardCustomCommandsContentCard(
             }) {
                 Text(
                     color = Grey6,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     text = command.name ?: ""
                 )
                 Text(
                     modifier = Modifier.fadedEdgeMarquee(),
                     color = Grey6,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     text = command.description ?: ""
                 )
 

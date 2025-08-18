@@ -212,6 +212,7 @@ fun SimpleHighSpeedDataLog(
     onValueChange: (String, Pair<String, Any>) -> Unit,
     onBeforeUcf: () -> Unit,
     onAfterUcf: () -> Unit,
+    onErrorUcf:(String) ->Unit = { _ -> /**  **/},
     onSendCommand: (String, CommandRequest?) -> Unit,
     onStartStopLog: (Boolean) -> Unit = { /**NOOP **/ },
     onRefresh: () -> Unit = { /**NOOP **/ }
@@ -274,6 +275,7 @@ fun SimpleHighSpeedDataLog(
                     onValueChange = onValueChange,
                     onAfterUcf = onAfterUcf,
                     onBeforeUcf = onBeforeUcf,
+                    onErrorUcf = onErrorUcf,
                     onSendCommand = onSendCommand
                 )
             } else {

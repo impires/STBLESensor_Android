@@ -1,6 +1,5 @@
 package com.st.high_speed_data_log.composable
 
-import android.util.Log
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -32,6 +31,7 @@ fun HsdlSensors(
     onValueChange: (String, Pair<String, Any>) -> Unit,
     onBeforeUcf: () -> Unit,
     onAfterUcf: () -> Unit,
+    onErrorUcf:(String) -> Unit,
     onSendCommand: (String, CommandRequest?) -> Unit,
     state: LazyListState
 ) {
@@ -62,6 +62,7 @@ fun HsdlSensors(
                     onSendCommand = { onSendCommand(name, it) },
                     onBeforeUcf = onBeforeUcf,
                     onAfterUcf = onAfterUcf,
+                    onErrorUcf = onErrorUcf,
                     onOpenComponent = {
                         isOpen = if (it == isOpen) "" else it
                     }

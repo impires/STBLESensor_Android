@@ -49,6 +49,7 @@ fun Component(
     enableCollapse: Boolean,
     enabled: Boolean,
     showNotMounted: Boolean = true,
+    isVespucci: Boolean = false,
     isOpen: Boolean,
     interfaceModel: DtmiContent.DtmiInterfaceContent,
     componentModel: DtmiContent.DtmiComponentContent,
@@ -56,6 +57,7 @@ fun Component(
     onSendCommand: (CommandRequest?) -> Unit,
     onBeforeUcf:() -> Unit,
     onAfterUcf:() -> Unit,
+    onErrorUcf:(String) -> Unit = {_ -> /** NOP **/},
     onOpenComponent: (String) -> Unit
 ) {
 
@@ -114,7 +116,7 @@ fun Component(
 
                 val subtitle =
                     if (componentModel.contentType == DtmiContent.DtmiComponentContent.ContentType.SENSOR) {
-                        componentModel.displayName.localizedDisplayNameSensor
+                        componentModel.displayName.localizedDisplayNameSensor(isVespucci)
                     } else {
                         null
                     }
@@ -175,6 +177,7 @@ fun Component(
                                 onValueChange = onValueChange,
                                 onBeforeUcf = onBeforeUcf,
                                 onAfterUcf = onAfterUcf,
+                                onErrorUcf = onErrorUcf,
                                 componentName = subtitle?: "NoSensorName",
                                 onSendCommand = onSendCommand
                             )

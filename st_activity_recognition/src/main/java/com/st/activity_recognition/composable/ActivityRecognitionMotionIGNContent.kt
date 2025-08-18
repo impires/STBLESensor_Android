@@ -26,6 +26,7 @@ import com.st.activity_recognition.R
 import com.st.blue_sdk.features.activity.ActivityInfo
 import com.st.blue_sdk.features.activity.ActivityType
 import com.st.ui.theme.LocalDimensions
+import com.st.ui.theme.PrimaryBlue
 import com.st.ui.theme.PrimaryYellow
 import com.st.ui.theme.Shapes
 
@@ -111,7 +112,7 @@ fun ActivityRecognitionMotionIGNContent(
                 painter = painterResource(
                     R.drawable.activity_stationary
                 ),
-                tint = Color.Unspecified,
+                tint = PrimaryBlue,
                 contentDescription = null
             )
 
@@ -134,7 +135,7 @@ fun ActivityRecognitionMotionIGNContent(
                 painter = painterResource(
                     R.drawable.activity_jogging
                 ),
-                tint = Color.Unspecified,
+                tint = PrimaryBlue,
                 contentDescription = null
             )
 
@@ -167,7 +168,7 @@ fun ActivityRecognitionMotionIGNContent(
                 painter = painterResource(
                     R.drawable.activity_walking
                 ),
-                tint = Color.Unspecified,
+                tint = PrimaryBlue,
                 contentDescription = null
             )
 
@@ -191,7 +192,7 @@ fun ActivityRecognitionMotionIGNContent(
                 painter = painterResource(
                     R.drawable.activity_stairs
                 ),
-                tint = Color.Unspecified,
+                tint = PrimaryBlue,
                 contentDescription = null
             )
         }

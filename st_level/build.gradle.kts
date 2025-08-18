@@ -55,10 +55,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    composeCompiler {
-        enableStrongSkippingMode = true
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true

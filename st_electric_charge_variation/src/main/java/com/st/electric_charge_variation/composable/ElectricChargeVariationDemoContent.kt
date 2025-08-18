@@ -120,10 +120,12 @@ fun ElectricChargeVariationDemoContent(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(start = LocalDimensions.current.paddingNormal,
+                .padding(
+                    start = LocalDimensions.current.paddingNormal,
                     bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
                     end = LocalDimensions.current.paddingNormal,
-                    top = LocalDimensions.current.paddingNormal),
+                    top = LocalDimensions.current.paddingNormal
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingNormal)
         ) {
@@ -210,7 +212,12 @@ fun ElectricChargeVariationDemoContent(
                     shadowElevation = LocalDimensions.current.elevationNormal
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = LocalDimensions.current.paddingNormal,
+                                end = LocalDimensions.current.paddingNormal
+                            ),
                         horizontalArrangement = Arrangement.Absolute.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -316,7 +323,12 @@ fun ElectricChargeVariationDemoContent(
                     shadowElevation = LocalDimensions.current.elevationNormal
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = LocalDimensions.current.paddingNormal,
+                                end = LocalDimensions.current.paddingNormal
+                            ),
                         horizontalArrangement = Arrangement.Absolute.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

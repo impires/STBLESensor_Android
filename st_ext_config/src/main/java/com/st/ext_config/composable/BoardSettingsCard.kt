@@ -9,8 +9,6 @@ package com.st.ext_config.composable
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,7 +33,6 @@ import com.st.ext_config.ui.ext_config.ExtConfigViewModel
 import com.st.ui.composables.BlueMsButton
 import com.st.ui.composables.BlueMsButtonOutlined
 import com.st.ui.composables.EnumProperty
-import com.st.ui.composables.Header
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.Grey6
@@ -80,17 +77,18 @@ fun BoardSettingsCard(
             .fillMaxWidth()
             .padding(all = LocalDimensions.current.paddingNormal),
         shape = Shapes.small,
-        shadowElevation = LocalDimensions.current.elevationNormal,
-        onClick = { isOpen = !isOpen }
+        shadowElevation = LocalDimensions.current.elevationNormal
+        //onClick = { isOpen = !isOpen }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(all = LocalDimensions.current.paddingNormal)
         ) {
-            Header(
+            HeaderCardExtConfig(
+                modifier = Modifier.clickable{isOpen = !isOpen},
                 isOpen = isOpen,
-                icon = Icons.Default.Settings,
+                imageVector = Icons.Default.Settings,
                 title = stringResource(id = R.string.st_extConfig_boardSettings_cardTitle)
             )
 
@@ -299,7 +297,7 @@ fun BoardSettingsContentCard(
         Text(
             modifier = Modifier.clickable { onSetName() },
             color = nameTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardSettings_setName)
         )
 
@@ -314,7 +312,7 @@ fun BoardSettingsContentCard(
                 }
             },
             color = readCustomTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardSettings_readCustomCommands)
         )
 
@@ -328,7 +326,7 @@ fun BoardSettingsContentCard(
                 }
             },
             color = timeTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardSettings_setTime)
         )
 
@@ -342,7 +340,7 @@ fun BoardSettingsContentCard(
                 }
             },
             color = dateTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardSettings_setDate)
         )
 
@@ -366,7 +364,7 @@ fun BoardSettingsContentCard(
         Text(
             modifier = Modifier.clickable { onSetWiFiCredentials() },
             color = wifiTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardSettings_setWiFiCredentials)
         )
     }

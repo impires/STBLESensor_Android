@@ -1,5 +1,6 @@
 package com.st.asset_tracking_event.composable
 
+import android.util.Log
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,11 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import java.util.Locale
@@ -125,13 +131,16 @@ fun AssetTrackingEventItem(
                     AssetTrackingEventType.Fall -> {
                         Text(
                             style = MaterialTheme.typography.bodySmall,
-                            text = "Height: ${event.fall!!.heightCm} cm",
+                            text = "Height:  %.2f cm".format(
+                                Locale.getDefault(),
+                                event.fall!!.heightCm),
                         )
                     }
-
                     AssetTrackingEventType.Shock -> {
                         Text(
-                            text = "Duration: ${event.shock!!.durationMSec} ms",
+                            text =  "Duration:  %.2f ms".format(
+                                Locale.getDefault(),
+                                event.shock!!.durationMSec),
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,

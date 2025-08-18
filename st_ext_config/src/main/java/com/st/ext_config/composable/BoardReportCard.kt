@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.st.ext_config.R
-import com.st.ui.composables.Header
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.Grey6
@@ -62,17 +61,18 @@ fun BoardReportCard(
             .fillMaxWidth()
             .padding(all = LocalDimensions.current.paddingNormal),
         shape = Shapes.small,
-        shadowElevation = LocalDimensions.current.elevationNormal,
-        onClick = { isOpen = !isOpen }
+        shadowElevation = LocalDimensions.current.elevationNormal
+        //onClick = { isOpen = !isOpen }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(all = LocalDimensions.current.paddingNormal)
         ) {
-            Header(
+            HeaderCardExtConfig(
+                modifier = Modifier.clickable{isOpen = !isOpen},
                 isOpen = isOpen,
-                icon = Icons.Default.Info,
+                imageVector = Icons.Default.Info,
                 title = stringResource(id = R.string.st_extConfig_boardReport_cardTitle)
             )
 
@@ -140,7 +140,7 @@ fun BoardReportContentCard(
                 }
             },
             color = versionFwTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardReport_versionFirmware)
         )
 
@@ -154,7 +154,7 @@ fun BoardReportContentCard(
                 }
             },
             color = infoTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardReport_info)
         )
 
@@ -168,7 +168,7 @@ fun BoardReportContentCard(
                 }
             },
             color = helpTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardReport_help)
         )
 
@@ -182,7 +182,7 @@ fun BoardReportContentCard(
                 }
             },
             color = powerTextColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             text = stringResource(id = R.string.st_extConfig_boardReport_powerStatus)
         )
     }

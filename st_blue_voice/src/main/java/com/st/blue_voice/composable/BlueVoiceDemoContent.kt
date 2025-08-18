@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -376,7 +375,6 @@ fun SliderLabel(isEnable: Boolean, label: String, minWidth: Dp, modifier: Modifi
 }
 
 private fun initAudioTrack(decodeParams: DecodeParams) {
-
     val minBufSize = AudioTrack.getMinBufferSize(
         decodeParams.samplingFreq,
         if (decodeParams.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO,

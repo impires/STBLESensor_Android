@@ -633,11 +633,6 @@ fun DeviceList(
                             text = stringResource(id = R.string.st_home_deviceList_welcomeText)
                         )
                     }
-                } else {
-                    item {
-                        EmptyDeviceList()
-                    }
-                }
 
                 itemsIndexed(items = filteredDevices) { _, item ->
                     DeviceListItem(
@@ -654,6 +649,11 @@ fun DeviceList(
                             onPinChange(item.device.address, change)
                         }
                     )
+                    }
+                } else {
+                    item {
+                        EmptyDeviceList()
+                    }
                 }
 
                 if (filteredDevices.isEmpty()) {

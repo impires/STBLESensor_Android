@@ -25,6 +25,7 @@ import com.st.activity_recognition.R
 import com.st.blue_sdk.features.activity.ActivityInfo
 import com.st.blue_sdk.features.activity.ActivityType
 import com.st.ui.theme.LocalDimensions
+import com.st.ui.theme.PrimaryBlue
 import com.st.ui.theme.PrimaryYellow
 import com.st.ui.theme.Shapes
 
@@ -89,7 +90,7 @@ fun ActivityRecognitionMotionAPD_MLCContent(
             painter = painterResource(
                 R.drawable.activity_adult_not_in_car
             ),
-            tint = Color.Unspecified,
+            tint = PrimaryBlue,
             contentDescription = null
         )
 
@@ -112,7 +113,7 @@ fun ActivityRecognitionMotionAPD_MLCContent(
             painter = painterResource(
                 R.drawable.activity_adult_in_car
             ),
-            tint = Color.Unspecified,
+            tint = PrimaryBlue,
             contentDescription = null
         )
     }

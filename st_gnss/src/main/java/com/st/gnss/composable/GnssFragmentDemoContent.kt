@@ -44,6 +44,7 @@ import com.st.gnss.R
 import com.st.ui.theme.Grey6
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PrimaryBlue
+import com.st.ui.theme.PrimaryYellow
 import com.st.ui.theme.Shapes
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -60,10 +61,12 @@ fun GnssFragmentDemoContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = LocalDimensions.current.paddingNormal,
+            .padding(
+                top = LocalDimensions.current.paddingNormal,
                 start = LocalDimensions.current.paddingNormal,
                 end = LocalDimensions.current.paddingNormal,
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingNormal)
     ) {
@@ -122,12 +125,15 @@ fun GnssFragmentDemoContent(
                     )
                 }
 
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.Bottom)
+                        .padding(
+                            bottom = LocalDimensions.current.paddingNormal,
+                            end = LocalDimensions.current.paddingNormal
+                        )
+                        .clickable {
                 if (gnssData != null) {
-                    Icon(
-                        modifier = Modifier
-                            .size(size = LocalDimensions.current.iconNormal)
-                            .align(Alignment.Bottom)
-                            .clickable {
                                 locationData = Pair(
                                     LocationData(
                                         latitude = gnssData!!.latitude.value,
@@ -135,26 +141,18 @@ fun GnssFragmentDemoContent(
                                     ), System.currentTimeMillis()
                                 )
                             }
-                            .padding(
-                                bottom = LocalDimensions.current.paddingNormal,
-                                end = LocalDimensions.current.paddingNormal
-                            ),
-                        painter = painterResource(R.drawable.ic_gps_fixed_24),
-                        tint = PrimaryBlue,
-                        contentDescription = null
-                    )
-                } else {
+                        },
+                    shape = Shapes.small,
+                    shadowElevation = LocalDimensions.current.elevationNormal,
+                    color = if (gnssData != null) PrimaryYellow else Grey6
+                ) {
+
                     Icon(
                         modifier = Modifier
                             .size(size = LocalDimensions.current.iconNormal)
-                            .align(Alignment.Bottom)
-                            .padding(
-                                bottom = LocalDimensions.current.paddingNormal,
-                                end = LocalDimensions.current.paddingNormal
-                            ),
-                        painter =
-                        painterResource(R.drawable.ic_gps_not_fixed_24),
-                        tint = Grey6,
+                            .padding(LocalDimensions.current.paddingSmall),
+                        painter = painterResource(if (gnssData != null) R.drawable.ic_gps_fixed_24 else R.drawable.ic_gps_not_fixed_24),
+                        tint = PrimaryBlue,
                         contentDescription = null
                     )
                 }
@@ -212,9 +210,11 @@ fun GnssFragmentDemoContent(
             shadowElevation = LocalDimensions.current.elevationNormal
         ) {
             locationData?.let { location ->
-                AnimatedContent(targetState = location.second, label = "",
+                AnimatedContent(
+                    targetState = location.second, label = "",
                     transitionSpec = {
-                        (fadeIn() + slideInVertically(animationSpec = tween(400),
+                        (fadeIn() + slideInVertically(
+                            animationSpec = tween(400),
                             initialOffsetY = { fullHeight -> fullHeight })).togetherWith(
                             fadeOut(
                                 animationSpec = tween(200)

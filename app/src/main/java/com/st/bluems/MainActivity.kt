@@ -141,6 +141,8 @@ class MainActivity : AppCompatActivity() {
 
         navController = findNavController(R.id.nav_host_fragment_content_main)
 
+        val currentDestinationId = navController.currentDestination?.id
+
         GlobalConfig.navigateBack = { nodeId ->
             navController.navigate(HomeFragmentDirections.actionToHomeFragment())
             viewModel.disconnect(nodeId = nodeId)
@@ -152,9 +154,9 @@ class MainActivity : AppCompatActivity() {
         setUpUserProfiling()
 
         when {
-            viewModel.shouldShowTerms -> HomeFragmentDirections.actionHomeFragmentToTermsFragment()
-            viewModel.shouldShowWelcome -> HomeFragmentDirections.actionHomeFragmentToWelcomeFragment()
-            viewModel.shouldShowProfile -> HomeFragmentDirections.actionHomeFragmentToProfileNavGraph()
+            viewModel.shouldShowTerms && currentDestinationId!= R.id.termsFragment -> HomeFragmentDirections.actionHomeFragmentToTermsFragment()
+            viewModel.shouldShowWelcome && currentDestinationId != R.id.welcomeFragment -> HomeFragmentDirections.actionHomeFragmentToWelcomeFragment()
+            viewModel.shouldShowProfile && currentDestinationId != com.st.user_profiling.R.id.user_profiling_nav_graph -> HomeFragmentDirections.actionHomeFragmentToProfileNavGraph()
             else -> null
         }?.let { destination ->
             val navOptions: NavOptions = navOptions {

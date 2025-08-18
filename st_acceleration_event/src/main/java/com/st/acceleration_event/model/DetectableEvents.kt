@@ -141,7 +141,7 @@ fun getEventIconResource(eventType: AccelerationType): Int {
         AccelerationType.DoubleTap -> R.drawable.acc_event_tap_double
         AccelerationType.WakeUp -> R.drawable.acc_event_wake_up
         AccelerationType.Pedometer -> R.drawable.acc_event_pedometer
-        else -> R.drawable.acc_event_none
+        //else -> R.drawable.acc_event_none
     }
 }
 

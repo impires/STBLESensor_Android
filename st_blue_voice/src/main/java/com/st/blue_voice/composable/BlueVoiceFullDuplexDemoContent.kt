@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -265,6 +266,8 @@ fun BlueVoiceFullDuplexDemoContent(
 }
 
 private fun initAudioTrack(decodeParams: DecodeParams) {
+
+    Log.i("initAudioTrack", "initAudioDecoder4: ${decodeParams.samplingFreq} ${if (decodeParams.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO}")
 
     val minBufSize = AudioTrack.getMinBufferSize(
         decodeParams.samplingFreq,

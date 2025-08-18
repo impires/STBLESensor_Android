@@ -53,6 +53,7 @@ import androidx.navigation.NavController
 import com.st.blue_sdk.board_catalog.models.BoardFirmware
 import com.st.catalog.CatalogViewModel
 import com.st.catalog.R
+import com.st.catalog.StCatalogConfig
 import com.st.catalog.availableDemos
 import com.st.ui.composables.StTopBar
 import com.st.ui.theme.Grey5
@@ -78,6 +79,7 @@ fun FirmwareList(
         modifier = modifier,
         currentDemoName = viewModel.selectedDemoName,
         firmwareList = firmwareList,
+        displayShowLatest = StCatalogConfig.displayShowLatest,
         onBack = {
             navController.popBackStack()
         }
@@ -89,6 +91,7 @@ fun FirmwareList(
     modifier: Modifier = Modifier,
     currentDemoName: String? = null,
     onBack: () -> Unit = { /** NOOP **/ },
+    displayShowLatest: Boolean = true,
     firmwareList: List<BoardFirmware>
 ) {
 
@@ -180,6 +183,7 @@ fun FirmwareList(
             )
         }
 
+        if(displayShowLatest) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -210,6 +214,7 @@ fun FirmwareList(
         }
 
         Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingNormal))
+        }
 
         Box(modifier = Modifier.weight(1f)) {
             LazyColumn(

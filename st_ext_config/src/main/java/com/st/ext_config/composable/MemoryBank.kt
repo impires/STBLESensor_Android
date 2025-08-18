@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,11 +32,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.st.ext_config.R
 import com.st.ui.composables.BlueMsButton
+import com.st.ui.theme.Grey3
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.SecondaryBlue
 import com.st.ui.theme.Grey6
@@ -67,6 +73,7 @@ fun MemoryBank(
         isRunningBank && (nextRunningBank == 0)
     }
 
+    var showDialogFoSwitchingBank by remember { mutableStateOf(false) }
 
     Surface(
         modifier = if (mustBeBordered) modifier
@@ -98,10 +105,11 @@ fun MemoryBank(
                 } else {
                     Checkbox(
                         checked = switchToThisBank,
-                        enabled = (installedFwDetail != null) && (switchToThisBank != true),
+                        enabled = (installedFwDetail != null) && !switchToThisBank,
                         onCheckedChange = {
-                            switchToThisBank = it
-                            onSwap()
+                            showDialogFoSwitchingBank = true
+//                            switchToThisBank = it
+//                            onSwap()
                         })
                 }
 
@@ -140,7 +148,7 @@ fun MemoryBank(
                     text = stringResource(id = R.string.st_extConfig_fwDownload_noFwLabel)
                 )
 
-                if (isCompatibleFwListNotEmpty && (isRunningBank == false) && (switchToThisBank==false)) {
+                if (isCompatibleFwListNotEmpty && !isRunningBank && !switchToThisBank) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
@@ -164,7 +172,7 @@ fun MemoryBank(
                     text = installedFwDetail
                 )
 
-                if (isCompatibleFwListNotEmpty && (isRunningBank == false)&& (switchToThisBank==false)) {
+                if (isCompatibleFwListNotEmpty && !isRunningBank && !switchToThisBank) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
@@ -179,7 +187,7 @@ fun MemoryBank(
                 }
             }
 
-            if ((selectedFwName != null) && (isRunningBank == false) && (switchToThisBank==false)) {
+            if ((selectedFwName != null) && !isRunningBank && !switchToThisBank) {
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     color = Grey6,
@@ -219,6 +227,84 @@ fun MemoryBank(
             }
 
             Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingLarge))
+        }
+    }
+
+    if (showDialogFoSwitchingBank) {
+        SwitchBankDialog(
+            onDismissRequest = { showDialogFoSwitchingBank = false },
+            onSwapConfirmed = {
+                showDialogFoSwitchingBank = false
+                switchToThisBank = true
+                onSwap()
+            })
+    }
+}
+
+@Composable
+private fun SwitchBankDialog(
+    onDismissRequest: () -> Unit,
+    onSwapConfirmed: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Surface(
+            shape = Shapes.medium
+        ) {
+            Column(
+                modifier = Modifier.padding(all = LocalDimensions.current.paddingNormal),
+                verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingMedium)
+            ) {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 24.sp,
+                    letterSpacing = 0.15.sp,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    text = "Switch Memory Bank"
+                )
+
+                HorizontalDivider(
+                    Modifier
+                        .fillMaxWidth(),
+                    thickness = 1.dp, color = Grey3
+                )
+
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    fontSize = 14.sp,
+                    lineHeight = 24.sp,
+                    letterSpacing = 0.15.sp,
+                    color = Grey6,
+                    text = "Do you want to switch the Memory Bank?"
+                )
+
+                HorizontalDivider(
+                    Modifier
+                        .fillMaxWidth(),
+                    thickness = 1.dp, color = Grey3
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    BlueMsButton(
+                        text = "Cancel",
+                        onClick = onDismissRequest
+                    )
+
+                    BlueMsButton(
+                        text = "Ok",
+                        onClick = onSwapConfirmed
+                    )
+                }
+            }
         }
     }
 }

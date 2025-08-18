@@ -10,7 +10,6 @@ package com.st.blue_voice
 import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioRecord
-import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -90,13 +89,13 @@ class BlueVoiceViewModel @Inject constructor(
 
     @SuppressLint("MissingPermission")
     private fun initAudioRecord(samplingFreq: Int, channels: Short): AudioRecord {
-        val ch =
-            if (channels.toInt() == 1) AudioFormat.CHANNEL_IN_MONO else AudioFormat.CHANNEL_IN_STEREO
-        val minBufSize = AudioTrack.getMinBufferSize(
-            samplingFreq,
-            ch,
-            AudioFormat.ENCODING_PCM_16BIT
-        )
+//        val ch =
+//            if (channels.toInt() == 1) AudioFormat.CHANNEL_IN_MONO else AudioFormat.CHANNEL_IN_STEREO
+//        val minBufSize = AudioTrack.getMinBufferSize(
+//            samplingFreq,
+//            ch,
+//            AudioFormat.ENCODING_PCM_16BIT
+//        )
         return AudioRecord.Builder()
                 .setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
                 .setAudioFormat(
@@ -182,7 +181,7 @@ class BlueVoiceViewModel @Inject constructor(
             return flowOf()
         }
 
-        return audioService.startDecondingIncomingAudioStream(nodeId)
+        return audioService.startDecodingIncomingAudioStream(nodeId)
     }
 
     fun enableBeamForming(

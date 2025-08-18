@@ -37,6 +37,7 @@ fun Command(
     content: DtmiContent.DtmiCommandContent,
     onBeforeUcf:() -> Unit,
     onAfterUcf:() -> Unit,
+    onErrorUcf:(String) -> Unit,
     componentName: String,
     onSendCommand: (CommandRequest?) -> Unit
 ) {
@@ -48,6 +49,7 @@ fun Command(
             commandName = content.name,
             onBeforeUcf = onBeforeUcf,
             onAfterUcf = onAfterUcf,
+            onErrorUcf = onErrorUcf,
             componentName = componentName,
             onSendCommand = onSendCommand
         )

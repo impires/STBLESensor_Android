@@ -79,13 +79,13 @@ class StPreferencesImpl @Inject constructor(
     }
 
     override fun setTermsFlag(accepted: Boolean) {
-        coroutineScope.launch {
+        runBlocking {
             dataStore.edit { prefs -> prefs[TERMS_KEY] = accepted }
         }
     }
 
     override fun setLevelProficiency(level: String) {
-        coroutineScope.launch {
+        runBlocking {
             dataStore.edit { prefs -> prefs[LEVEL_KEY] = level }
         }
 
@@ -96,7 +96,7 @@ class StPreferencesImpl @Inject constructor(
     }
 
     override fun setProfileType(profile: String) {
-        coroutineScope.launch {
+        runBlocking {
             dataStore.edit { prefs -> prefs[TYPE_KEY] = profile }
         }
 
@@ -116,13 +116,13 @@ class StPreferencesImpl @Inject constructor(
     }
 
     override fun setWelcomeFlag(completed: Boolean) {
-        coroutineScope.launch {
+        runBlocking {
             dataStore.edit { prefs -> prefs[WELCOME_KEY] = completed }
         }
     }
 
     override fun setBetaApplicationFlag(enableBeta: Boolean) {
-        coroutineScope.launch {
+        runBlocking {
             dataStore.edit { prefs -> prefs[BETA_KEY] = enableBeta }
         }
     }

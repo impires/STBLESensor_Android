@@ -16,11 +16,13 @@ import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.st.blue_sdk.BlueManager
+import com.st.blue_sdk.board_catalog.models.BoardCatalogStatus
 import com.st.blue_sdk.board_catalog.models.BoardDescription
 import com.st.blue_sdk.common.Status
 import com.st.blue_sdk.models.ConnectionStatus
 import com.st.blue_sdk.models.Node
 import com.st.blue_sdk.models.NodeState
+import com.st.internal.BuildConfig
 import com.st.login.api.StLoginManager
 import com.st.preferences.StPreferences
 import com.st.user_profiling.model.LevelProficiency
@@ -34,6 +36,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @HiltViewModel
@@ -70,7 +73,7 @@ class HomeViewModel @Inject constructor(
     private val _boardName = MutableStateFlow("")
     val boardName = _boardName.asStateFlow()
     val pinnedDevices = stPreferences.getFavouriteDevices()
-
+    var boardCatalogStatus: BoardCatalogStatus? = null
 
     private val _isPairingRequest = MutableStateFlow(false)
     val isPairingRequest = _isPairingRequest.asStateFlow()
@@ -83,6 +86,24 @@ class HomeViewModel @Inject constructor(
     private var numberCheckedTimes = 0
 
     private var activityResultRegistryOwner: ActivityResultRegistryOwner? = null
+
+    init {
+        val boardCatalogStatusSerialized = stPreferences.getBoardCatalogStatus()
+        val jsonDec = Json {
+            encodeDefaults = true
+            ignoreUnknownKeys = true
+        }
+
+        boardCatalogStatusSerialized?.let {
+            boardCatalogStatus=
+                try {
+                    jsonDec.decodeFromString<BoardCatalogStatus>(boardCatalogStatusSerialized)
+                } catch (e: Exception) {
+                    Log.d("HomeViewModel", e.stackTraceToString())
+                    null
+                }
+        }
+    }
 
     fun startScan() {
         viewModelScope.launch {

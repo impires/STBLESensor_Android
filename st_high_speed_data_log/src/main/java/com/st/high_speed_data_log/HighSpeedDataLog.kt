@@ -112,6 +112,7 @@ fun HighSpeedDataLog(
     val statusMessage by viewModel.statusMessage.collectAsStateWithLifecycle()
     val isConnectionLost by viewModel.isConnectionLost.collectAsStateWithLifecycle()
     val numActiveSensors by viewModel.numActiveSensors.collectAsStateWithLifecycle()
+    var ucfError: String? by remember { mutableStateOf(value = null) }
 
     HighSpeedDataLog(
         modifier = modifier,
@@ -135,6 +136,9 @@ fun HighSpeedDataLog(
         },
         onBeforeUcf = { viewModel.setEnableStartStopDemo(false) },
         onAfterUcf = { },
+        onErrorUcf = { error ->
+            ucfError = error
+        },
         onSendCommand = { name, value ->
             if (isLoading.not()) {
                 viewModel.sendCommand(
@@ -162,6 +166,68 @@ fun HighSpeedDataLog(
         PnPLInfoWarningSpontaneousMessage(
             messageType = statusMessage!!,
             onDismissRequest = { viewModel.cleanStatusMessage() })
+    }
+
+    ucfError?.let { error ->
+        BasicAlertDialog(onDismissRequest = { ucfError = null })
+        {
+            Surface(
+                modifier = Modifier
+                    //.wrapContentWidth()
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+                shape = Shapes.medium
+            ) {
+                Column(modifier = Modifier.padding(all = LocalDimensions.current.paddingMedium)) {
+                    Text(
+                        text = "Warning:",
+                        modifier = Modifier.padding(bottom = LocalDimensions.current.paddingNormal),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 24.sp,
+                        letterSpacing = 0.15.sp,
+                        color = ErrorText
+                    )
+                    Text(
+                        text = "Error Sending UCF:",
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.25.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        modifier = Modifier.padding(start = LocalDimensions.current.paddingMedium),
+                        text = error,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.25.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = LocalDimensions.current.paddingSmall,
+                                end = LocalDimensions.current.paddingSmall,
+                                top = LocalDimensions.current.paddingNormal
+                            ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.End
+                    ) {
+
+                        BlueMsButton(
+                            modifier = Modifier.padding(end = LocalDimensions.current.paddingSmall),
+                            text = "Ok",
+                            onClick = {
+                                ucfError = null
+                            }
+                        )
+                    }
+                }
+            }
+        }
     }
 
     if (isConnectionLost) {
@@ -242,15 +308,12 @@ fun HighSpeedDataLog(
     onValueChange: (String, Pair<String, Any>) -> Unit,
     onBeforeUcf: () -> Unit,
     onAfterUcf: () -> Unit,
+    onErrorUcf:(String) -> Unit,
     onSendCommand: (String, CommandRequest?) -> Unit,
     onStartStopLog: (Boolean) -> Unit = { /**NOOP **/ },
     onRefresh: () -> Unit = { /**NOOP **/ },
     navController: NavHostController = rememberNavController()
 ) {
-    val sensorsTitle = stringResource(id = R.string.st_hsdl_sensors)
-    val tagsTitle = stringResource(id = R.string.st_hsdl_tags)
-    var currentTitle by remember { mutableStateOf(sensorsTitle) }
-
     val pullRefreshState = rememberPullToRefreshState()
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
@@ -323,7 +386,6 @@ fun HighSpeedDataLog(
                     onClick = {
                         if (!isLoading) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            currentTitle = sensorsTitle
                             navController.navigate("Sensors") {
                                 navController.graph.startDestinationRoute?.let { screenRoute ->
                                     popUpTo(screenRoute) {
@@ -359,7 +421,6 @@ fun HighSpeedDataLog(
                     onClick = {
                         if (!isLoading) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            currentTitle = tagsTitle
                             navController.navigate("Tags") {
                                 navController.graph.startDestinationRoute?.let { screenRoute ->
                                     popUpTo(screenRoute) {
@@ -417,6 +478,7 @@ fun HighSpeedDataLog(
                             onValueChange = onValueChange,
                             onAfterUcf = onAfterUcf,
                             onBeforeUcf = onBeforeUcf,
+                            onErrorUcf = onErrorUcf,
                             onSendCommand = onSendCommand
                         )
                     } else {
