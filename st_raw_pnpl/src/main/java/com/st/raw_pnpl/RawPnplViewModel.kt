@@ -213,16 +213,16 @@ class RawPnplViewModel
                             }
                             (featurePnPL as PnPL).setMaxPayLoadSize(maxWriteLength)
 
-                                blueManager.writeFeatureCommand(
-                                    responseTimeout = 0,
-                                    nodeId = nodeId,
-                                    featureCommand = PnPLCommand(
-                                        feature = featurePnPL,
-                                        cmd = PnPLCmd.ALL
-                                    )
+                            blueManager.writeFeatureCommand(
+                                responseTimeout = 0,
+                                nodeId = nodeId,
+                                featureCommand = PnPLCommand(
+                                    feature = featurePnPL,
+                                    cmd = PnPLCmd.ALL
                                 )
-                            }
+                            )
                         }
+                    }
                 ).flowOn(Dispatchers.IO).onEach { featureUpdate ->
 
                     val data = featureUpdate.data
@@ -267,10 +267,10 @@ class RawPnplViewModel
                                         }
                                         count++
 
-                                        if(formatRawPnpLEntry.format.channels!= 1) {
+                                        if (formatRawPnpLEntry.format.channels != 1) {
                                             //The channels are interleaved
                                             string.append("[ ")
-                                            if(formatRawPnpLEntry.format.multiplyFactor!=null) {
+                                            if (formatRawPnpLEntry.format.multiplyFactor != null) {
                                                 val values =
                                                     formatRawPnpLEntry.format.valuesFloat.chunked(
                                                         formatRawPnpLEntry.format.channels
@@ -299,7 +299,7 @@ class RawPnplViewModel
                                         } else {
                                             string.append("[ ")
 
-                                            if(formatRawPnpLEntry.format.multiplyFactor!=null) {
+                                            if (formatRawPnpLEntry.format.multiplyFactor != null) {
                                                 formatRawPnpLEntry.format.valuesFloat.forEach { value ->
                                                     string.append("$value ")
                                                 }

@@ -119,11 +119,21 @@ class AzureIoTCentralPnPConnection {
                 when(telemetryFormat[index]!!) {
                     is FieldModel.FieldModelObj -> {
                         val name = (telemetryFormat[index]!! as FieldModel.FieldModelObj).name
-                        obj[name!!] = telemetry[index]
+                        val value = telemetry[index]
+                        obj[name!!] = if(value.isNaN()) {
+                            0.0
+                        } else {
+                            value
+                        }
                     }
                     is FieldModel.FieldModelString -> {
                         val name =(telemetryFormat[index]!! as FieldModel.FieldModelString).name
-                        obj[name!!] = telemetry[index]
+                        val value = telemetry[index]
+                        obj[name!!] = if(value.isNaN()) {
+                            0.0
+                        } else {
+                            value
+                        }
                     }
                 }
 

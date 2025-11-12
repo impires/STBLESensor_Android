@@ -603,8 +603,8 @@ private fun setMostProbClass(
             if ((mostProb < 1) || (mostProb > viewModel.customNames.size)) {
                 "UNKNOWN"
             } else {
-            viewModel.customNames[mostProb - 1]
-        }
+                viewModel.customNames[mostProb - 1]
+            }
         }
     } else {
         "UNKNOWN"

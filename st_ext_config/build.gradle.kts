@@ -6,7 +6,6 @@
  * If no LICENSE file comes with this software, it is provided AS-IS.
  */
 
-val stLocoApiKey: String by project
 val stCompileSdk: Int by rootProject.extra
 val stMinSdk: Int by rootProject.extra
 
@@ -17,7 +16,6 @@ plugins {
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.appswithloveLoco)
     alias(libs.plugins.androidxSafeargs)
 }
 
@@ -61,17 +59,6 @@ android {
         compose = true
         buildConfig = true
         viewBinding = true
-    }
-}
-
-Loco {
-    config {
-        apiKey = stLocoApiKey
-        // lang = ["it", "en"] // add as many languages as you want, they need to exist on localise.biz
-        defLang = "en"
-        fallbackLang = "en"
-        tags = "st_ext_config"
-        resDir = "$projectDir/src/main/res"
     }
 }
 

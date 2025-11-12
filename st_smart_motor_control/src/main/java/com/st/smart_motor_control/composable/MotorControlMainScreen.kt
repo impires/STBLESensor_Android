@@ -108,6 +108,9 @@ fun MotorControlMainScreen(
     val neaiClassName by viewModel.neaiClassName.collectAsStateWithLifecycle()
     val neaiClassProb by viewModel.neaiClassProb.collectAsStateWithLifecycle()
 
+    val cubeAiClassName by viewModel.cubeAiClassName.collectAsStateWithLifecycle()
+    val cubeAiClassProb by viewModel.cubeAiClassProb.collectAsStateWithLifecycle()
+
     val isMotorRunning by viewModel.isMotorRunning.collectAsStateWithLifecycle()
 
     val motorSpeed by viewModel.motorSpeed.collectAsStateWithLifecycle()
@@ -181,6 +184,8 @@ fun MotorControlMainScreen(
         busVoltage = busVoltage,
         neaiClassName = neaiClassName,
         neaiClassProb = neaiClassProb,
+        cubeAiClassName = cubeAiClassName,
+        cubeAiClassProb = cubeAiClassProb,
         isMotorRunning = isMotorRunning,
         motorSpeed = motorSpeed,
         motorSpeedControl = motorSpeedControl,
@@ -283,6 +288,8 @@ fun SmartMotorControlScreen(
     busVoltage: Int? = null,
     neaiClassName: String? = null,
     neaiClassProb: Float? = null,
+    cubeAiClassName: String? = null,
+    cubeAiClassProb: Float? = null,
     temperatureUnit: String,
     speedRefUnit: String,
     speedMeasUnit: String,
@@ -429,15 +436,14 @@ fun SmartMotorControlScreen(
         }
     ) { paddingValues ->
         BlueMSPullToRefreshBox(
-            modifier = modifier.consumeWindowInsets(paddingValues),
+            modifier = modifier.consumeWindowInsets(paddingValues).padding(paddingValues),
             state = pullRefreshState,
             isRefreshing = isLoading,
             isBetaRelease = isBetaApplication,
-            indicatorAlignment = Alignment.Center,
             onRefresh = onRefresh
         ) {
             NavHost(
-                modifier = Modifier.padding(paddingValues),
+                //modifier = Modifier.padding(paddingValues),
                 navController = navController,
                 startDestination = "MotorControl"
             ) {
@@ -466,6 +472,8 @@ fun SmartMotorControlScreen(
                         busVoltage = busVoltage,
                         neaiClassName = neaiClassName,
                         neaiClassProb = neaiClassProb,
+                        cubeAiClassName = cubeAiClassName,
+                        cubeAiClassProb = cubeAiClassProb,
                         isRunning = isMotorRunning,
                         isLogging = isLogging,
                         motorSpeed = motorSpeed,

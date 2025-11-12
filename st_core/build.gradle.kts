@@ -6,7 +6,6 @@
  * If no LICENSE file comes with this software, it is provided AS-IS.
  */
 
-val stLocoApiKey: String by project
 val stCompileSdk: Int by rootProject.extra
 val stMinSdk: Int by rootProject.extra
 

@@ -4,11 +4,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.FloatingActionButton
@@ -96,6 +102,7 @@ fun CloudAzureDeviceSelection(
 
     Scaffold(
         modifier = modifier.padding(all = LocalDimensions.current.paddingNormal),
+        contentWindowInsets = WindowInsets.statusBars,
         snackbarHost = {
             BlueMSSnackBarMaterial3(
                 snackBarHostState = snackBarHostState
@@ -103,6 +110,9 @@ fun CloudAzureDeviceSelection(
         },
         floatingActionButton = {
             FloatingActionButton(
+                modifier = Modifier.padding(
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                ),
                 onClick = { openAddDeviceDialog = true },
                 contentColor = MaterialTheme.colorScheme.primary,
                 containerColor = SecondaryBlue
@@ -202,6 +212,14 @@ fun CloudAzureDeviceSelection(
                                 text = "No available devices\nCreate a new one"
                             )
                         }
+                    }
+
+                    item{
+                        Spacer(
+                            Modifier.windowInsetsBottomHeight(
+                                WindowInsets.systemBars
+                            )
+                        )
                     }
                 }
             }

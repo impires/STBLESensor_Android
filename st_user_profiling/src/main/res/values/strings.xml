@@ -5,15 +5,7 @@
   ~ the root directory of this software component.
   ~ If no LICENSE file comes with this software, it is provided AS-IS.
   -->
-<!--
- Loco xml export: Android string resources
- Project: BlueMS
- Release: Working copy
- Locale: en, English
- Tagged: st_user_profiling
- Exported by: st localise
- Exported at: Fri, 20 May 2022 08:35:44 +0200
--->
+
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="st_userProfiling_levelProficiency_titleScreen">Level of Proficiency</string>
     <string name="st_userProfiling_levelProficiency_title">What is your level of proficiency?</string>

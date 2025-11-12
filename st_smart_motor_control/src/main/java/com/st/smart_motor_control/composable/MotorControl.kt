@@ -89,6 +89,8 @@ fun MotorControl(
     busVoltage: Int? = null,
     neaiClassName: String? = null,
     neaiClassProb: Float? = null,
+    cubeAiClassName: String? = null,
+    cubeAiClassProb: Float? = null,
     temperatureUnit: String,
     speedRefUnit: String,
     speedMeasUnit: String,
@@ -600,6 +602,14 @@ fun MotorControl(
                             id = R.drawable.neai_icon,
                             label = if (neaiClassName != null) "Class: $neaiClassName" else "Class: Undef",
                             value = neaiClassProb ?: 0f
+                        )
+                    }
+
+                    if ((cubeAiClassName != null) || cubeAiClassProb != null) {
+                        SlowTelemetry(
+                            id = R.drawable.cubeai_icon,
+                            label = if (cubeAiClassName != null) "Class: $cubeAiClassName" else "Class: Undef",
+                            value = cubeAiClassProb ?: 0f
                         )
                     }
 

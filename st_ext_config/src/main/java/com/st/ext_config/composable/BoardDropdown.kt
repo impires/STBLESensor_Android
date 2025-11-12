@@ -10,7 +10,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -52,6 +52,8 @@ fun BoardDropdown(
     if (!wbOnly) {
         items.add(stringResource(id = R.string.st_extConfig_fwUpgrade_otaBoard3))
         items.add(stringResource(id = R.string.st_extConfig_fwUpgrade_otaBoard4))
+        items.add(stringResource(id = R.string.st_extConfig_fwUpgrade_otaBoard5))
+        items.add(stringResource(id = R.string.st_extConfig_fwUpgrade_otaBoard6))
     }
     // remember the selected item
     var selectedItem by remember {
@@ -84,7 +86,7 @@ fun BoardDropdown(
                 .fillMaxWidth()
                 .height(height = 60.dp)
                 .wrapContentHeight()
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true),
             colors = OutlinedTextFieldDefaults.colors()
         )
         // menu

@@ -27,7 +27,7 @@ dependencyResolutionManagement {
 
         maven {
             name = "github"
-            url = uri("https://maven.pkg.github.com/SW-Platforms/BlueSTSDK_Android")
+            url = uri("https://maven.pkg.github.com/PRG-SWP/Android_App_STBLESensors")
             credentials {
                 username = System.getenv("GPR_USER") ?: GPR_USER
                 password = System.getenv("GPR_API_KEY") ?: GPR_API_KEY
@@ -95,3 +95,4 @@ include(":st_smart_motor_control")
 include(":st_cloud_azure_iot_central")
 include(":st_cloud_mqtt")
 include(":st_neai_extrapolation")
+include(":st_external_app")

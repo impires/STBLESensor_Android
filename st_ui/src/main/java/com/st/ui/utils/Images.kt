@@ -46,10 +46,11 @@ private val BLUE_ST_SDK_V2_BOARD_TYPE_IMAGES = mapOf(
     "WB55CG_NUCLEO_BOARD" to R.drawable.board_generic,
     "STM32WBA55G_DK1" to R.drawable.board_generic,
     "WBA65RI_NUCLEO_BOARD" to R.drawable.board_generic,
+    "WBA2_NUCLEO_BOARD" to R.drawable.board_generic,
     "GENERIC" to R.drawable.board_generic,
     "WB0X_NUCLEO_BOARD" to R.drawable.board_generic,
     "WB05_NUCLEO_BOARD" to R.drawable.board_generic,
-    "X_NUCLEO_67W61M" to R.drawable.board_generic,
+    "ST67W6X" to R.drawable.board_generic,
     "B_WBA5M_WPAN" to R.drawable.board_generic,
     "STM32WBA65I_DK1" to R.drawable.board_generic
 )
@@ -79,6 +80,7 @@ private val BLUE_ST_SDK_V2_BOARD_IMAGES = mapOf(
     "WB55CG_NUCLEO_BOARD" to R.drawable.real_board_nucleo_wba5x,
     "STM32WBA55G_DK1" to R.drawable.real_board_discovery_kit_wba,
     "WBA65RI_NUCLEO_BOARD" to R.drawable.real_board_nucleo_wba6,
+    "WBA2_NUCLEO_BOARD" to R.drawable.real_board_generic,
     "PROTEUS" to R.drawable.real_board_proteus,
     "ASTRA1" to R.drawable.real_board_astra,
     "STDES_CBMLORABLE" to R.drawable.real_board_stysys_sbu06,
@@ -93,7 +95,7 @@ private val BLUE_ST_SDK_V2_BOARD_IMAGES = mapOf(
     "B_U585I_IOT02A" to R.drawable.real_board_generic,
     "WB0X_NUCLEO_BOARD" to R.drawable.real_board_nucleo_wb0x,
     "WB05_NUCLEO_BOARD" to R.drawable.real_board_wb05kn1,
-    "X_NUCLEO_67W61M" to R.drawable.real_board_nucleo_67w61m1,
+    "ST67W6X" to R.drawable.real_board_nucleo_67w61m1,
     "B_WBA5M_WPAN" to R.drawable.real_board_wba5m_wpan,
     "STM32WBA65I_DK1" to R.drawable.real_board_wba651_dk1
 )

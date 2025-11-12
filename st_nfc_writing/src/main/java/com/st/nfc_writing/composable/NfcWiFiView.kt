@@ -15,12 +15,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -179,7 +179,7 @@ fun NfcWiFiView(
                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAuthDropDownMenu)
                                 },
                                 colors =  OutlinedTextFieldDefaults.colors(),
-                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
                             )
 
                             ExposedDropdownMenu(
@@ -234,7 +234,7 @@ fun NfcWiFiView(
                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedEncrDropDownMenu)
                                 },
                                 colors = OutlinedTextFieldDefaults.colors(),
-                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
                             )
 
                             ExposedDropdownMenu(

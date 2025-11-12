@@ -167,39 +167,39 @@ fun FwDownloadScreen(
             state = rememberLazyListState(),
             contentPadding = PaddingValues(all = LocalDimensions.current.paddingNormal),
             verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingMedium)
-    ) {
+        ) {
             item {
-            Row(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = LocalDimensions.current.paddingNormal),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
                         modifier = Modifier.padding(end = LocalDimensions.current.paddingNormal),
-                    color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.titleLarge,
                         text = "Select one firmware"
-                )
+                    )
 
                     Row(Modifier.clickable {
                         onlyLatest = !onlyLatest
                     }) {
-                    Icon(
-                        modifier = Modifier
-                            .padding(start = 4.dp),
-                        tint = SecondaryBlue,
-                        imageVector = if (onlyLatest) Icons.Default.FilterAlt else Icons.Default.FilterAltOff,
-                        contentDescription = null
-                    )
+                        Icon(
+                            modifier = Modifier
+                                .padding(start = 4.dp),
+                            tint = SecondaryBlue,
+                            imageVector = if (onlyLatest) Icons.Default.FilterAlt else Icons.Default.FilterAltOff,
+                            contentDescription = null
+                        )
 
-                    Text(
-                        modifier = Modifier
-                            .padding(start = 4.dp),
-                        color = if (onlyLatest) SecondaryBlue else Grey5,
-                        style = MaterialTheme.typography.titleMedium,
-                        text = "latest"
-                    )
+                        Text(
+                            modifier = Modifier
+                                .padding(start = 4.dp),
+                            color = if (onlyLatest) SecondaryBlue else Grey5,
+                            style = MaterialTheme.typography.titleMedium,
+                            text = "latest"
+                        )
                     }
                 }
 

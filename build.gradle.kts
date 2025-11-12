@@ -33,7 +33,6 @@ plugins {
     alias(libs.plugins.devtoolsKsp) apply false
     alias(libs.plugins.jlleitschuhKtlint) apply false
     alias(libs.plugins.littlerobotsVersionCatalogUpdate) apply true
-    alias(libs.plugins.appswithloveLoco) apply false
     alias(libs.plugins.androidxSafeargs) apply false
 }
 

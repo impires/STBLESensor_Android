@@ -256,7 +256,6 @@ private fun findBoardImage(model: Boards.Model): Int {
 }
 
 private fun initAudioTrack(decodeParams: DecodeParams) {
-
     val minBufSize = AudioTrack.getMinBufferSize(
         decodeParams.samplingFreq,
         if (decodeParams.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO,

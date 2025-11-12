@@ -18,11 +18,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.SnackbarDuration
@@ -39,7 +46,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -126,15 +133,19 @@ fun CloudMqttDeviceConnection(
 
     Scaffold(
         modifier = modifier.padding(LocalDimensions.current.paddingNormal),
+        contentWindowInsets = WindowInsets.statusBars,
         snackbarHost = {
             BlueMSSnackBarMaterial3(
+                modifier = Modifier.padding(
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                ),
                 snackBarHostState = snackBarHostState
             )
         }
     ) { paddingValue ->
 
         Column(
-            modifier = modifier
+            modifier = modifier.consumeWindowInsets(paddingValue)
                 .padding(paddingValue)
                 .fillMaxSize()
         ) {
@@ -355,6 +366,14 @@ fun CloudMqttDeviceConnection(
                                         }
                                     })
                             }
+
+                            item{
+                                Spacer(
+                                    Modifier.windowInsetsBottomHeight(
+                                        WindowInsets.systemBars
+                                    )
+                                )
+                            }
                         }
                     } else {
                         Text(
@@ -438,7 +457,7 @@ private fun UpdateIntervalSelectionDialog(
                         },
                         colors = OutlinedTextFieldDefaults.colors(),
                         modifier = Modifier
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
                             .fillMaxWidth()
                     )
 

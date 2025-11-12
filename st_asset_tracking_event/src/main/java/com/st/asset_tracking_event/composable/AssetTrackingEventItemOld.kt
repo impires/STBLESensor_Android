@@ -48,7 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import com.st.ui.composables.bottomBorder
+import com.st.ui.utils.bottomBorder
 import kotlin.math.sqrt
 import java.util.Locale
 

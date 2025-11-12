@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable

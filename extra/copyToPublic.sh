@@ -62,19 +62,6 @@ for i in "${arr[@]}"; do
       sed -i "$lineNum"d "../../Android_App_STBLESensors_Pub/$i/build.gradle.kts"
     fi
   fi
-  # Strip loco plugin
-  if [ -f ../../Android_App_STBLESensors_Pub/"$i"/build.gradle.kts ]; then
-    lineNum=$(awk "/Loco/{ print NR ; exit }" ../../Android_App_STBLESensors_Pub/"$i"/build.gradle.kts)
-    if [[ $lineNum =~ $re ]] && [ $lineNum -gt 0 ]; then
-      sed -i "$lineNum",$(($lineNum + 7))d "../../Android_App_STBLESensors_Pub/$i/build.gradle.kts"
-      lineNum=$(awk "/appswithlove/{ print NR ; exit }" ../../Android_App_STBLESensors_Pub/"$i"/build.gradle.kts)
-      sed -i "$lineNum"d "../../Android_App_STBLESensors_Pub/$i/build.gradle.kts"
-      lineNum=$(awk "/st_dependencies/{ print NR ; exit }" ../../Android_App_STBLESensors_Pub/"$i"/build.gradle.kts)
-      if [[ $lineNum =~ $re ]] &&  [ "$lineNum" -gt 0 ]; then
-        sed -i "$lineNum"d "../../Android_App_STBLESensors_Pub/$i/build.gradle.kts"
-      fi
-    fi
-  fi
   echo "$i folder copied"
 done
 

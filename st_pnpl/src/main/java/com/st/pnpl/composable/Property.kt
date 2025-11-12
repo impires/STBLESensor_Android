@@ -17,6 +17,7 @@ import com.st.ui.composables.FloatProperty
 import com.st.ui.composables.GeoProperty
 import com.st.ui.composables.IntegerProperty
 import com.st.ui.composables.LOAD_FILE_RESPONSE_PROPERTY_NAME
+import com.st.ui.composables.LOAD_MODEL_RESPONSE_PROPERTY_NAME
 import com.st.ui.composables.LongProperty
 import com.st.ui.composables.StringProperty
 import com.st.ui.composables.TimeProperty
@@ -46,7 +47,7 @@ fun Property(
     onValueChange: (Pair<String, Any>) -> Unit,
     commandBehavior: Boolean = false
 ) {
-    if (content.name == LOAD_FILE_RESPONSE_PROPERTY_NAME && data is JsonPrimitive?) {
+    if (((content.name == LOAD_FILE_RESPONSE_PROPERTY_NAME) || (content.name == LOAD_MODEL_RESPONSE_PROPERTY_NAME)) && data is JsonPrimitive?) {
         UploadFileResultProperty(
             modifier = modifier,
             result = data?.booleanOrNull == true

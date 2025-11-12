@@ -26,7 +26,7 @@ import javax.inject.Singleton
 @Singleton
 class StPreferencesImpl @Inject constructor(
     private val dataStore: DataStore<Preferences>,
-    @PreferencesScope private val coroutineScope: CoroutineScope,
+    @param:PreferencesScope private val coroutineScope: CoroutineScope,
     private val appAnalyticsService: Set<@JvmSuppressWildcards ApplicationAnalyticsService>
 ) : StPreferences {
 

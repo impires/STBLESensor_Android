@@ -137,9 +137,11 @@ fun FwUpgradeScreen(
         Boards.Model.STM32WBA55G_DK1,
         Boards.Model.WBA65RI_NUCLEO_BOARD,
         Boards.Model.STM32WBA65I_DK1,
+        Boards.Model.WB0X_NUCLEO_BOARD,
+        Boards.Model.WBA2_NUCLEO_BOARD,
+        Boards.Model.ST67W6X)
 
-        Boards.Model.WB0X_NUCLEO_BOARD)
-
+    //val supportedBoardModels: List<Boards.Model> = listOf()
     val supportedBoardModelsWB = listOf(
 
         Boards.Model.WB55_NUCLEO_BOARD,
@@ -158,11 +160,10 @@ fun FwUpgradeScreen(
             boardModel
         } else {
             when(selectedBoardIndex) {
-                //3 -> Boards.Model.WBA6_BOARD
+                5 -> Boards.Model.ST67W6X
+                4 -> Boards.Model.WBA2_NUCLEO_BOARD
                 3 -> Boards.Model.WBA65RI_NUCLEO_BOARD
-                //2 -> Boards.Model.WBA_BOARD
                 2 -> Boards.Model.STM32WBA55G_DK1
-                //else -> Boards.Model.WB_BOARD
                 1 -> Boards.Model.WB15CC_NUCLEO_BOARD
                 else -> Boards.Model.WB55_NUCLEO_BOARD
             }
@@ -184,7 +185,12 @@ fun FwUpgradeScreen(
             Boards.Model.STM32WBA55G_DK1-> if(radioSelection == 0) "0x080000" else "0x0FA000"
             Boards.Model.WBA65RI_NUCLEO_BOARD,
             Boards.Model.STM32WBA65I_DK1 -> if(radioSelection == 0) "0x100000" else "0x1F4000"
+            Boards.Model.WBA2_NUCLEO_BOARD -> if(radioSelection == 0) "0x40000" else "0x07A000"
             Boards.Model.WB0X_NUCLEO_BOARD -> if(radioSelection == 0) "0x3F800" else "0x07E000"
+            Boards.Model.ST67W6X -> {
+                //Not Used for this board type....
+                if(radioSelection == 0) "0x3F800" else "0x07E000"
+            }
             else -> "" //shouldn't happen
         }
     }
@@ -217,27 +223,39 @@ fun FwUpgradeScreen(
             when(selectedBoardIndex) {
                 0 -> WbOTAUtils.WBBoardType.WB5xOrWB3x
                 1 -> WbOTAUtils.WBBoardType.WB1x
-                2 -> WbOTAUtils.WBBoardType.WBA
-                else -> WbOTAUtils.WBBoardType.WBA6
+                2 -> WbOTAUtils.WBBoardType.WBA5
+                3 -> WbOTAUtils.WBBoardType.WBA6
+                4 -> WbOTAUtils.WBBoardType.WBA2
+                else -> WbOTAUtils.WBBoardType.ST67W6X
             }
         } else {
             when(boardModel) {
-                //Boards.Model.WBA_BOARD -> WbOTAUtils.WBBoardType.WBA
+                //Boards.Model.WBA_BOARD -> WbOTAUtils.WBBoardType.WBA5
                 Boards.Model.WB55CG_NUCLEO_BOARD,
-                Boards.Model.STM32WBA55G_DK1 -> WbOTAUtils.WBBoardType.WBA
+                Boards.Model.STM32WBA55G_DK1 -> WbOTAUtils.WBBoardType.WBA5
                 Boards.Model.STM32WBA65I_DK1,
                 Boards.Model.WBA65RI_NUCLEO_BOARD -> WbOTAUtils.WBBoardType.WBA6
                 Boards.Model.WB0X_NUCLEO_BOARD -> WbOTAUtils.WBBoardType.WB09
-                else -> WbOTAUtils.WBBoardType.WBA
+                Boards.Model.WBA2_NUCLEO_BOARD -> WbOTAUtils.WBBoardType.WBA2
+                Boards.Model.ST67W6X -> WbOTAUtils.WBBoardType.ST67W6X
+                else -> WbOTAUtils.WBBoardType.WBA5
             }
         }
     }
 
-    fun getCurrentFwType(): FirmwareType {
+    fun getCurrentFwType(switch:Boolean = false): FirmwareType {
         return if (radioSelection == 0) {
-            FirmwareType.BOARD_FW
+            if(switch) {
+                FirmwareType.BLE_FW
+            } else {
+                FirmwareType.BOARD_FW
+            }
         } else {
-            FirmwareType.BLE_FW
+            if(switch) {
+                FirmwareType.BOARD_FW
+            } else {
+                FirmwareType.BLE_FW
+            }
         }
     }
 
@@ -304,7 +322,9 @@ fun FwUpgradeScreen(
                         val isWBA = (boardModel == Boards.Model.WB55CG_NUCLEO_BOARD) ||
                                 (boardModel == Boards.Model.STM32WBA55G_DK1) ||
                                 (boardModel == Boards.Model.WBA65RI_NUCLEO_BOARD) ||
-                                (boardModel == Boards.Model.STM32WBA65I_DK1)
+                                (boardModel == Boards.Model.STM32WBA65I_DK1) ||
+                                (boardModel == Boards.Model.WBA2_NUCLEO_BOARD) ||
+                                (boardModel == Boards.Model.ST67W6X)
 
                         if(isNotSupportedBoard || isWb) {
                             BoardDropdown(selectedIndex = selectedBoardIndex, wbOnly = isWb,boardModel = boardModel) { boardIndex ->
@@ -314,7 +334,11 @@ fun FwUpgradeScreen(
                         }
                         val radioOptions = mutableListOf(
                             stringResource(id = R.string.st_extConfig_fwUpgrade_otaOpt1),
-                            stringResource(id = if(selectedBoardIndex == 2 || selectedBoardIndex == 3 || isWBA || boardModel == Boards.Model.WB0X_NUCLEO_BOARD) R.string.st_extConfig_fwUpgrade_otaOpt2bis else R.string.st_extConfig_fwUpgrade_otaOpt2)
+                            stringResource(id =  if(selectedBoardIndex != 5) {
+                                if(selectedBoardIndex == 2 || selectedBoardIndex == 3 || isWBA || boardModel == Boards.Model.WB0X_NUCLEO_BOARD) R.string.st_extConfig_fwUpgrade_otaOpt2bis else R.string.st_extConfig_fwUpgrade_otaOpt2
+                            } else {
+                                R.string.st_extConfig_fwUpgrade_otaOpt2tris
+                            })
                         )
 
                         radioOptions.forEachIndexed { index, text ->
@@ -349,28 +373,34 @@ fun FwUpgradeScreen(
                                 )
                             }
                         }
-                        TextField(
-                            value = address,
-                            onValueChange = { address = it },
-                            label = { Text(text = stringResource(id = R.string.st_extConfig_fwUpgrade_address)) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(height = 60.dp)
-                                .wrapContentHeight(),
-                            colors = ExposedDropdownMenuDefaults.textFieldColors()
-                        )
-                        //if(!(boardModel == Boards.Model.WB_BOARD && isRebootedYet)) {
-                        if(!(isWb && isRebootedYet)) {
+                        if(selectedBoardIndex!=5) {
+                            //Not Visualized for ST67W6x
                             TextField(
-                                value = nbSectorsToErase,
-                                onValueChange = { nbSectorsToErase = it },
-                                label = { Text(text = stringResource(id = R.string.st_extConfig_fwUpgrade_nbSectors)) },
+                                value = address,
+                                onValueChange = { address = it },
+                                label = { Text(text = stringResource(id = R.string.st_extConfig_fwUpgrade_address)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(height = 60.dp)
                                     .wrapContentHeight(),
                                 colors = ExposedDropdownMenuDefaults.textFieldColors()
                             )
+                        }
+                        //if(!(boardModel == Boards.Model.WB_BOARD && isRebootedYet)) {
+                        if(!(isWb && isRebootedYet)) {
+                            if(selectedBoardIndex!=5) {
+                                //Not Visualized for ST67W6x
+                                TextField(
+                                    value = nbSectorsToErase,
+                                    onValueChange = { nbSectorsToErase = it },
+                                    label = { Text(text = stringResource(id = R.string.st_extConfig_fwUpgrade_nbSectors)) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(height = 60.dp)
+                                        .wrapContentHeight(),
+                                    colors = ExposedDropdownMenuDefaults.textFieldColors()
+                                )
+                            }
                         }
                     }
                 }
@@ -438,7 +468,8 @@ fun FwUpgradeScreen(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     if (wbOta) {
                         val boardType = getCurrentBoardType()
-                        val firmwareType = getCurrentFwType()
+                        //the Radio Button selection 1...for ST67W6X is switched respect all the other WB boards...
+                        val firmwareType = getCurrentFwType(boardModel == Boards.Model.ST67W6X)
 
                         onStartUploadFile(boardType, firmwareType, address, nbSectorsToErase)
                     } else {

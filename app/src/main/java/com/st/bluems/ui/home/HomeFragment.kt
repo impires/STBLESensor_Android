@@ -107,16 +107,17 @@ class HomeFragment : Fragment() {
     fun onPairingRequest(context: Context?, intent: Intent) {
 
         val pairingPin = nfcViewModel.pairingPin.value
-        @Suppress("DEPRECATION") val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-        } else {
-            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-        }
+        @Suppress("DEPRECATION") val device =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+            } else {
+                intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+            }
         if ((device != null) && (pairingPin != null)) {
             val node = viewModel.getNodeFromNodeId(device.address)
             node?.device?.setPin(pairingPin)
             //nfcViewModel.setNFCPairingPin(null)
-        } else if(device!=null) {
+        } else if (device != null) {
             //Toast.makeText(context,"Pin 123456",Toast.LENGTH_SHORT).show()
             viewModel.setIsPairingRequest(true)
         }
@@ -145,30 +146,30 @@ class HomeFragment : Fragment() {
         )
 
         //if (nfcViewModel.pairingPin.value != null) {
-            blePairingReceiver = object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    if (intent != null) {
-                        when (intent.action) {
-                            BluetoothDevice.ACTION_BOND_STATE_CHANGED -> onBoundStateChange(
-                                context,
-                                intent
-                            )
+        blePairingReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent != null) {
+                    when (intent.action) {
+                        BluetoothDevice.ACTION_BOND_STATE_CHANGED -> onBoundStateChange(
+                            context,
+                            intent
+                        )
 
-                            BluetoothDevice.ACTION_PAIRING_REQUEST -> onPairingRequest(
-                                context,
-                                intent
-                            )
-                        }
+                        BluetoothDevice.ACTION_PAIRING_REQUEST -> onPairingRequest(
+                            context,
+                            intent
+                        )
                     }
                 }
             }
-            requireContext().registerReceiver(
-                blePairingReceiver,
-                IntentFilter().apply {
-                    addAction(BluetoothDevice.ACTION_PAIRING_REQUEST)
-                    addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
-                }
-            )
+        }
+        requireContext().registerReceiver(
+            blePairingReceiver,
+            IntentFilter().apply {
+                addAction(BluetoothDevice.ACTION_PAIRING_REQUEST)
+                addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
+            }
+        )
         //}
 
         //Because if we change the Profile&Level on DemoList...
@@ -235,7 +236,11 @@ class HomeFragment : Fragment() {
                         },
                         isLocationEnable = isLocationEnabled,
                         onEnableLocation = {
-                            locationRequestLauncher.launch(Intent(ACTION_LOCATION_SOURCE_SETTINGS))
+                            locationRequestLauncher.launch(
+                                Intent(
+                                    ACTION_LOCATION_SOURCE_SETTINGS
+                                )
+                            )
                         }
                     )
 

@@ -221,7 +221,7 @@ class FlowDemoViewModel
                                 //Log.i("FlowDemoViewModel", "sectionExtraFlow Always: $sectionExtraFlow")
                                 sectionExtraFlow.examplesFlow.forEach { extraFlowUrl ->
                                     try {
-                                        val responseBody =  if (isBeta) {
+                                        val responseBody = if (isBeta) {
                                             downloadAPI.downloadFile(
                                                 extraFlowUrl.replace(
                                                     "STMicroelectronics",
@@ -249,7 +249,7 @@ class FlowDemoViewModel
                                     //Log.i("FlowDemoViewModel", "sectionExtraFlow Mounted: $sectionExtraFlow")
                                     sectionExtraFlow.examplesFlow.forEach { extraFlowUrl ->
                                         try {
-                                            val responseBody =  if (isBeta) {
+                                            val responseBody = if (isBeta) {
                                                 downloadAPI.downloadFile(
                                                     extraFlowUrl.replace(
                                                         "STMicroelectronics",
@@ -571,15 +571,15 @@ class FlowDemoViewModel
                             if (!isError) {
                                 val nextMessage =
                                     prepareNextMessage(flowCompressed, it.payload.length)
-                            nextMessage?.let {
-                                sendMessage(nextMessage)
-                            //_flowBytesSent.value += it.payload.length
-                            _flowMessageReceived.value =
-                                Pair(CommunicationError.FLOW_NO_ERROR, "Sending...")
+                                nextMessage?.let {
+                                    sendMessage(nextMessage)
+                                    //_flowBytesSent.value += it.payload.length
+                                    _flowMessageReceived.value =
+                                        Pair(CommunicationError.FLOW_NO_ERROR, "Sending...")
+                                }
+                            }
                         }
                     }
-                }
-            }
                 }
             }
             //First Message with the Dimension of the Compressed Flow
@@ -711,7 +711,7 @@ class FlowDemoViewModel
     fun getMountedDil24FromOptionBytes(): String? {
         if (node != null) {
             if ((node!!.advertiseInfo != null) && (node!!.catalogInfo != null)) {
-                if(node!!.catalogInfo!!.optionBytes.isNotEmpty()) {
+                if (node!!.catalogInfo!!.optionBytes.isNotEmpty()) {
                     val optionByte = node!!.catalogInfo!!.optionBytes[0]
                     if (OptionByte.OptionByteValueType.fromFormat(optionByte.format) == OptionByte.OptionByteValueType.ENUM_STRING) {
                         val optionByteValue =
@@ -730,7 +730,7 @@ class FlowDemoViewModel
     fun getPossibleMountedDil24sFromOptionBytes(): List<String> {
         if (node != null) {
             if ((node!!.advertiseInfo != null) && (node!!.catalogInfo != null)) {
-                if(node!!.catalogInfo!!.optionBytes.isNotEmpty()) {
+                if (node!!.catalogInfo!!.optionBytes.isNotEmpty()) {
                     val optionByte = node!!.catalogInfo!!.optionBytes[0]
                     if (OptionByte.OptionByteValueType.fromFormat(optionByte.format) == OptionByte.OptionByteValueType.ENUM_STRING) {
                         val optionByteValue =
@@ -740,10 +740,10 @@ class FlowDemoViewModel
                             val retValue: MutableList<String> = mutableListOf()
                             optionByte.stringValues!!.find { it.value == optionByteValue }
                                 ?.let { value ->
-                                value.displayName?.split("/")?.forEach {
-                                    retValue.add(it)
+                                    value.displayName?.split("/")?.forEach {
+                                        retValue.add(it)
+                                    }
                                 }
-                            }
                             return retValue
                         }
                     }
@@ -756,7 +756,7 @@ class FlowDemoViewModel
     fun getRunningFlowFromOptionBytes(): String? {
         if (node != null) {
             if ((node!!.advertiseInfo != null) && (node!!.catalogInfo != null)) {
-                if(node!!.catalogInfo!!.optionBytes.size>1) {
+                if (node!!.catalogInfo!!.optionBytes.size > 1) {
                     val optionByte = node!!.catalogInfo!!.optionBytes[1]
                     if (OptionByte.OptionByteValueType.fromFormat(optionByte.format) == OptionByte.OptionByteValueType.ENUM_STRING) {
                         val optionByteValue =

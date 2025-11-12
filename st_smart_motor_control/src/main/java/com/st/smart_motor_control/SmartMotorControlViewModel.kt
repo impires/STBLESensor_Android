@@ -37,6 +37,8 @@ import com.st.preferences.StPreferences
 import com.st.smart_motor_control.model.MotorControlFault
 import com.st.smart_motor_control.model.MotorControlFault.Companion.getErrorCodeFromValue
 import com.st.ui.composables.CommandRequest
+import com.st.ui.composables.LOAD_FILE_COMMAND_NAME
+import com.st.ui.composables.LOAD_FILE_RESPONSE_PROPERTY_NAME
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -156,6 +158,14 @@ class SmartMotorControlViewModel
     val neaiClassProb: StateFlow<Float?>
         get() = _neaiClassProb
 
+    private val _cubeAiClassName = MutableStateFlow<String?>(null)
+    val cubeAiClassName: StateFlow<String?>
+        get() = _cubeAiClassName
+
+    private val _cubeAiClassProb = MutableStateFlow<Float?>(null)
+    val cubeAiClassProb: StateFlow<Float?>
+        get() = _cubeAiClassProb
+
     private val _isMotorRunning = MutableStateFlow(false)
     val isMotorRunning = _isMotorRunning.asStateFlow()
 
@@ -187,7 +197,7 @@ class SmartMotorControlViewModel
     private fun sensorPropNamePredicate(name: String): Boolean =
         name == "odr" || name == "fs" ||
                 name == "enable" || name == "aop" ||
-                name == "load_file" || name == "ucf_status" || name == "mounted"
+                name == LOAD_FILE_COMMAND_NAME || name == LOAD_FILE_RESPONSE_PROPERTY_NAME || name == "mounted"
 
     private fun actuatorsPropNamePredicate(name: String): Boolean =
         name == "enable" || name == "st_ble_stream"
@@ -661,12 +671,12 @@ class SmartMotorControlViewModel
                                 command = value.commandName,
                                 fields = value.request
                             ),
-                            askTheStatus = it.commandName != "load_file"
+                            askTheStatus = it.commandName != LOAD_FILE_COMMAND_NAME
                         )
                     )
                 }
             } else {
-                if (it.commandName == "load_file") {
+                if (it.commandName == LOAD_FILE_COMMAND_NAME) {
                     runBlocking {
                         //RunBlocking for avoiding that the HSDataLogFragment starts
                         // before to finish the load process
@@ -794,9 +804,9 @@ class SmartMotorControlViewModel
                             maxWriteLength = (node.maxPayloadSize)
                         }
                     }
-                        (pnplFeatures.firstOrNull { it.name == PnPL.NAME } as PnPL?)?.setMaxPayLoadSize(
+                    (pnplFeatures.firstOrNull { it.name == PnPL.NAME } as PnPL?)?.setMaxPayLoadSize(
                         maxWriteLength
-                        )
+                    )
 
                     if (_sensorsActuators.value.isEmpty() || _tags.value.isEmpty()) {
                         getModel(nodeId = nodeId)
@@ -1224,6 +1234,21 @@ class SmartMotorControlViewModel
                                 foundStream.formats.firstOrNull { entry -> entry.name == "probability_neai" }?.format?.values?.firstOrNull()
                             if (value is Float) {
                                 _neaiClassProb.emit(value)
+                            }
+
+
+                            //Search CubeAiClassName
+                            value =
+                                foundStream.formats.firstOrNull { entry -> entry.name == "class_cubeai" }?.format?.values?.firstOrNull()
+                            if (value is String) {
+                                _cubeAiClassName.emit(value)
+                            }
+
+                            //Search CubeAiClassProbability
+                            value =
+                                foundStream.formats.firstOrNull { entry -> entry.name == "probability_cubeai" }?.format?.values?.firstOrNull()
+                            if (value is Float) {
+                                _cubeAiClassProb.emit(value)
                             }
 
                         }

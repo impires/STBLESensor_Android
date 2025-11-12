@@ -454,15 +454,14 @@ fun HighSpeedDataLog(
         }
     ) { paddingValues ->
         BlueMSPullToRefreshBox(
-            modifier = modifier.consumeWindowInsets(paddingValues),
+            modifier = modifier.consumeWindowInsets(paddingValues).padding(paddingValues),
             state = pullRefreshState,
             isRefreshing = isLoading,
             isBetaRelease = isBetaApplication,
-            indicatorAlignment = Alignment.Center,
             onRefresh = onRefresh
         ) {
             NavHost(
-                modifier = Modifier.padding(paddingValues),
+                //modifier = Modifier.padding(paddingValues),
                 navController = navController,
                 startDestination = "Sensors"
             ) {

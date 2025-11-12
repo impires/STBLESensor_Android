@@ -57,7 +57,7 @@ fun BoardCustomCommandsCard(
                     modifier = Modifier.clickable{isOpen = !isOpen},
                     isOpen = isOpen,
                     imageVector = Icons.Default.Build,
-                    title = stringResource(id = R.string.st_extConfig_customCommands_cardTitle)
+                    title =stringResource(id = R.string.st_extConfig_customCommands_cardTitle)
                 )
 
                 AnimatedVisibility(

@@ -12,5 +12,7 @@ object StCatalogConfig {
 
     var firmwareFamilyFilter: String? = null
 
+    var hideNotReleaseFwMaturity: Boolean? = null
+
     var firmwareFamilyVersionFilter: List<String> = emptyList()
 }

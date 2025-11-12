@@ -164,6 +164,9 @@
             android:id="@+id/action_demoList_to_registersDemoFragment"
             app:destination="@id/registersDemoFragment" />
         <action
+            android:id="@+id/action_demoList_to_ExternalAppDemoFragment"
+            app:destination="@id/externalAppDemoFragment" />
+        <action
             android:id="@+id/action_demoList_to_accelerationEventFragment"
             app:destination="@id/accelerationEventFragment" />
         <action
@@ -556,6 +559,17 @@
         <argument
             android:name="demoType"
             app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/externalAppDemoFragment"
+        android:name="com.st.external_app.ExternalAppDemoFragment"
+        android:label="ExternalAppDemoFragment">
+        <argument
+            android:name="nodeId"
+            app:argType="string" />
+        <argument
+            android:name="externalAppType"
+            app:argType="integer" />
     </fragment>
     <fragment
         android:id="@+id/accelerationEventFragment"

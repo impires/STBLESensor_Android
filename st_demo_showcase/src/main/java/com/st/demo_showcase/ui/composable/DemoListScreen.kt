@@ -58,7 +58,7 @@ fun DemoListScreen(
     onPinChange: (Boolean) -> Unit = { /** NOOP **/ },
     onLoginRequired: () -> Unit = { /** NOOP **/ },
     onExpertRequired: () -> Unit = { /** NOOP **/ },
-    onLastFwRequired: ()  -> Unit = { /** NOOP **/ },
+    onLastFwRequired: () -> Unit = { /** NOOP **/ },
     onDemoSelected: (Demo) -> Unit = { /** NOOP **/ },
     onCustomDTMIClicked: () -> Unit = { /** NOOP **/ },
     onDemoReordered: (Int, Int) -> Unit = { _, _ -> /** NOOP **/ }
@@ -184,7 +184,7 @@ fun DemoListScreen(
         )
     }
 
-    if(openDeniedLastFwDialog) {
+    if (openDeniedLastFwDialog) {
         LastFwRestrictionDialog(
             onLastFwRequired = onLastFwRequired,
             onDismiss = { openDeniedLastFwDialog = false }

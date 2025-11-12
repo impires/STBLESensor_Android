@@ -168,7 +168,7 @@ fun AssetTrackingEventContent(
     var showFallEvent by rememberSaveable { mutableStateOf(true) }
     var showShockEvent by rememberSaveable { mutableStateOf(true) }
 
-    val trackingEventsDataFiltered by remember (showFallEvent, showShockEvent, trackingEventsData) {
+    val trackingEventsDataFiltered by remember(showFallEvent, showShockEvent, trackingEventsData) {
         derivedStateOf {
             trackingEventsData.filter {
                 (showFallEvent && it.second.type == AssetTrackingEventType.Fall) ||
@@ -480,8 +480,8 @@ fun AssetTrackingEventContent(
                         painter = painterResource(R.drawable.event_reset),
                         tint = Grey0,
                         contentDescription = null
-                )
-            }
+                    )
+                }
 
             }
 
@@ -511,7 +511,7 @@ fun AssetTrackingEventContent(
                             selectedEvent = item
                             showShockInfoDialog = true
                         }
-//                        isTheLastElement = index == trackingEventsDataFiltered.size - 1
+                    //isTheLastElement = index == trackingEventsDataFiltered.size - 1
                     )
                 }
             }

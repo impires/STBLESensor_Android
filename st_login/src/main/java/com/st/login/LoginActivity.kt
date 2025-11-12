@@ -34,6 +34,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.st.login.LoginActivityViewModel.LoginStatus
 import com.st.login.loginprovider.ILoginProvider
 import com.st.login.loginprovider.LoginProviderFactory
+import androidx.core.net.toUri
 
 /**
  * Activity used to sign in the user with his account
@@ -320,7 +321,7 @@ class LoginActivity : AppCompatActivity() {
                         webView.settings.domStorageEnabled = true
                         webView.settings.allowUniversalAccessFromFileURLs = true
 
-                        webView.loadUrl(Uri.parse(url).toString())
+                        webView.loadUrl(url.toUri().toString())
 
                         webView.webViewClient = object : WebViewClient() {
                             override fun onPageFinished(view: WebView?, url: String?) {

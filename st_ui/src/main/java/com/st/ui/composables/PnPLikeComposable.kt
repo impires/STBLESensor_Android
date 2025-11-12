@@ -228,16 +228,16 @@ fun StringProperty(
             ),
             supportingText = {
                 if (isValid.not()) {
-                if ((maxLength != null) || (minLength != null)) {
-                    val maxText = maxLength?.let { max -> " ≤$max" } ?: ""
-                    val minText = minLength?.let { min -> "$min≤ " } ?: ""
-                    Text(
-                        text = minText + "${internalState.length}" + maxText,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
-                        color = if (isValid.not()) ErrorText else Color.Unspecified
-                    )
-                }
+                    if ((maxLength != null) || (minLength != null)) {
+                        val maxText = maxLength?.let { max -> " ≤$max" } ?: ""
+                        val minText = minLength?.let { min -> "$min≤ " } ?: ""
+                        Text(
+                            text = minText + "${internalState.length}" + maxText,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                            color = if (isValid.not()) ErrorText else Color.Unspecified
+                        )
+                    }
                 }
             },
             trailingIcon = {
@@ -615,7 +615,9 @@ fun <T : Any> EnumProperty(
                     shape = Shapes.small
                 )
                 .clickable {
-                    expanded = !expanded
+                    if(enabled) {
+                        expanded = !expanded
+                    }
                 }
                 .padding(LocalDimensions.current.paddingNormal)
                 .onGloballyPositioned { coordinates ->
@@ -736,14 +738,19 @@ private fun compressUCFString(ucfContent: String): String {
 }
 
 const val LOAD_FILE_COMMAND_NAME = "load_file"
+const val LOAD_MODEL_COMMAND_NAME = "load_model"
 const val LOAD_FILE_RESPONSE_PROPERTY_NAME = "ucf_status"
+const val LOAD_MODEL_RESPONSE_PROPERTY_NAME = "model_status"
 const val BIN_FILE_TYPE = "application/octet-stream"
 const val JSON_FILE_TYPE = "application/json"
 const val FILE_UCF = "ucf"
 const val FILE_JSON = "json"
 const val FILE_DATA = "data"
+const val MODEL_DATA = "content"
 const val FILE_SIZE = "size"
 const val FILE_REQUEST = "ucf_data"
+const val FILE_MODEL_REQUEST = "arguments"
+const val MODEL_FILE_NAME = "filename"
 
 data class CommandRequest(
     val commandType: String,
@@ -808,12 +815,22 @@ fun UCF(
                             CommandRequest(
                                 commandType = commandType,
                                 commandName = commandName,
-                                request = mapOf(
-                                    FILE_REQUEST to mapOf(
-                                        FILE_SIZE to postProcFile.length,
-                                        FILE_DATA to postProcFile
+                                request = if(commandName==LOAD_FILE_COMMAND_NAME) {
+                                    mapOf(
+                                        FILE_REQUEST to mapOf(
+                                            FILE_SIZE to postProcFile.length,
+                                            FILE_DATA to postProcFile
+                                        )
                                     )
-                                )
+                                } else {
+                                    mapOf(
+                                        FILE_MODEL_REQUEST to mapOf(
+                                            MODEL_FILE_NAME to fileName,
+                                            FILE_SIZE to postProcFile.length,
+                                            MODEL_DATA to postProcFile
+                                        )
+                                    )
+                                }
                             )
                         )
                     } else {

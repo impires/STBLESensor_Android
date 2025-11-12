@@ -426,7 +426,7 @@ class DemoShowCaseViewModel @Inject constructor(
         //Add the FoTA only to WB/WBA boards
         if ((familyType != Boards.Family.WB_FAMILY) && (familyType != Boards.Family.WBA_FAMILY) && (boardType != Boards.Model.WB0X_NUCLEO_BOARD)) {
             buildDemoList.remove(Demo.WbsOtaFUOTA)
-        }
+        } 
 
         //Remove applications in Beta
         if (!stPreferences.isBetaApplication()) {

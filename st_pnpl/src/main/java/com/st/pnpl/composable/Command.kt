@@ -24,6 +24,7 @@ import com.st.pnpl.R
 import com.st.ui.composables.BlueMsButtonOutlined
 import com.st.ui.composables.CommandRequest
 import com.st.ui.composables.LOAD_FILE_COMMAND_NAME
+import com.st.ui.composables.LOAD_MODEL_COMMAND_NAME
 import com.st.ui.composables.UCF
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.utils.localizedDisplayName
@@ -41,7 +42,7 @@ fun Command(
     componentName: String,
     onSendCommand: (CommandRequest?) -> Unit
 ) {
-    if (content.name == LOAD_FILE_COMMAND_NAME) {
+    if ((content.name == LOAD_FILE_COMMAND_NAME) || (content.name == LOAD_MODEL_COMMAND_NAME)){
         UCF(
             label = content.displayName.localizedDisplayName,
             modifier = modifier.fillMaxWidth(),

@@ -274,18 +274,18 @@ fun SensorFusionDemoContent(
                 }
             ) {
                 Icon(
-                modifier = Modifier
-                    .width(100.dp)
+                    modifier = Modifier
+                        .width(100.dp)
                         .height(42.dp).clickable {
-                        viewModel.resetCubeCalibration(nodeId)
-                        showCalibrationDialog = true
-                    },
+                            viewModel.resetCubeCalibration(nodeId)
+                            showCalibrationDialog = true
+                        },
                     painter = painterResource(R.drawable.calibration),
                     tint =  Grey0,
-                contentDescription = null
-            )
+                    contentDescription = null
+                )
+            }
         }
-    }
     }
 
     if (showResetDialog) {

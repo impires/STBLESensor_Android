@@ -27,6 +27,7 @@ import com.st.acceleration_event.model.getDefaultIconResource
 import com.st.acceleration_event.model.getEventIconResource
 import com.st.acceleration_event.model.isOrientationEvent
 import com.st.blue_sdk.features.acceleration_event.AccelerationEventInfo
+import com.st.blue_sdk.features.acceleration_event.AccelerationType
 import com.st.blue_sdk.features.acceleration_event.DetectableEventType
 import com.st.ui.theme.LocalDimensions
 
@@ -89,7 +90,8 @@ fun AccSingleEventContent(
                 )
             }
 
-            if ((mCurrentEvent == DetectableEventType.Pedometer)) {
+            //if ((mCurrentEvent == DetectableEventType.Pedometer)) {
+                if(accEventData.first.accEvent.first().value == AccelerationType.Pedometer) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         style = MaterialTheme.typography.bodyLarge,
@@ -119,16 +121,12 @@ fun AccSingleEventContent(
                         }
                     ) { steps ->
                         Text(
-                            modifier = Modifier.padding(
-                                top = LocalDimensions.current.paddingNormal
-                            ),
                             style = MaterialTheme.typography.bodyLarge,
                             text = "$steps"
                         )
                     }
                 }
             }
-
         } else {
             Icon(
                 modifier = Modifier.size(size = LocalDimensions.current.imageExtraLarge),

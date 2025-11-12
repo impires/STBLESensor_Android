@@ -74,6 +74,7 @@ fun BoardScreen(
             Lifecycle.Event.ON_START -> {
                 viewModel.setSelectedDemo(null)
             }
+
             else -> {}
         }
     }
@@ -93,19 +94,19 @@ fun BoardScreen(
         val allDemo by remember(key1 = firmwareList) {
             derivedStateOf {
                 if (StCatalogConfig.showDemoList) {
-                val demosSet = mutableSetOf<Demo>()
+                    val demosSet = mutableSetOf<Demo>()
                     val firmwareListWithoutDuplicate = firmwareList.groupBy { it.fwName }
                         .map { list -> list.value.distinctBy { it.fwVersion } }.flatten()
-                firmwareListWithoutDuplicate.forEach {
-                        demosSet.addAll(it.availableDemos().filter {
+                    firmwareListWithoutDuplicate.forEach {
+                        demosSet.addAll(it.availableDemos(demoDecorator = it.demoDecorator).filter {
                             if (it.isBoardTypeDependent) {
                                 it.boardTypesAllowed.contains(boardOrNull!!.boardModel())
                             } else {
                                 true
                             }
                         })
-                }
-                demosSet
+                    }
+                    demosSet
                 } else {
                     mutableSetOf()
                 }
@@ -117,7 +118,7 @@ fun BoardScreen(
             board = boardOrNull!!,
             boardDescOrNull = boardDescOrNull,
             demos = allDemo.toList(),
-            onDemoSelected = {demoName ->
+            onDemoSelected = { demoName ->
                 viewModel.setSelectedDemo(demoName)
                 navController.navigate(
                     "detail/$boardPart/firmwares"
@@ -331,12 +332,12 @@ fun BoardScreen(
                     )
                 }
             } else {
-            if (boardDescOrNull.orderURL != null) {
-                BlueMsButton(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = LocalDimensions.current.paddingLarge)
-                        .padding(vertical = LocalDimensions.current.paddingNormal),
+                if (boardDescOrNull.orderURL != null) {
+                    BlueMsButton(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = LocalDimensions.current.paddingLarge)
+                            .padding(vertical = LocalDimensions.current.paddingNormal),
                         onClick = onOrderClick,
                         iconPainter = painterResource(R.drawable.shopping_icon),
                         text = stringResource(id = R.string.st_catalog_board_orderBtn)

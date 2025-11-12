@@ -133,7 +133,7 @@ fun GnssFragmentDemoContent(
                             end = LocalDimensions.current.paddingNormal
                         )
                         .clickable {
-                if (gnssData != null) {
+                            if (gnssData != null) {
                                 locationData = Pair(
                                     LocationData(
                                         latitude = gnssData!!.latitude.value,

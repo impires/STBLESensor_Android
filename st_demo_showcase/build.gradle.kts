@@ -6,7 +6,6 @@
  * If no LICENSE file comes with this software, it is provided AS-IS.
  */
 
-val stLocoApiKey: String by project
 val stCompileSdk: Int by rootProject.extra
 val stMinSdk: Int by rootProject.extra
 
@@ -16,7 +15,6 @@ plugins {
     alias(libs.plugins.googleHilt)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.appswithloveLoco)
     alias(libs.plugins.androidxSafeargs)
 }
 
@@ -61,17 +59,6 @@ android {
         compose = true
         buildConfig = true
         viewBinding = true
-    }
-}
-
-Loco {
-    config {
-        apiKey = stLocoApiKey
-        // lang = ["it", "en"] // add as many languages as you want, they need to exist on localise.biz
-        defLang = "en"
-        fallbackLang = "en"
-        tags = "st_demo_showcase"
-        resDir = "$projectDir/src/main/res"
     }
 }
 
@@ -138,6 +125,7 @@ dependencies {
     implementation(project(":st_neai_extrapolation"))
     implementation(project(":st_medical_signal"))
     implementation(project(":st_asset_tracking_event"))
+    implementation(project(":st_external_app"))
     // NEW_DEMO_ANCHOR
     // !!! Leave a row before this comment to allow the script to add the new demo !!!
 

@@ -67,7 +67,7 @@ fun MemoryBank(
 
     var switchToThisBank by remember { mutableStateOf(false) }
 
-    val mustBeBordered = if (nextRunningBank==bankNum) {
+    val mustBeBordered = if (nextRunningBank == bankNum) {
         true
     } else {
         isRunningBank && (nextRunningBank == 0)
@@ -132,7 +132,7 @@ fun MemoryBank(
 //                textDecoration = if (isRunningBank) TextDecoration.Underline else null,
                 style = MaterialTheme.typography.bodyLarge,
                 text = if (isRunningBank) "Running Firmware:" else {
-                    if(nextRunningBank==bankNum) {
+                    if (nextRunningBank == bankNum) {
                         "Next Running Firmware:"
                     } else {
                         "Firmware Present:"

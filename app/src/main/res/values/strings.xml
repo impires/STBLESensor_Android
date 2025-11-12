@@ -5,15 +5,6 @@
   ~ the root directory of this software component.
   ~ If no LICENSE file comes with this software, it is provided AS-IS.
   -->
-<!--
- Loco xml export: Android string resources
- Project: BlueMS
- Release: Working copy
- Locale: en, English
- Tagged: st_bluems
- Exported by: st localise
- Exported at: Fri, 27 May 2022 07:38:17 +0200
--->
 <resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="st_home_deviceList_screenTitle">Available Boards</string>
     <string name="st_home_deviceList_discoverBtn">Discover our products</string>

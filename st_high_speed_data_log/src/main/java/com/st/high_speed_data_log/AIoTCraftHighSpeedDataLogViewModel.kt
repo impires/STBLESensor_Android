@@ -36,6 +36,10 @@ import com.st.pnpl.util.SetCommandPnPLRequest
 import com.st.preferences.StPreferences
 import com.st.ui.composables.CommandRequest
 import com.st.ui.composables.ENABLE_PROPERTY_NAME
+import com.st.ui.composables.LOAD_FILE_COMMAND_NAME
+import com.st.ui.composables.LOAD_FILE_RESPONSE_PROPERTY_NAME
+import com.st.ui.composables.LOAD_MODEL_COMMAND_NAME
+import com.st.ui.composables.LOAD_MODEL_RESPONSE_PROPERTY_NAME
 import com.st.ui.utils.localizedDisplayName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -68,7 +72,7 @@ import kotlin.math.roundToInt
 
 @HiltViewModel
 class AIoTCraftHighSpeedDataLogViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val blueManager: BlueManager,
     private val stPreferences: StPreferences
 ) : ViewModel() {
@@ -136,11 +140,11 @@ class AIoTCraftHighSpeedDataLogViewModel @Inject constructor(
 //    private val _numActiveSensors = MutableStateFlow(value = 0)
 //    val numActiveSensors = _numActiveSensors.asStateFlow()
 
-//    var isBeta = false
-//
-//    init {
-//        isBeta = stPreferences.isBetaApplication()
-//    }
+    var isBeta = false
+
+    init {
+        isBeta = stPreferences.isBetaApplication()
+    }
 
     private fun <T> MutableList<T>.removeFirstElements(count: Int): List<T> {
         val subList = this.subList(0, minOf(count, this.size)).toList()
@@ -278,8 +282,10 @@ class AIoTCraftHighSpeedDataLogViewModel @Inject constructor(
                 name == "fs" ||
                 name == "enable" ||
                 name == "aop" ||
-                name == "load_file" ||
-                name == "ucf_status" ||
+                name == LOAD_FILE_COMMAND_NAME ||
+                name == LOAD_MODEL_COMMAND_NAME ||
+                name == LOAD_FILE_RESPONSE_PROPERTY_NAME ||
+                name == LOAD_MODEL_RESPONSE_PROPERTY_NAME ||
                 name == "mounted" ||
                 name == "resolution" ||
                 name == "ranging_mode" ||
@@ -1144,7 +1150,7 @@ class AIoTCraftHighSpeedDataLogViewModel @Inject constructor(
                     )
                 }
             } else {
-                if (it.commandName == "load_file") {
+                if ((it.commandName == LOAD_FILE_COMMAND_NAME) || (it.commandName == LOAD_MODEL_COMMAND_NAME)) {
                     runBlocking {
                         //RunBlocking for avoiding that the HSDataLogFragment starts
                         // before to finish the load process
@@ -1372,32 +1378,32 @@ class AIoTCraftHighSpeedDataLogViewModel @Inject constructor(
             Log.d("onTagChangeStateException", e.message.toString())
         }
         if (currentTagSelected != null) {
-        viewModelScope.launch {
-            sendCommand(
-                nodeId = nodeId,
-                typeOfCmd = PnPLTypeOfCommand.Set,
-                cmd = PnPLCmd(
-                    command = TAGS_INFO_JSON_KEY,
+            viewModelScope.launch {
+                sendCommand(
+                    nodeId = nodeId,
+                    typeOfCmd = PnPLTypeOfCommand.Set,
+                    cmd = PnPLCmd(
+                        command = TAGS_INFO_JSON_KEY,
                         request = currentTagSelected,
-                    fields = mapOf(STATUS_JSON_KEY to newState)
-                ),
-                askTheStatus = false
-            )
+                        fields = mapOf(STATUS_JSON_KEY to newState)
+                    ),
+                    askTheStatus = false
+                )
 
-            val oldTagsStatus = _vespucciTags.value.toMutableMap()
-            oldTagsStatus[tag] = newState
+                val oldTagsStatus = _vespucciTags.value.toMutableMap()
+                oldTagsStatus[tag] = newState
 
-            _vespucciTags.update { oldTagsStatus }
+                _vespucciTags.update { oldTagsStatus }
 
-            if (newState) {
-                _vespucciTagsActivation.update { it + tag }
+                if (newState) {
+                    _vespucciTagsActivation.update { it + tag }
 
-                delay(timeMillis = 7000L)
+                    delay(timeMillis = 7000L)
 
-                _vespucciTagsActivation.update { it - tag }
+                    _vespucciTagsActivation.update { it - tag }
+                }
             }
         }
-    }
     }
 
     fun enableStreamSensor(nodeId: String, sensor: String) {

@@ -9,18 +9,11 @@ package com.st.working_in_progress
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineScope
-import com.st.blue_sdk.BlueManager
-import com.st.blue_sdk.features.Feature
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 @HiltViewModel
 class WorkingInProgressViewModel
@@ -32,7 +25,8 @@ class WorkingInProgressViewModel
 
     fun openGooglePlayConsole(context: Context) {
         Intent(Intent.ACTION_VIEW).also { intent ->
-            intent.data = Uri.parse("https://play.google.com/store/apps/details?id=com.st.bluemsclassic")
+            intent.data =
+                "https://play.google.com/store/apps/details?id=com.st.bluemsclassic".toUri()
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             if (intent.resolveActivity(packageManager) != null) {
                 context.startActivity(intent)

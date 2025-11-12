@@ -3,9 +3,13 @@ package com.st.high_speed_data_log.composable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,10 +26,12 @@ fun AIoTCraftHsdlTags(
     tags: List<ComponentWithInterface> = emptyList(),
     status: List<JsonObject>,
     onValueChange: (String, Pair<String, Any>) -> Unit,
+    state: LazyListState,
     onSendCommand: (String, CommandRequest?) -> Unit
 ) {
     /** NOOP **/
     LazyColumn(
+        state = state,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(all = LocalDimensions.current.paddingNormal),
         verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingNormal)
@@ -53,6 +59,14 @@ fun AIoTCraftHsdlTags(
             if (tags.lastIndex != index) {
                 Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingNormal))
             }
+        }
+
+        item {
+            Spacer(
+                Modifier.windowInsetsBottomHeight(
+                    WindowInsets.navigationBars
+                )
+            )
         }
     }
 }

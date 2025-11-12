@@ -44,8 +44,9 @@ class CloudMqttFragment : Fragment() {
             setContent {
                 BlueMSTheme {
                     CloudMqttScreen(
-                        modifier = Modifier
-                            .fillMaxSize().padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+//                        modifier = Modifier
+//                            .fillMaxSize().padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                        modifier = Modifier.fillMaxSize(),
                         viewModel = viewModel,
                         nodeId = nodeId
                     )
@@ -57,7 +58,7 @@ class CloudMqttFragment : Fragment() {
 
 @Composable
 fun CloudMqttScreen(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     viewModel: CloudMqttViewModel,
     nodeId: String
 ) {

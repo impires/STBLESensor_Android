@@ -7,17 +7,20 @@ import androidx.compose.foundation.MarqueeSpacing
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.st.ui.theme.Grey10
@@ -39,7 +42,7 @@ fun Modifier.fadedEdgeMarquee(edgeWidth: Dp = 0.dp, velocity: Dp = 40.dp): Modif
         )
     }
 
-    var innerWidth by remember { mutableStateOf(value = -1) }
+    var innerWidth by remember { mutableIntStateOf(value = -1) }
 
     return@composed this
         // Rendering to an offscreen buffer is required to get the faded edges' alpha to be
@@ -62,3 +65,41 @@ fun Modifier.fadedEdgeMarquee(edgeWidth: Dp = 0.dp, velocity: Dp = 40.dp): Modif
         .onSizeChanged { innerWidth = it.width }
         .padding(start = edgeWidth)
 }
+
+fun Modifier.leftBorder(xOffsetDp: Dp = 0.dp, strokeWidth: Dp, color: Color) = composed(
+    factory = {
+        val density = LocalDensity.current
+        val strokeWidthPx = density.run { strokeWidth.toPx() }
+        val xOffset = density.run { xOffsetDp.toPx() }
+
+        Modifier.drawBehind {
+            val height = size.height
+
+            drawLine(
+                color = color,
+                start = Offset(x = xOffset, y = 0f),
+                end = Offset(x = xOffset, y = height),
+                strokeWidth = strokeWidthPx
+            )
+        }
+    }
+)
+
+fun Modifier.bottomBorder(strokeWidth: Dp, color: Color) = composed(
+    factory = {
+        val density = LocalDensity.current
+        val strokeWidthPx = density.run { strokeWidth.toPx() }
+
+        Modifier.drawBehind {
+            val width = size.width
+            val height = size.height - strokeWidthPx / 2
+
+            drawLine(
+                color = color,
+                start = Offset(x = 0f, y = height),
+                end = Offset(x = width, y = height),
+                strokeWidth = strokeWidthPx
+            )
+        }
+    }
+)

@@ -230,16 +230,16 @@ class MedicalSignalViewModel
                             }
                             (featurePnPL as PnPL).setMaxPayLoadSize(maxWriteLength)
 
-                                blueManager.writeFeatureCommand(
-                                    responseTimeout = 0,
-                                    nodeId = nodeId,
-                                    featureCommand = PnPLCommand(
-                                        feature = featurePnPL,
-                                        cmd = PnPLCmd.ALL
-                                    )
+                            blueManager.writeFeatureCommand(
+                                responseTimeout = 0,
+                                nodeId = nodeId,
+                                featureCommand = PnPLCommand(
+                                    feature = featurePnPL,
+                                    cmd = PnPLCmd.ALL
                                 )
-                            }
+                            )
                         }
+                    }
                 ).flowOn(Dispatchers.IO).onEach { featureUpdate ->
 
                     val data = featureUpdate.data

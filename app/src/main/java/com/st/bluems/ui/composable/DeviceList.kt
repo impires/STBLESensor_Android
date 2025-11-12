@@ -50,12 +50,19 @@ import com.st.ui.theme.Grey6
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavOptions
 import androidx.navigation.navOptions
+import com.st.blue_sdk.board_catalog.models.isDeprecated
+import com.st.blue_sdk.board_catalog.models.isDismissed
 import com.st.ui.composables.BlueMSPullToRefreshBox
+import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.PrimaryBlue
 import com.st.ui.theme.SecondaryBlue
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun DeviceListScreen(
@@ -86,6 +93,21 @@ fun DeviceListScreen(
 
     var forceScan by rememberSaveable {
         mutableStateOf(false)
+    }
+
+    var isBoardCatalogDeprecated by remember { mutableStateOf(false) }
+    var isBoardCatalogDismissed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(key1 = Unit) {
+        val boardCatalogStatus = viewModel.boardCatalogStatus
+        if (boardCatalogStatus != null) {
+
+            isBoardCatalogDismissed = boardCatalogStatus.isDismissed()
+
+            if (isBoardCatalogDismissed.not()) {
+                isBoardCatalogDeprecated = boardCatalogStatus.isDeprecated()
+            }
+        }
     }
 
     DeviceListWithPermissionsCheck(
@@ -209,7 +231,7 @@ fun DeviceListScreen(
             forceScan = true
             val result = viewModel.setLocalBoardCatalog(fileUri = fileUri)
             result?.let { res ->
-                if(res.startsWith("Added")) {
+                if (res.startsWith("Added")) {
                     Toast.makeText(context, result, Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(context, result, Toast.LENGTH_LONG).show()
@@ -217,6 +239,22 @@ fun DeviceListScreen(
             }
         }
     )
+
+    if (isBoardCatalogDeprecated) {
+        CatalogStatusDeprecatedDismissedDialog(
+            title = "Deprecated Application Version",
+            body = "Please update your application.\nThis application version will be dismissed on ",
+            date = viewModel.boardCatalogStatus?.dismissionDate ?: Date(),
+            onDismissRequest = { isBoardCatalogDeprecated = false })
+    }
+
+    if (isBoardCatalogDismissed) {
+        CatalogStatusDeprecatedDismissedDialog(title = "Dismissed Application Version",
+            body = "Please update your application!.\n" +
+                    "This application version is dismissed from ",
+            date = viewModel.boardCatalogStatus?.dismissionDate ?: Date(),
+            onDismissRequest = { isBoardCatalogDismissed = false })
+    }
 }
 
 @OptIn(
@@ -520,7 +558,7 @@ fun DeviceList(
         modifier = modifier,
         contentWindowInsets = WindowInsets.statusBars,
         floatingActionButtonPosition = FabPosition.End,
-                floatingActionButton = {
+        floatingActionButton = {
             FloatingActionButton(
                 modifier = Modifier.padding(
                     bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -568,7 +606,7 @@ fun DeviceList(
                 .fillMaxSize()
                 .consumeWindowInsets(paddingValues)
                 .padding(paddingValues),
-                //.padding(paddingValues = paddingValues),
+            //.padding(paddingValues = paddingValues),
             filteredDevices = filteredDevices,
             pinnedDevices = pinnedDevices,
             onPinChange = onPinChange,
@@ -634,21 +672,21 @@ fun DeviceList(
                         )
                     }
 
-                itemsIndexed(items = filteredDevices) { _, item ->
-                    DeviceListItem(
-                        modifier = Modifier.animateItem(
-                            fadeInSpec = null, fadeOutSpec = null, placementSpec = spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                                visibilityThreshold = IntOffset.VisibilityThreshold
-                            )
-                        ),
-                        isPin = pinnedDevices.contains(item.device.address),
-                        item = item,
-                        onNodeSelected = onNodeSelected,
-                        onPinChange = { change ->
-                            onPinChange(item.device.address, change)
-                        }
-                    )
+                    itemsIndexed(items = filteredDevices) { _, item ->
+                        DeviceListItem(
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = null, fadeOutSpec = null, placementSpec = spring(
+                                    stiffness = Spring.StiffnessMediumLow,
+                                    visibilityThreshold = IntOffset.VisibilityThreshold
+                                )
+                            ),
+                            isPin = pinnedDevices.contains(item.device.address),
+                            item = item,
+                            onNodeSelected = onNodeSelected,
+                            onPinChange = { change ->
+                                onPinChange(item.device.address, change)
+                            }
+                        )
                     }
                 } else {
                     item {
@@ -671,12 +709,66 @@ fun DeviceList(
                         Modifier.windowInsetsBottomHeight(
                             WindowInsets.systemBars
                         )
-                        )
-                    }
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+fun CatalogStatusDeprecatedDismissedDialog(
+    modifier: Modifier = Modifier,
+    title: String,
+    body: String,
+    date: Date,
+    onDismissRequest: () -> Unit = { /** NOOP **/ }
+) {
+    AlertDialog(
+        modifier = modifier,
+        onDismissRequest = onDismissRequest,
+        title = {
+            Text(text = title)
+        },
+        text = {
+            val string = body + SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date)
+            Text(
+                text = string
+            )
+        },
+        confirmButton = {
+            BlueMsButton(
+                text = stringResource(id = android.R.string.ok),
+                onClick = onDismissRequest
+            )
+        }
+    )
+}
+
+@Preview
+@Composable
+private fun CatalogStatusDeprecatedDismissedDialogDeprecatedPreview() {
+    PreviewBlueMSTheme {
+        CatalogStatusDeprecatedDismissedDialog(
+            title = "Deprecated Application Version",
+            body = "Please update your application.\nThis application version will be dismissed on ",
+            date = Date(),
+            onDismissRequest = { })
+    }
+}
+
+@Preview
+@Composable
+private fun CatalogStatusDeprecatedDismissedDialogDismissedPreview() {
+    PreviewBlueMSTheme {
+        CatalogStatusDeprecatedDismissedDialog(
+            title = "Dismissed Application Version",
+            body = "Please update your application!.\n" +
+                    "This application version is dismissed from ",
+            date = Date(),
+            onDismissRequest = { })
+    }
+}
 
 private const val DEGREES = 360f
 private const val DURATION_MILLIS = 1500

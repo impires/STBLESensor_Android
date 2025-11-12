@@ -26,8 +26,9 @@ dependencyResolutionManagement {
         mavenLocal()
 
         maven {
-            name = "github"
-            url = uri("https://maven.pkg.github.com/SW-Platforms/BlueSTSDK_Android")
+            name = "githubSDK"
+            //Prod
+            url = uri("https://maven.pkg.github.com/STMicroelectronics/BlueSTSDK_Android")
             credentials {
                 username = System.getenv("GPR_USER") ?: GPR_USER
                 password = System.getenv("GPR_API_KEY") ?: GPR_API_KEY
@@ -39,9 +40,9 @@ dependencyResolutionManagement {
 rootProject.name = "BlueMS"
 include(":app")
 include(":st_compass")
-include(":st_licenses")
 include(":st_ui")
 include(":st_welcome")
+include(":st_licenses")
 include(":st_user_profiling")
 include(":st_preferences")
 include(":st_terms")
@@ -98,3 +99,4 @@ include(":st_cloud_mqtt")
 include(":st_neai_extrapolation")
 include(":st_medical_signal")
 include(":st_asset_tracking_event")
+include(":st_external_app")

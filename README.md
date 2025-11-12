@@ -13,15 +13,6 @@ Example:
 GPR_USER=PezzoniL  
 GPR_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXX
 
-For using this application is necessary to downlaod the Android BlueST-SDK from:
-https://github.com/STMicroelectronics/BlueSTSDK_Android
-
-tag BlueST-SDK_V1.2.14
-
-and follow the instruction for compiling and publish on local maven repository the 2 libraries necessary for this application:
-* st-blue-sdk
-* st-opus
-
 
 ## License
 

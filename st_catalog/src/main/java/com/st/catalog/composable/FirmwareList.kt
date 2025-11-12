@@ -184,36 +184,36 @@ fun FirmwareList(
         }
 
         if(displayShowLatest) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(LocalDimensions.current.paddingSmall)
-                .clickable {
-                    onlyLatest = !onlyLatest
-                    coroutineScope.launch {
-                        state.animateScrollToItem(index = 0)
-                    }
-                },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End
-        ) {
-
-            Text(
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodySmall,
-                text = "Show latest"
-            )
-
-            Icon(
+            Row(
                 modifier = Modifier
-                    .padding(start = LocalDimensions.current.paddingNormal),
-                tint = SecondaryBlue,
-                imageVector = if (onlyLatest) Icons.Default.FilterAlt else Icons.Default.FilterAltOff,
-                contentDescription = null
-            )
-        }
+                    .fillMaxWidth()
+                    .padding(LocalDimensions.current.paddingSmall)
+                    .clickable {
+                        onlyLatest = !onlyLatest
+                        coroutineScope.launch {
+                            state.animateScrollToItem(index = 0)
+                        }
+                    },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
 
-        Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingNormal))
+                Text(
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall,
+                    text = "Show latest"
+                )
+
+                Icon(
+                    modifier = Modifier
+                        .padding(start = LocalDimensions.current.paddingNormal),
+                    tint = SecondaryBlue,
+                    imageVector = if (onlyLatest) Icons.Default.FilterAlt else Icons.Default.FilterAltOff,
+                    contentDescription = null
+                )
+            }
+
+            Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingNormal))
         }
 
         Box(modifier = Modifier.weight(1f)) {

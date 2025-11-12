@@ -124,7 +124,7 @@ fun MainTopBar(
                                 enableDisableHiddenDemos()
                             })
                         } else {
-                            Text(text = "Show Removed Demos", modifier = Modifier.clickable {
+                            Text(text = " Show Removed Demos", modifier = Modifier.clickable {
                                 enableDisableHiddenDemos()
                             })
                         }

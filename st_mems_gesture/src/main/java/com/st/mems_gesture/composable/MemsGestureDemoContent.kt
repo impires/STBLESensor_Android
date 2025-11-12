@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -40,16 +41,6 @@ fun MemsGestureDemoContent(
 ) {
     val gestureData by viewModel.gestureData.collectAsStateWithLifecycle()
 
-
-    val configuration = LocalConfiguration.current
-
-    val smallScreen by remember(key1 = configuration) {
-        derivedStateOf {
-            val screenHeight = configuration.screenHeightDp
-            screenHeight < 800
-        }
-    }
-
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -59,104 +50,38 @@ fun MemsGestureDemoContent(
             derivedStateOf { gestureData.first.gesture.value == MemsGestureType.Glance }
         }
 
-        val animatedColorGlanceImage by animateColorAsState(
-            if (glanceImage) PrimaryYellow else Color.Unspecified,
-            label = "color"
-        )
-
         val pickUpImage by remember(key1 = gestureData.second) {
             derivedStateOf { gestureData.first.gesture.value == MemsGestureType.PickUp }
         }
-
-        val animatedColorPickUpImage by animateColorAsState(
-            if (pickUpImage) PrimaryYellow else Color.Unspecified,
-            label = "color"
-        )
 
         val wakeUpImage by remember(key1 = gestureData.second) {
             derivedStateOf { gestureData.first.gesture.value == MemsGestureType.WakeUp }
         }
 
-        val animatedColorWakeUpImage by animateColorAsState(
-            if (wakeUpImage) PrimaryYellow else Color.Unspecified,
-            label = "color"
-        )
-
         Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(LocalDimensions.current.paddingNormal),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = modifier.fillMaxWidth().padding(start = LocalDimensions.current.paddingLarge),
+            horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.SpaceAround
         ) {
-
-            Icon(
-                modifier = Modifier
-                    .size(size = if (smallScreen) LocalDimensions.current.imageMedium else LocalDimensions.current.imageLarge)
-                    .graphicsLayer(
-                        alpha = if (glanceImage) {
-                            1f
-                        } else {
-                            0.3f
-                        }
-                    )
-                    .border(
-                        BorderStroke(4.dp, animatedColorGlanceImage),
-                        Shapes.extraLarge
-                    )
-                    .padding(4.dp)
-                    .clip(Shapes.extraLarge),
-                painter = painterResource(
-                    R.drawable.mems_gesture_glance
-                ),
-                tint = Color.Unspecified,
-                contentDescription = null
+            MemsGestureItem(
+                modifier = Modifier.weight(1f),
+                isActive = glanceImage,
+                id = R.drawable.mems_gesture_glance,
+                label = "Glance"
             )
 
-            Icon(
-                modifier = Modifier
-                    .size(size = if (smallScreen) LocalDimensions.current.imageMedium else LocalDimensions.current.imageLarge)
-                    .graphicsLayer(
-                        alpha = if (pickUpImage) {
-                            1f
-                        } else {
-                            0.3f
-                        }
-                    )
-                    .border(
-                        BorderStroke(4.dp, animatedColorPickUpImage),
-                        Shapes.extraLarge
-                    )
-                    .padding(4.dp)
-                    .clip(Shapes.extraLarge),
-                painter = painterResource(
-                    R.drawable.mems_gesture_pick_up
-                ),
-                tint = Color.Unspecified,
-                contentDescription = null
+            MemsGestureItem(
+                modifier = Modifier.weight(1f),
+                isActive = pickUpImage,
+                id = R.drawable.mems_gesture_pick_up,
+                label = "Pick Up"
             )
 
-            Icon(
-                modifier = Modifier
-                    .size(size = if (smallScreen) LocalDimensions.current.imageMedium else LocalDimensions.current.imageLarge)
-                    .graphicsLayer(
-                        alpha = if (wakeUpImage) {
-                            1f
-                        } else {
-                            0.3f
-                        }
-                    )
-                    .border(
-                        BorderStroke(4.dp, animatedColorWakeUpImage),
-                        Shapes.extraLarge
-                    )
-                    .padding(4.dp)
-                    .clip(Shapes.extraLarge),
-                painter = painterResource(
-                    R.drawable.mems_gesture_wake_up
-                ),
-                tint = Color.Unspecified,
-                contentDescription = null
+            MemsGestureItem(
+                modifier = Modifier.weight(1f),
+                isActive = wakeUpImage,
+                id = R.drawable.mems_gesture_wake_up,
+                label = "Wake Up"
             )
         }
 

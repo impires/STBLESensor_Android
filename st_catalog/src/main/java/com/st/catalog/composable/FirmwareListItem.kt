@@ -61,10 +61,13 @@ fun FirmwareListItem(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
-            Row(modifier = Modifier.fillMaxWidth()
-                .padding(bottom = LocalDimensions.current.paddingSmall),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = LocalDimensions.current.paddingSmall),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically) {
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = version,
                     maxLines = 1,
@@ -72,7 +75,7 @@ fun FirmwareListItem(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                if(fwMaturity!=FirmwareMaturity.RELEASE){
+                if (fwMaturity != FirmwareMaturity.RELEASE) {
                     Text(
                         text = "$fwMaturity FW",
                         maxLines = 1,
@@ -95,8 +98,13 @@ fun FirmwareListItem(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            if(listOfDemos.isNotBlank()) {
-                HorizontalDivider(modifier = Modifier.padding(top = LocalDimensions.current.paddingNormal,bottom = LocalDimensions.current.paddingNormal))
+            if (listOfDemos.isNotBlank()) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(
+                        top = LocalDimensions.current.paddingNormal,
+                        bottom = LocalDimensions.current.paddingNormal
+                    )
+                )
 
                 Text(
                     modifier = Modifier.padding(bottom = LocalDimensions.current.paddingSmall),
@@ -108,7 +116,10 @@ fun FirmwareListItem(
                 )
 
                 Text(
-                    modifier = Modifier.padding(bottom = LocalDimensions.current.paddingSmall,start=  LocalDimensions.current.paddingSmall),
+                    modifier = Modifier.padding(
+                        bottom = LocalDimensions.current.paddingSmall,
+                        start = LocalDimensions.current.paddingSmall
+                    ),
                     text = listOfDemos,
                     maxLines = AVAILABLE_DEMOS_MAX_LINES,
                     style = MaterialTheme.typography.bodySmall,

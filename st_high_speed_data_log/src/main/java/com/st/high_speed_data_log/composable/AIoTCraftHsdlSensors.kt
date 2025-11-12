@@ -1,25 +1,30 @@
 package com.st.high_speed_data_log.composable
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,8 +33,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.st.blue_sdk.board_catalog.models.DtmiContent
 import com.st.high_speed_data_log.ComponentWithInterface
 import com.st.high_speed_data_log.HsdlConfig
@@ -78,16 +86,20 @@ fun AIoTCraftHsdlSensors(
     sensors: List<ComponentWithInterface> = emptyList(),
     status: List<JsonObject>,
     onValueChange: (String, Pair<String, Any>) -> Unit,
-    onBeforeUcf:() -> Unit,
-    onAfterUcf:() -> Unit,
+    onBeforeUcf: () -> Unit,
+    onAfterUcf: () -> Unit,
     onErrorUcf: (String) -> Unit,
-    onSendCommand: (String, CommandRequest?) -> Unit
+    onSendCommand: (String, CommandRequest?) -> Unit,
+    state: LazyListState,
+    viewModel: AIoTCraftHsdlSensorsViewModel = viewModel()
 ) {
     var isOpen by rememberSaveable(sensors) { mutableStateOf(value = "") }
 
     var filter by remember { mutableStateOf(value = SensorsFilter()) }
 
     var currentMutualSensor: MutualSensor? by remember { mutableStateOf(null) }
+
+    val dialogAlreadyShown by viewModel.dialogShownOnce.collectAsState()
 
     val sensorsMounted by remember(sensors, status) {
         derivedStateOf {
@@ -131,6 +143,10 @@ fun AIoTCraftHsdlSensors(
 
     val showDialogMutualSensor by remember(sensorGroups) {
         derivedStateOf {
+            if (dialogAlreadyShown) {
+                return@derivedStateOf false
+            }
+
             var thereAreMutualSensors = false
 
             val sensorsMounted = mutualSensorsAIoTCraft.filter { mutualSensor ->
@@ -152,6 +168,7 @@ fun AIoTCraftHsdlSensors(
     }
 
     LazyColumn(
+        state = state,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(all = LocalDimensions.current.paddingNormal),
     ) {
@@ -189,32 +206,39 @@ fun AIoTCraftHsdlSensors(
                 item {
                     //Single Component
                     val componentWithInterface = sensorGroup.value.first()
-            val name = componentWithInterface.first.name
-            val data = (status.find { it.containsKey(name) })?.get(name)
-            data?.let {
-                Component(
-                    modifier = modifier.padding(bottom = LocalDimensions.current.paddingMedium),
-                    name = name,
-                    data = data,
-                    enabled = isLoading.not(),
-                    enableCollapse = true,
-                    isOpen = isOpen == name,
+                    val name = componentWithInterface.first.name
+                    val data = (status.find { it.containsKey(name) })?.get(name)
+                    data?.let {
+                        Component(
+                            modifier = modifier.padding(bottom = LocalDimensions.current.paddingMedium),
+                            name = name,
+                            data = data,
+                            enabled = isLoading.not(),
+                            enableCollapse = true,
+                            isOpen = isOpen == name,
                             isVespucci = HsdlConfig.isVespucci,
-                    showNotMounted = false,
-                    componentModel = componentWithInterface.first,
-                    interfaceModel = componentWithInterface.second,
-                    onValueChange = { onValueChange(name, it) },
-                    onSendCommand = { onSendCommand(name, it) },
-                    onBeforeUcf = onBeforeUcf,
-                    onAfterUcf = onAfterUcf,
+                            showNotMounted = false,
+                            componentModel = componentWithInterface.first,
+                            interfaceModel = componentWithInterface.second,
+                            onValueChange = { onValueChange(name, it) },
+                            onSendCommand = { onSendCommand(name, it) },
+                            onBeforeUcf = onBeforeUcf,
+                            onAfterUcf = onAfterUcf,
                             onErrorUcf = onErrorUcf,
-                    onOpenComponent = {
-                        isOpen = if (it == isOpen) "" else it
-                    }
+                            onOpenComponent = {
+                                isOpen = if (it == isOpen) "" else it
+                            }
                         )
                     }
                 }
             }
+        }
+        item {
+            Spacer(
+                Modifier.windowInsetsBottomHeight(
+                    WindowInsets.navigationBars
+                )
+            )
         }
     }
 
@@ -222,7 +246,9 @@ fun AIoTCraftHsdlSensors(
     if (showDialogMutualSensor) {
         currentMutualSensor?.let { sensor ->
             Dialog(
-                onDismissRequest = {}
+                onDismissRequest = {
+                    viewModel.markDialogAsShown()
+                }
             ) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -238,9 +264,23 @@ fun AIoTCraftHsdlSensors(
                         verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingNormal)
                     ) {
                         Text(
-                            text = "Please select the sensor you wish to use",
+                            text = "high-g / low-g selection",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
+                            color = PrimaryBlue
+                        )
+
+                        Text(
+                            text = "Multiple high-g and low-g sensors have been detected on your board. Please select the sensor you wish to use.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Normal,
+                            color = PrimaryBlue
+                        )
+
+                        Text(
+                            text = "Note: if you have already used another high-g / low-g sensor and have not reeboted the board, please reboot it first. Otherwise, the new sensor you selected will not function correctly.",
+                            style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
+                            fontWeight = FontWeight.Normal,
                             color = PrimaryBlue
                         )
 
@@ -260,7 +300,7 @@ fun AIoTCraftHsdlSensors(
                                 },
                                 colors = OutlinedTextFieldDefaults.colors(),
                                 modifier = Modifier.menuAnchor(
-                                    MenuAnchorType.PrimaryNotEditable,
+                                    ExposedDropdownMenuAnchorType.PrimaryNotEditable,
                                     true
                                 )
                             )
@@ -305,9 +345,10 @@ fun AIoTCraftHsdlSensors(
                                 onClick = {
                                     filter =
                                         filter.copy(sensors = filter.sensors + hiddenSensor)
+                                    viewModel.markDialogAsShown()
                                 }
-                )
-            }
+                            )
+                        }
                     }
                 }
             }

@@ -44,8 +44,8 @@ import kotlin.coroutines.suspendCoroutine
 
 @Singleton
 class StLoginManagerImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
-    @LoginConfig private val stLoginConfig: STLoginConfig
+    @param:ApplicationContext private val context: Context,
+    @param:LoginConfig private val stLoginConfig: STLoginConfig
 ) : StLoginManager {
 
     private var TAG = if (stLoginConfig.isProdEnvironment) {

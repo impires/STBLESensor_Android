@@ -77,7 +77,9 @@ import com.st.blue_sdk.features.extended.gesture_navigation.GestureNavigation as
 import com.st.blue_sdk.features.extended.neai_anomaly_detection.NeaiAnomalyDetection as NeaiAnomalyDetectionFeature
 import com.st.blue_sdk.features.extended.neai_class_classification.NeaiClassClassification as NeaiClassClassificationFeature
 import com.st.blue_sdk.features.extended.neai_extrapolation.NeaiExtrapolation as NeaiExtrapolationFeature
-
+import com.st.external_app.model.ExternalAppType
+import com.st.external_app.ExternalAppAIoTCraft
+import com.st.external_app.ExternalAppRobotics
 const val LOG_SETTINGS = "Log Settings"
 const val SERIAL_CONSOLE = "Serial Console"
 
@@ -87,7 +89,7 @@ val DEFAULT_MENU_ACTIONS = listOf(
 
 @Keep
 enum class Demo(
-    @DrawableRes val icon: Int,
+    @param:DrawableRes val icon: Int,
     var displayName: String,
     val group: List<DemoGroup> = emptyList(),
     val features: List<String>,
@@ -518,8 +520,22 @@ enum class Demo(
         icon = com.st.medical_signal.R.drawable.medical_signal_icon,
         features = listOf(MedicalSignal16BitFeature.NAME, MedicalSignal24BitFeature.NAME),
         group = listOf(DemoGroup.Health, DemoGroup.Graphs)
+    ),
+    ExternalAppLinkToAIoTCraft(
+        displayName = ExternalAppAIoTCraft.appTitle,
+        icon = ExternalAppAIoTCraft.appIcon,
+        couldBeEnabledOutside = true,
+        group = listOf(DemoGroup.AI, DemoGroup.DataLog),
+        features = emptyList()
+    ),
+    ExternalAppLinkToRobotics(
+        displayName = ExternalAppRobotics.appTitle,
+        icon = ExternalAppRobotics.appIcon,
+        couldBeEnabledOutside = true,
+        group = listOf(DemoGroup.AI, DemoGroup.DataLog, DemoGroup.EnvironmentalSensors,DemoGroup.Control),
+        features = emptyList()
     )
-    // *** NEW_DEMO_TEMPLATE ANCHOR1 ***\
+        // *** NEW_DEMO_TEMPLATE ANCHOR1 ***\
     ,
     SdLoggingDemo(
         displayName = "SD Logging",
@@ -765,6 +781,16 @@ enum class Demo(
             )
 
             WbsOtaFUOTA -> DemoListFragmentDirections.actionDemoListToFwUpgrade(nodeId)
+
+            ExternalAppLinkToAIoTCraft -> DemoListFragmentDirections.actionDemoListToExternalAppDemoFragment(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.AIOTCRAFT.code
+            )
+
+            ExternalAppLinkToRobotics -> DemoListFragmentDirections.actionDemoListToExternalAppDemoFragment(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.ROBOTICS.code
+            )
         }
 
         direction.let {

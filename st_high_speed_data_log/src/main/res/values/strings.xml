@@ -20,7 +20,7 @@
     <string name="st_hsdl_tags_acquisitionTitle">Acquisition Information</string>
     <string name="st_hsdl_tags_tagsTitle">Tags Information</string>
     <string name="st_hsdl_datalog_stopDialogTitle">Data Logging completed</string>
-    <string name="st_hsdl_datalog_stopDialogMessage">You can start another acquisition using the Play button or upload the collected data to your dataset by using the Storage button.</string>
+    <string name="st_hsdl_datalog_stopDialogMessage">Your data log has been saved to the SD card. You can start another acquisition using the Play button. Alternatively, you can upload your data by going back to the use case selection and choosing Data Upload.</string>
     <string name="st_hsdl_datalog_resetDialogMessage">To access the logs on the board, press the RESET button. This will restart the board. Would you like to proceed?</string>
     <string name="st_hsdl_datalog_resetBtn">Restart</string>
     <string name="st_hsdl_datalog_stopDialogClose">Close</string>

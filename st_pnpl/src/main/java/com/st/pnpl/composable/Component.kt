@@ -31,6 +31,8 @@ import com.st.ui.composables.Header
 import com.st.ui.composables.HeaderEnabledProperty
 import com.st.ui.composables.LOAD_FILE_COMMAND_NAME
 import com.st.ui.composables.LOAD_FILE_RESPONSE_PROPERTY_NAME
+import com.st.ui.composables.LOAD_MODEL_COMMAND_NAME
+import com.st.ui.composables.LOAD_MODEL_RESPONSE_PROPERTY_NAME
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.Shapes
 import com.st.ui.utils.localizedDisplayName
@@ -184,7 +186,9 @@ fun Component(
 
                             if (index != interfaceModel.contents.lastIndex) {
                                 val isLoadFileCommand =
-                                    content.name == LOAD_FILE_COMMAND_NAME && interfaceModel.contents[index + 1].name == LOAD_FILE_RESPONSE_PROPERTY_NAME
+                                    ((content.name == LOAD_FILE_COMMAND_NAME) && interfaceModel.contents[index + 1].name == LOAD_FILE_RESPONSE_PROPERTY_NAME) ||
+                                        ((content.name == LOAD_MODEL_COMMAND_NAME) && interfaceModel.contents[index + 1].name == LOAD_MODEL_RESPONSE_PROPERTY_NAME)
+
                                 if (isLoadFileCommand.not()) {
                                     Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingSmall))
                                     HorizontalDivider()

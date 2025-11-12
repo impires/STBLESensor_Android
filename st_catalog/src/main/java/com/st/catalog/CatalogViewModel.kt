@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
+import com.st.external_app.ExternalAppAIoTCraft
+import com.st.external_app.ExternalAppRobotics
 
 @HiltViewModel
 class CatalogViewModel
@@ -57,9 +59,9 @@ class CatalogViewModel
 
     var isBeta = false
 
-    var selectedDemoName: String?=null
+    var selectedDemoName: String? = null
 
-    fun setSelectedDemo(demoName: String?){
+    fun setSelectedDemo(demoName: String?) {
         selectedDemoName = demoName
     }
 
@@ -98,7 +100,7 @@ class CatalogViewModel
 
     fun getFirmwareListForBoardPart(boardPart: String) {
         viewModelScope.launch {
-        val boards = _boardsDescription.value.filter { it.boardPart == boardPart}
+            val boards = _boardsDescription.value.filter { it.boardPart == boardPart }
             val firmwareList = mutableListOf<BoardFirmware>()
             boards.forEach { board ->
                 val firmwareFamilyFilter = StCatalogConfig.firmwareFamilyFilter
@@ -110,15 +112,19 @@ class CatalogViewModel
                         true
                 }.filter {
                     it.bleDevId == board.bleDevId &&
-                            (firmwareFamilyFilter.isNullOrEmpty() || it.fwName.startsWith(firmwareFamilyFilter)) &&
-                            (firmwareFamilyVersionFilter.isEmpty() ||  firmwareFamilyVersionFilter.contains(it.fwVersion))
+                            (firmwareFamilyFilter.isNullOrEmpty() || it.fwName.startsWith(
+                                firmwareFamilyFilter
+                            )) &&
+                            (firmwareFamilyVersionFilter.isEmpty() || firmwareFamilyVersionFilter.contains(
+                                it.fwVersion
+                            ))
                 })
             }
             _firmwareList.value = firmwareList.toList()
         }
     }
 
-    fun sendCatalogAnalytics(friendlyName: String){
+    fun sendCatalogAnalytics(friendlyName: String) {
         appAnalyticsService.forEach { service ->
             service.trackCatalogFlow(friendlyName)
         }
@@ -126,6 +132,11 @@ class CatalogViewModel
 
     init {
         viewModelScope.launch {
+
+            StCatalogConfig.hideNotReleaseFwMaturity?.let { hideNotReleaseFwMaturity ->
+                blueManager.setHideNotReleaseFwMaturity(hideNotReleaseFwMaturity)
+            }
+
             _boards.value = blueManager.getBoardCatalog().filter {
                 if (StCatalogConfig.boardModelFilter.isNotEmpty())
                     StCatalogConfig.boardModelFilter.contains(it.boardModel())
@@ -169,7 +180,10 @@ fun UUID.buildFeatures(
     return features
 }
 
-fun BoardFirmware.availableDemos(demoDecorator: DemoDecorator?=null, addFlowForBoardType: Boolean = true): List<Demo> {
+fun BoardFirmware.availableDemos(
+    demoDecorator: DemoDecorator? = null,
+    addFlowForBoardType: Boolean = true
+): List<Demo> {
     val features = mutableListOf<Feature<*>>()
 
     characteristics.map { UUID.fromString(it.uuid) }.forEach { characteristic ->
@@ -187,33 +201,30 @@ fun BoardFirmware.availableDemos(demoDecorator: DemoDecorator?=null, addFlowForB
     }
 
     if (StCatalogConfig.showDemoList) {
-    return Demo.entries.filter { demo ->
-        when (demo) {
+        return Demo.entries.filter { demo ->
+            when (demo) {
                 //Demo.Flow -> boardModel() == Boards.Model.SENSOR_TILE_BOX || boardModel() == Boards.Model.SENSOR_TILE_BOX_PRO || boardModel() == Boards.Model.SENSOR_TILE_BOX_PROB || boardModel() == Boards.Model.SENSOR_TILE_BOX_PROC
                 Demo.Flow -> {
-                    if(addFlowForBoardType) {
+                    if (addFlowForBoardType) {
                         boardModel() == Boards.Model.SENSOR_TILE_BOX || boardModel() == Boards.Model.SENSOR_TILE_BOX_PRO || boardModel() == Boards.Model.SENSOR_TILE_BOX_PROB || boardModel() == Boards.Model.SENSOR_TILE_BOX_PROC
                     } else {
                         demoDecorator?.add?.contains("Flow") == true
                     }
                 }
-            Demo.BlueVoiceFullDuplex -> false
-            Demo.BlueVoiceFullBand -> false
-            else -> {
 
-                if (demo.featuresNotAllowed == null) {
-                    if (demo.requireAllFeatures) {
-                        features.map { it.name }.containsAll(demo.features)
-                    } else {
-                        features.map { it.name }.any {
-                            demo.features.contains(it)
-                        }
-                    }
-                } else {
+                Demo.ExternalAppLinkToRobotics -> {
+                    demoDecorator?.add?.contains(ExternalAppRobotics.appTitle) == true
+                }
 
-                    if (features.map { it.name }.containsAll(demo.featuresNotAllowed!!)) {
-                        false
-                    } else {
+                Demo.ExternalAppLinkToAIoTCraft -> {
+                    demoDecorator?.add?.contains(ExternalAppAIoTCraft.appTitle) == true
+                }
+
+                Demo.BlueVoiceFullDuplex -> false
+                Demo.BlueVoiceFullBand -> false
+                else -> {
+
+                    if (demo.featuresNotAllowed == null) {
                         if (demo.requireAllFeatures) {
                             features.map { it.name }.containsAll(demo.features)
                         } else {
@@ -221,11 +232,23 @@ fun BoardFirmware.availableDemos(demoDecorator: DemoDecorator?=null, addFlowForB
                                 demo.features.contains(it)
                             }
                         }
+                    } else {
+
+                        if (features.map { it.name }.containsAll(demo.featuresNotAllowed!!)) {
+                            false
+                        } else {
+                            if (demo.requireAllFeatures) {
+                                features.map { it.name }.containsAll(demo.features)
+                            } else {
+                                features.map { it.name }.any {
+                                    demo.features.contains(it)
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-    }
     } else {
         return emptyList()
     }

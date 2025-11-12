@@ -6,7 +6,6 @@
  * If no LICENSE file comes with this software, it is provided AS-IS.
  */
 
-val stLocoApiKey: String by project
 val stCompileSdk: Int by rootProject.extra
 val stMinSdk: Int by rootProject.extra
 
@@ -16,7 +15,6 @@ plugins {
     alias(libs.plugins.googleHilt)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.appswithloveLoco)
 }
 
 apply {
@@ -63,17 +61,6 @@ android {
     }
 }
 
-Loco {
-    config {
-        apiKey = stLocoApiKey
-        // lang = ["it", "en"] // add as many languages as you want, they need to exist on localise.biz
-        defLang = "en"
-        fallbackLang = "en"
-        tags = "st_catalog"
-        resDir = "$projectDir/src/main/res"
-    }
-}
-
 dependencies {
     // Blue ST module:
     // - Core
@@ -84,6 +71,8 @@ dependencies {
     implementation(project(":st_preferences"))
     // - DemoShowcase
     implementation(project(":st_demo_showcase"))
+    // - External App
+    implementation(project(":st_external_app"))
 
     // Blue ST SDK
     implementation(libs.st.sdk)

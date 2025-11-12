@@ -6,7 +6,6 @@
  * If no LICENSE file comes with this software, it is provided AS-IS.
  */
 
-val stLocoApiKey: String by project
 val stCompileSdk: Int by rootProject.extra
 val stMinSdk: Int by rootProject.extra
 
@@ -16,7 +15,6 @@ plugins {
     alias(libs.plugins.googleHilt)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.appswithloveLoco)
     alias(libs.plugins.androidxSafeargs)
 }
 
@@ -63,17 +61,6 @@ android {
     }
 }
 
-Loco {
-    config {
-        apiKey = stLocoApiKey
-        // lang = ["it", "en"] // add as many languages as you want, they need to exist on localise.biz
-        defLang = "en"
-        fallbackLang = "en"
-        tags = "st_high_speed_data_log"
-        resDir = "$projectDir/src/main/res"
-    }
-}
-
 dependencies {
     // Blue ST module:
     // - Core
@@ -94,6 +81,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigationFragment)
+    implementation(libs.androidx.compose.material3)
     ksp(libs.hilt.compiler)
 
     // Dependency required for API desugaring.

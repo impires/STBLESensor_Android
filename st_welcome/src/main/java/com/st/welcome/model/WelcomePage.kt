@@ -12,5 +12,5 @@ import androidx.annotation.DrawableRes
 data class WelcomePage(
     val title: String,
     val description: String,
-    @DrawableRes val drawableRes: Int
+    @param:DrawableRes val drawableRes: Int
 )

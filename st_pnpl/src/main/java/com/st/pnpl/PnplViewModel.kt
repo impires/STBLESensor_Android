@@ -352,33 +352,33 @@ class PnplViewModel @Inject constructor(
                                     }
 
                                     try {
-                                    val firstOne = commandQueue.first()
+                                        val firstOne = commandQueue.first()
 
-                                    //Remove the command from the list and send Next One
-                                    commandQueue.removeAt(0)
-                                    if (commandQueue.isNotEmpty()) {
-                                        blueManager.writeFeatureCommand(
-                                            responseTimeout = 0,
-                                            nodeId = nodeId, featureCommand = PnPLCommand(
-                                                feature = featurePnPL!!,
-                                                cmd = commandQueue[0].pnpLCommand
+                                        //Remove the command from the list and send Next One
+                                        commandQueue.removeAt(0)
+                                        if (commandQueue.isNotEmpty()) {
+                                            blueManager.writeFeatureCommand(
+                                                responseTimeout = 0,
+                                                nodeId = nodeId, featureCommand = PnPLCommand(
+                                                    feature = featurePnPL!!,
+                                                    cmd = commandQueue[0].pnpLCommand
+                                                )
                                             )
-                                        )
-                                    }
+                                        }
 
-                                    if (firstOne.askTheStatus) {
-                                        //Ask the status
-                                        if (firstOne.typeOfCommand == PnPLTypeOfCommand.Command) {
-                                            sendGetAllCommand(nodeId = nodeId)
-                                        } else {
+                                        if (firstOne.askTheStatus) {
+                                            //Ask the status
+                                            if (firstOne.typeOfCommand == PnPLTypeOfCommand.Command) {
+                                                sendGetAllCommand(nodeId = nodeId)
+                                            } else {
 //                                            sendGetStatusComponentInfoCommand(
 //                                                feature = featurePnPL!!,
 //                                                name = firstOne.pnpLCommand.command,
 //                                                nodeId = nodeId
 //                                            )
-                                            sendGetAllCommand(nodeId = nodeId)
+                                                sendGetAllCommand(nodeId = nodeId)
+                                            }
                                         }
-                                    }
                                     } catch (e: Exception) {
                                         e.printStackTrace()
                                     }

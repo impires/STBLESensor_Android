@@ -27,6 +27,8 @@ import com.st.pnpl.util.SetCommandPnPLRequest
 import com.st.preferences.StPreferences
 import com.st.ui.composables.CommandRequest
 import com.st.ui.composables.ENABLE_PROPERTY_NAME
+import com.st.ui.composables.LOAD_FILE_COMMAND_NAME
+import com.st.ui.composables.LOAD_FILE_RESPONSE_PROPERTY_NAME
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -179,8 +181,8 @@ class HighSpeedDataLogViewModel @Inject constructor(
                 name == "fs" ||
                 name == "enable" ||
                 name == "aop" ||
-                name == "load_file" ||
-                name == "ucf_status" ||
+                name == LOAD_FILE_COMMAND_NAME ||
+                name == LOAD_FILE_RESPONSE_PROPERTY_NAME ||
                 name == "mounted" ||
                 name == "resolution" ||
                 name == "ranging_mode" ||

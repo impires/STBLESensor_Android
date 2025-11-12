@@ -12,7 +12,7 @@ import androidx.annotation.StringRes
 
 data class RadioButtonItem<T>(
     val data: T,
-    @StringRes val name: Int,
-    @StringRes val description: Int,
-    @DrawableRes val image: Int? = null
+    @param:StringRes val name: Int,
+    @param:StringRes val description: Int,
+    @param:DrawableRes val image: Int? = null
 )

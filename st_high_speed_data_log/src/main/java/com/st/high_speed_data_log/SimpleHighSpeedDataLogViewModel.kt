@@ -16,6 +16,8 @@ import com.st.pnpl.composable.PnPLSpontaneousMessageType
 import com.st.preferences.StPreferences
 import com.st.ui.composables.CommandRequest
 import com.st.ui.composables.ENABLE_PROPERTY_NAME
+import com.st.ui.composables.LOAD_FILE_COMMAND_NAME
+import com.st.ui.composables.LOAD_FILE_RESPONSE_PROPERTY_NAME
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -150,8 +152,8 @@ class SimpleHighSpeedDataLogViewModel @Inject constructor(
                 name == "fs" ||
                 name == "enable" ||
                 name == "aop" ||
-                name == "load_file" ||
-                name == "ucf_status" ||
+                name == LOAD_FILE_COMMAND_NAME ||
+                name == LOAD_FILE_RESPONSE_PROPERTY_NAME ||
                 name == "mounted" ||
                 name == "resolution" ||
                 name == "ranging_mode" ||
@@ -369,7 +371,7 @@ class SimpleHighSpeedDataLogViewModel @Inject constructor(
 
     fun sendCommand(nodeId: String, name: String, commandRequest: CommandRequest?) {
         commandRequest?.let {
-            if (it.commandName == "load_file") {
+            if (it.commandName == LOAD_FILE_COMMAND_NAME) {
                 runBlocking {
                     //RunBlocking for avoiding that the HSDataLogFragment starts
                     // before to finish the load process

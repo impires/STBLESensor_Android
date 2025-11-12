@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltViewModel
@@ -51,14 +52,14 @@ class AccelerationEventViewModel
 
         feature?.let {
             viewModelScope.launch {
-                blueManager.getFeatureUpdates(nodeId, listOf(it)).collect {
-                    val data = it.data
+                blueManager.getFeatureUpdates(nodeId, listOf(it)).collect { featureUpdate ->
+                    val data = featureUpdate.data
                     if (data is AccelerationEventInfo) {
 //                        Log.i(
 //                            "AccelerationEventViewModel",
 //                            "Ts=[${it.timeStamp}] AC=[${data.accEvent}] S=[${data.numSteps}]"
 //                        )
-                        _accEventData.emit(Pair(data, it.timeStamp))
+                        _accEventData.emit(Pair(data, featureUpdate.timeStamp))
                     }
                 }
             }
@@ -80,7 +81,8 @@ class AccelerationEventViewModel
         feature?.let {
             val feature = it as AccelerationEvent
 
-            viewModelScope.launch {
+            //viewModelScope.launch {
+            runBlocking {
                 blueManager.writeFeatureCommand(
                     nodeId = nodeId,
                     featureCommand = EnableDetectionAccelerationEvent(

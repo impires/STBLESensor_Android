@@ -19,8 +19,8 @@ fun Map<String, String>.localizedDisplayNameSensor(isVespucci: Boolean): String 
         if(isVespucci) {
             //With Vespucci replace l and h
             when (lowHigh.lowercase()) {
-                "l" -> lowHigh = "Low"
-                "h" -> lowHigh = "High"
+                "l" -> lowHigh = "low-g"
+                "h" -> lowHigh = "high-g"
                 else -> {}
             }
         }

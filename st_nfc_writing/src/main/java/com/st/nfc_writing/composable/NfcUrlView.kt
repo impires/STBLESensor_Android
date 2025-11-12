@@ -20,7 +20,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -174,7 +174,7 @@ fun NfcUrlView(
                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDropDownMenu)
                                 },
                                 colors = OutlinedTextFieldDefaults.colors(),
-                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
                             )
 
                             ExposedDropdownMenu(

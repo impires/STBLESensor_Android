@@ -1,37 +1,22 @@
 package com.st.activity_recognition.composable
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.st.activity_recognition.R
 import com.st.blue_sdk.features.FeatureField
 import com.st.blue_sdk.features.activity.ActivityInfo
 import com.st.blue_sdk.features.activity.ActivityType
 import com.st.ui.theme.BlueMSTheme
 import com.st.ui.theme.LocalDimensions
-import com.st.ui.theme.PrimaryBlue
-import com.st.ui.theme.PrimaryYellow
-import com.st.ui.theme.Shapes
 import java.util.Date
 
 
@@ -41,234 +26,75 @@ fun ActivityRecognitionMotionARContent(
     showFastWalking: Boolean,
     activityData: Pair<ActivityInfo, Long?>
 ) {
-
     val stationaryImage by remember(key1 = activityData.second) {
         derivedStateOf { activityData.first.activity.value == ActivityType.Stationary }
     }
-
-    val animatedColorStationaryImage by animateColorAsState(
-        if (stationaryImage) PrimaryYellow else Color.Unspecified,
-        label = "color"
-    )
 
     val walkingImage by remember(key1 = activityData.second) {
         derivedStateOf { activityData.first.activity.value == ActivityType.Walking }
     }
 
-    val animatedColorWalkingImage by animateColorAsState(
-        if (walkingImage) PrimaryYellow else Color.Unspecified,
-        label = "color"
-    )
-
     val fastWalkingImage by remember(key1 = activityData.second) {
         derivedStateOf { activityData.first.activity.value == ActivityType.FastWalking }
     }
-
-    val animatedColorFastWalkingImage by animateColorAsState(
-        if (fastWalkingImage) PrimaryYellow else Color.Unspecified,
-        label = "color"
-    )
 
     val joggingImage by remember(key1 = activityData.second) {
         derivedStateOf { activityData.first.activity.value == ActivityType.Jogging }
     }
 
-    val animatedColorJoggingImage by animateColorAsState(
-        if (joggingImage) PrimaryYellow else Color.Unspecified,
-        label = "color"
-    )
-
     val bikingImage by remember(key1 = activityData.second) {
         derivedStateOf { activityData.first.activity.value == ActivityType.Biking }
     }
-
-    val animatedColorBikingImage by animateColorAsState(
-        if (bikingImage) PrimaryYellow else Color.Unspecified,
-        label = "color"
-    )
 
     val drivingImage by remember(key1 = activityData.second) {
         derivedStateOf { activityData.first.activity.value == ActivityType.Driving }
     }
 
-    val animatedColorDrivingImage by animateColorAsState(
-        if (drivingImage) PrimaryYellow else Color.Unspecified,
-        label = "color"
-    )
-
-    val configuration = LocalConfiguration.current
-
-    val smallScreen by remember(key1 = configuration) {
-        derivedStateOf {
-            val screenHeight = configuration.screenHeightDp
-            screenHeight < 800
-        }
-    }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(all = LocalDimensions.current.paddingNormal),
-        horizontalArrangement = Arrangement.spacedBy(
-            LocalDimensions.current.paddingNormal
-        )
+    Column(
+        modifier = modifier.fillMaxWidth().padding(start = LocalDimensions.current.paddingLarge),
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.SpaceAround
     ) {
-        Column(
-            modifier = Modifier.weight(0.5f),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingNormal)
-        ) {
-            Icon(
-                modifier = Modifier
-                    .size(size = if (smallScreen) LocalDimensions.current.imageMedium else LocalDimensions.current.imageLarge)
-                    .graphicsLayer(
-                        alpha = if (stationaryImage) {
-                            1f
-                        } else {
-                            0.3f
-                        }
-                    )
-                    .border(
-                        BorderStroke(4.dp, animatedColorStationaryImage),
-                        Shapes.extraLarge
-                    )
-                    .padding(4.dp)
-                    .clip(Shapes.extraLarge),
-                painter = painterResource(
-                    R.drawable.activity_stationary
-                ),
-                tint = PrimaryBlue,
-                contentDescription = null
+        ActivityRecognitionItem(modifier = Modifier.weight(1f),
+            isActive = stationaryImage,
+            id =  R.drawable.activity_stationary,
+            label = "Inactive"
             )
 
-            Icon(
-                modifier = Modifier
-                    .size(size = if (smallScreen) LocalDimensions.current.imageMedium else LocalDimensions.current.imageLarge)
-                    .graphicsLayer(
-                        alpha = if (fastWalkingImage) {
-                            1f
-                        } else {
-                            if (showFastWalking) {
-                                0.3f
-                            } else {
-                                0f
-                            }
-                        }
-                    )
-                    .border(
-                        BorderStroke(4.dp, animatedColorFastWalkingImage),
-                        Shapes.extraLarge
-                    )
-                    .padding(4.dp)
-                    .clip(Shapes.extraLarge),
-                painter = painterResource(
-                    R.drawable.activity_fastwalking
-                ),
-                tint = PrimaryBlue,
-                contentDescription = null
-            )
+        ActivityRecognitionItem(modifier = Modifier.weight(1f),
+            isActive = walkingImage,
+            id =  R.drawable.activity_walking,
+            label = "Walking"
+        )
 
-            Icon(
-                modifier = Modifier
-                    .size(size = if (smallScreen) LocalDimensions.current.imageMedium else LocalDimensions.current.imageLarge)
-                    .graphicsLayer(
-                        alpha = if (bikingImage) {
-                            1f
-                        } else {
-                            0.3f
-                        }
-                    )
-                    .border(
-                        BorderStroke(4.dp, animatedColorBikingImage),
-                        Shapes.extraLarge
-                    )
-                    .padding(4.dp)
-                    .clip(Shapes.extraLarge),
-                painter = painterResource(
-                    R.drawable.activity_biking
-                ),
-                tint = PrimaryBlue,
-                contentDescription = null
+        if(showFastWalking) {
+            ActivityRecognitionItem(modifier = Modifier.weight(1f),
+                isActive = fastWalkingImage,
+                id =  R.drawable.activity_fastwalking,
+                label = "Fast Walking"
             )
         }
 
-        Column(
-            modifier = Modifier.weight(0.5f),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingNormal)
-        ) {
+        ActivityRecognitionItem(modifier = Modifier.weight(1f),
+            isActive = joggingImage,
+            id =  R.drawable.activity_jogging,
+            label = "Jogging"
+        )
 
-            Icon(
-                modifier = Modifier
-                    .size(size = if (smallScreen) LocalDimensions.current.imageMedium else LocalDimensions.current.imageLarge)
-                    .graphicsLayer(
-                        alpha = if (walkingImage) {
-                            1f
-                        } else {
-                            0.3f
-                        }
-                    )
-                    .border(
-                        BorderStroke(4.dp, animatedColorWalkingImage),
-                        Shapes.extraLarge
-                    )
-                    .padding(4.dp)
-                    .clip(Shapes.extraLarge),
-                painter = painterResource(
-                    R.drawable.activity_walking
-                ),
-                tint = PrimaryBlue,
-                contentDescription = null
-            )
+        ActivityRecognitionItem(modifier = Modifier.weight(1f),
+            isActive = bikingImage,
+            id =  R.drawable.activity_biking,
+            label = "Bicycle riding"
+        )
 
-            Icon(
-                modifier = Modifier
-                    .size(size = if (smallScreen) LocalDimensions.current.imageMedium else LocalDimensions.current.imageLarge)
-                    .graphicsLayer(
-                        alpha = if (joggingImage) {
-                            1f
-                        } else {
-                            0.3f
-                        }
-                    )
-                    .border(
-                        BorderStroke(4.dp, animatedColorJoggingImage),
-                        Shapes.extraLarge
-                    )
-                    .padding(4.dp)
-                    .clip(Shapes.extraLarge),
-                painter = painterResource(
-                    R.drawable.activity_jogging
-                ),
-                tint = PrimaryBlue,
-                contentDescription = null
-            )
-
-            Icon(
-                modifier = Modifier
-                    .size(size = if (smallScreen) LocalDimensions.current.imageMedium else LocalDimensions.current.imageLarge)
-                    .graphicsLayer(
-                        alpha = if (drivingImage) {
-                            1f
-                        } else {
-                            0.3f
-                        }
-                    )
-                    .border(
-                        BorderStroke(4.dp, animatedColorDrivingImage),
-                        Shapes.extraLarge
-                    )
-                    .padding(4.dp)
-                    .clip(Shapes.extraLarge),
-                painter = painterResource(
-                    R.drawable.activity_driving
-                ),
-                tint = PrimaryBlue,
-                contentDescription = null
-            )
-        }
+        ActivityRecognitionItem(modifier = Modifier.weight(1f),
+            isActive = drivingImage,
+            id =  R.drawable.activity_driving_new,
+            label = "Vehicle driving"
+        )
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable

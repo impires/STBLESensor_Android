@@ -263,7 +263,6 @@ fun SimpleHighSpeedDataLog(
             state = pullRefreshState,
             isRefreshing = isLoading,
             isBetaRelease = isBetaApplication,
-            indicatorAlignment = Alignment.Center,
             onRefresh = onRefresh
         ) {
             if (isLogging.not()) {

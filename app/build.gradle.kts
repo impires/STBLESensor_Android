@@ -6,7 +6,6 @@
  * If no LICENSE file comes with this software, it is provided AS-IS.
  */
 
-val stLocoApiKey: String by project
 val stCompileSdk: Int by rootProject.extra
 val stMinSdk: Int by rootProject.extra
 val stTargetSdk: Int by rootProject.extra
@@ -20,7 +19,6 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.devtoolsKsp)
     alias(libs.plugins.jlleitschuhKtlint)
-    alias(libs.plugins.appswithloveLoco)
     alias(libs.plugins.androidxSafeargs)
     alias(libs.plugins.jaredsburrowsLicense)
 }
@@ -37,8 +35,8 @@ android {
         applicationId = "com.st.bluems"
         minSdk = stMinSdk
         targetSdk = stTargetSdk
-        versionCode = 341
-        versionName = "5.2.12"
+        versionCode = 352
+        versionName = "5.2.13"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -119,17 +117,6 @@ configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
     version.set("0.22.0")
 }
 
-Loco {
-    config {
-        apiKey = stLocoApiKey
-        // lang = ["it", "en"] // add as many languages as you want, they need to exist on localise.biz
-        defLang = "en"
-        fallbackLang = "en"
-        tags = "st_bluems"
-        resDir = "$projectDir/src/main/res"
-    }
-}
-
 dependencies {
     // Blue ST module:
     // - Core
@@ -155,7 +142,6 @@ dependencies {
 
     // Blue ST SDK
     implementation(libs.st.sdk)
-
 
     // Room
     implementation(libs.bundles.room)

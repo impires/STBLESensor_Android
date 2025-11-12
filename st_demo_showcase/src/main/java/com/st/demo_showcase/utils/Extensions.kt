@@ -18,6 +18,8 @@ import com.st.demo_showcase.models.LOG_SETTINGS
 import com.st.neai_classification.NEAI_CLASSIFICATION_SETTINGS
 import com.st.neai_classification.NeaiClassificationFragmentDirections
 import com.st.ui.composables.ActionItem
+import com.st.external_app.ExternalAppAIoTCraft
+import com.st.external_app.ExternalAppRobotics
 
 fun List<String>?.toActions(
     demo: Demo?,
@@ -164,4 +166,6 @@ fun Demo.getDescription(context: Context): String =
         Demo.CloudMqtt -> "Connect the board to one MQTT Server"
         Demo.MedicalSignal -> "Display Medical Signals"
         Demo.AssetTrackingEventDemo -> "Show asset tracking detected events, such as Fall or Shock Events"
+        Demo.ExternalAppLinkToAIoTCraft -> ExternalAppAIoTCraft.appShortDescription
+        Demo.ExternalAppLinkToRobotics -> ExternalAppRobotics.appShortDescription
     }
