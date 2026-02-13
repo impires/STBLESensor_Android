@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.st.cloud_azure_iot_central.model.CloudAPIToken
 import com.st.ui.theme.ErrorText
@@ -27,6 +28,7 @@ import com.st.ui.theme.SuccessText
 import com.st.cloud_azure_iot_central.R
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.Date
 
 @Composable
 fun CloudAppItem(
@@ -156,7 +158,7 @@ fun CloudAppItem(
                             val tokenExpire = "Valid until " + SimpleDateFormat(
                                 "dd/MM/yyyy hh:mm:ss",
                                 Locale.getDefault()
-                            ).format(apiToken!!.expire)
+                            ).format(apiToken.expire)
 
                             Text(
                                 style = MaterialTheme.typography.bodyMedium,
@@ -181,4 +183,51 @@ fun CloudAppItem(
             }
         }
     }
+}
+
+@Preview(group = "Not Configured")
+@Composable
+fun CloudAppItemNotConfiguredPreview() {
+    CloudAppItem(
+        apiToken = null,
+        authorizationKey = null,
+        apiTokenExpired = false,
+        cloudAppName = "MyAzureApp",
+        cloudAppUrl = "https://myapp.azureiotcentral.com",
+        isSelected = false
+    )
+}
+
+@Preview(group = "Configured")
+@Composable
+fun CloudAppItemConfiguredNotExpiredPreview() {
+    CloudAppItem(
+        apiToken = CloudAPIToken(
+            id = "token123",
+            roles = emptyList(),
+            expire = Date(System.currentTimeMillis() + 3600_000)
+        ),
+        authorizationKey = "authKey123",
+        apiTokenExpired = false,
+        cloudAppName = "MyAzureApp",
+        cloudAppUrl = "https://myapp.azureiotcentral.com",
+        isSelected = true
+    )
+}
+
+@Preview(group = "Configured")
+@Composable
+fun CloudAppItemConfiguredExpiredPreview() {
+    CloudAppItem(
+        apiToken = CloudAPIToken(
+            id = "token123",
+            roles = emptyList(),
+            expire = Date(System.currentTimeMillis() - 3600_000)
+        ),
+        authorizationKey = "authKey123",
+        apiTokenExpired = true,
+        cloudAppName = "My Long Long Long Azure Application Name That Overflows",
+        cloudAppUrl = "https://thisisareallylongurlformyapplicationthatshouldoverflowthecontainer.azureiotcentral.com",
+        isSelected = false
+    )
 }

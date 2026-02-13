@@ -42,6 +42,7 @@ import com.st.ui.composables.ComposableLifecycle
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.Shapes
 import com.st.ui.theme.SuccessText
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -113,6 +114,8 @@ fun BeamFormingDemoContent(
         viewModel.audioData(nodeId).onStart {
             val decodeParams = viewModel.getAudioDecodeParams(nodeId)
             initAudioTrack(decodeParams)
+        }.filter {
+            it.isNotEmpty()
         }.onEach {
             sample = it[0]
         }.map { it.toByteArray() }

@@ -18,8 +18,6 @@ plugins {
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.jlleitschuhKtlint)
-    alias(libs.plugins.androidxSafeargs)
     alias(libs.plugins.jaredsburrowsLicense)
 }
 
@@ -35,8 +33,8 @@ android {
         applicationId = "com.st.bluems"
         minSdk = stMinSdk
         targetSdk = stTargetSdk
-        versionCode = 352
-        versionName = "5.2.13"
+        versionCode = 356
+        versionName = "5.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -110,13 +108,6 @@ detekt {
     config.setFrom("../detekt-config-compose.yml")
 }
 
-configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-    verbose.set(true)
-    debug.set(true)
-    android.set(true)
-    version.set("0.22.0")
-}
-
 dependencies {
     // Blue ST module:
     // - Core
@@ -150,8 +141,8 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigationFragment)
     ksp(libs.hilt.compiler)
+    ksp(libs.kotlin.metadata)
 
     // Dependency required for API desugaring.
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)

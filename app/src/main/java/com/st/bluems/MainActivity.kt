@@ -13,41 +13,69 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.navigation.NavController
-import androidx.navigation.NavOptions
-import androidx.navigation.findNavController
-import androidx.navigation.navOptions
-import com.st.bluems.ui.home.HomeFragmentDirections
-import com.st.core.GlobalConfig
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
+import com.st.bluems.ui.home.HomeScreen
+import com.st.bluems.ui.home.HomeViewModel
 import com.st.core.api.ApplicationAnalyticsService.ApplicationNameEtna
-import com.st.demo_showcase.DemoShowCaseConfig
 import com.st.terms.StTermsConfig
-import com.st.terms.TermsFragmentDirections
+import com.st.terms.composable.LicenseAgreementScreen
+import com.st.ui.theme.BlueMSTheme
+import com.st.ui.theme.Grey0
+import com.st.user_profiling.ProfileViewModel
 import com.st.user_profiling.StUserProfilingConfig
+import com.st.user_profiling.composable.UserProfilingNavigationScreen
 import com.st.user_profiling.model.LevelProficiency
 import com.st.user_profiling.model.ProfileType
 import com.st.welcome.StWelcomeConfig
-import com.st.welcome.WelcomeFragmentDirections
+import com.st.welcome.composable.WelcomeScreen
 import com.st.welcome.model.WelcomePage
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.serialization.Serializable
 import java.nio.charset.StandardCharsets
+import kotlin.getValue
+
+
+@Serializable
+data object WelcomeNavKey : NavKey
+
+@Serializable
+data object TermsNavKey : NavKey
+
+@Serializable
+data object UserProfilingNavKey : NavKey
+
+@Serializable
+data object BlueMSApplicationNavKey : NavKey
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels()
-    private val nfcViewModel: NFCConnectionViewModel  by viewModels()
-    private lateinit var navController: NavController
+    private val nfcViewModel: NFCConnectionViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
         installSplashScreen()
 
-        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT), navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT,Color.TRANSPARENT))
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
@@ -55,7 +83,7 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        if(BuildConfig.DEBUG) {
+        if (BuildConfig.DEBUG) {
             viewModel.initApplicationAnalytics(
                 ApplicationNameEtna.STBLESensorDev,
                 application,
@@ -68,7 +96,22 @@ class MainActivity : AppCompatActivity() {
                 this
             )
         }
-//
+
+        val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.getPackageInfo(
+                packageName,
+                PackageManager.PackageInfoFlags.of(0)
+            )
+        } else {
+            packageManager.getPackageInfo(packageName, 0)
+        }
+
+        val versionName = pInfo.versionName?.replace('.', '_') ?: "NoName"
+        val packageName = pInfo.packageName.split('.').last()
+
+        val keySearched = "${packageName}_${versionName}"
+        Log.i("Firebase Remote Config", "keySearched : $keySearched")
+
 //        //Singleton
 //        val remoteConfig: FirebaseRemoteConfig = Firebase.remoteConfig
 //        val configSettings = remoteConfigSettings {
@@ -80,55 +123,51 @@ class MainActivity : AppCompatActivity() {
 //        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
 //
 //        //Read the Default Value
-//        val numberDefault = remoteConfig.getLong(LOADING_PHRASE_CONFIG_KEY)
-//        Log.d(TAG,"Default number=${numberDefault}")
-//        TODO: Save on GlobalConfig
+//        var boardCatalogStatus = remoteConfig.getString(keySearched)
+//        Log.d("boardCatalogStatus", "Default number=${boardCatalogStatus}")
 //
 //        remoteConfig.fetchAndActivate()
 //            .addOnCompleteListener(this) { task ->
 //                if (task.isSuccessful) {
 //                    val updated = task.result
-//                    Log.d(TAG, "Config params updated: $updated")
-//                    Toast.makeText(
-//                        this,
-//                        "Fetch and activate succeeded",
-//                        Toast.LENGTH_SHORT,
-//                    ).show()
+//                    Log.d("boardCatalogStatus", "Config params updated: $updated")
+//                    boardCatalogStatus = remoteConfig.getString(keySearched)
+//                    if (boardCatalogStatus.isNotEmpty()) {
+//                        viewModel.updateBoardCatalogStatus(boardCatalogStatus)
+//                    }
 //                } else {
-//                    Toast.makeText(
-//                        this,
-//                        "Fetch failed",
-//                        Toast.LENGTH_SHORT,
-//                    ).show()
+//                    Log.d("boardCatalogStatus", "Fetch failed")
 //                }
 //            }
 //
 //        remoteConfig.addOnConfigUpdateListener(object : ConfigUpdateListener {
-//            override fun onUpdate(configUpdate : ConfigUpdate) {
-//                Log.d(TAG, "Updated keys: " + configUpdate.updatedKeys);
+//            override fun onUpdate(configUpdate: ConfigUpdate) {
+//                Log.d(boardCatalogStatus, "Updated keys: " + configUpdate.updatedKeys)
 //
-//                if (configUpdate.updatedKeys.contains(LOADING_PHRASE_CONFIG_KEY)) {
+//                if (configUpdate.updatedKeys.contains(keySearched)) {
 //                    remoteConfig.activate().addOnCompleteListener {
-//                        val number = remoteConfig[LOADING_PHRASE_CONFIG_KEY].asLong()
-//                        Log.d(TAG,"New number=${number}")
-//                        TODO: Save on GlobalConfig
+//                        boardCatalogStatus = remoteConfig.getString(keySearched)
+//                        Log.d(boardCatalogStatus, "New number=$boardCatalogStatus")
+//                        if (boardCatalogStatus.isNotEmpty()) {
+//                            viewModel.updateBoardCatalogStatus(boardCatalogStatus)
+//                        }
 //                    }
 //                }
 //            }
 //
-//            override fun onError(error : FirebaseRemoteConfigException) {
-//                Log.w(TAG, "Config update error with code: " + error.code, error)
+//            override fun onError(error: FirebaseRemoteConfigException) {
+//                Log.w("boardCatalogStatus", "Config update error with code: " + error.code, error)
 //            }
 //        })
 
-        //for using NFC deep Link node autoconnect
+        //for using NFC deep Link node auto-connect
         val nfcIntent = intent
         val appLinkData = nfcIntent.data
         if (appLinkData != null) {
 
             val sPairingPin: ByteArray? = appLinkData.getQueryParameter("Pin")?.toByteArray(
-                    StandardCharsets.UTF_8
-                )
+                StandardCharsets.UTF_8
+            )
             nfcViewModel.setNFCPairingPin(sPairingPin)
 
             val mNodeTag: String? = appLinkData.getQueryParameter("Add")
@@ -137,36 +176,74 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.reportApplicationAnalytics(applicationContext)
 
-        setContentView(R.layout.activity_main)
+        setContent {
+            BlueMSTheme {
+                val backState =
+                    rememberNavBackStack(
+                        when {
+                            viewModel.shouldShowTerms -> TermsNavKey
+                            //viewModel.shouldShowWelcome -> WelcomeNavKey
+                            //We propose again the Terms Screen for avoiding problem for lateinit var...
+                            viewModel.shouldShowWelcome -> TermsNavKey
+                            viewModel.shouldShowProfile -> UserProfilingNavKey
+                            else -> BlueMSApplicationNavKey
+                        }
+                    )
 
-        navController = findNavController(R.id.nav_host_fragment_content_main)
 
-        val currentDestinationId = navController.currentDestination?.id
+                LaunchedEffect(key1 = Unit) {
+                    setUpTerms(backState)
+                    setUpWelcome(backState)
+                    setUpUserProfiling(backState)
+                }
 
-        GlobalConfig.navigateBack = { nodeId ->
-            navController.navigate(HomeFragmentDirections.actionToHomeFragment())
-            viewModel.disconnect(nodeId = nodeId)
-        }
+                NavDisplay(
+                    modifier = Modifier
+                        .background(
+                            Grey0
+                        ),
+                    backStack = backState,
+//                    onBack = {
+//                        backState.removeLastOrNull()
+//                    },
+                    entryDecorators = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator()
+                    ),
+                    entryProvider = entryProvider {
+                        entry<TermsNavKey> {
+                            LicenseAgreementScreen(onLicenseAgree = {
+                                StTermsConfig.onDone(true)
+                            })
+                        }
 
-        setUpDemoShowCase()
-        setUpTerms()
-        setUpWelcome()
-        setUpUserProfiling()
+                        entry<WelcomeNavKey> {
+                            WelcomeScreen(
+                                welcomePages = StWelcomeConfig.welcomePages,
+                                onSkip = StWelcomeConfig.onSkip
+                            )
+                        }
 
-        when {
-            viewModel.shouldShowTerms && currentDestinationId!= R.id.termsFragment -> HomeFragmentDirections.actionHomeFragmentToTermsFragment()
-            viewModel.shouldShowWelcome && currentDestinationId != R.id.welcomeFragment -> HomeFragmentDirections.actionHomeFragmentToWelcomeFragment()
-            viewModel.shouldShowProfile && currentDestinationId != com.st.user_profiling.R.id.user_profiling_nav_graph -> HomeFragmentDirections.actionHomeFragmentToProfileNavGraph()
-            else -> null
-        }?.let { destination ->
-            val navOptions: NavOptions = navOptions {
-                popUpTo(R.id.homeFragment) { inclusive = true }
+                        entry<UserProfilingNavKey> {
+                            val viewModel: ProfileViewModel by viewModels()
+                            UserProfilingNavigationScreen(
+                                viewModel = viewModel
+                            )
+                        }
+
+                        entry<BlueMSApplicationNavKey> {
+//                            AndroidFragment<HomeFragment>()
+                            val homeViewModel: HomeViewModel = hiltViewModel()
+                            HomeScreen(homeViewModel = homeViewModel, nfcViewModel = nfcViewModel)
+                        }
+                    }
+                )
             }
-            navController.navigate(directions = destination, navOptions = navOptions)
         }
     }
 
-    private fun setUpUserProfiling() {
+
+    private fun setUpUserProfiling(backState: NavBackStack<NavKey>) {
         LevelProficiency.fromString(viewModel.level)?.let { level ->
             StUserProfilingConfig.defaultLevelProficiency = level
         }
@@ -177,18 +254,12 @@ class MainActivity : AppCompatActivity() {
 
         StUserProfilingConfig.onDone = { level: LevelProficiency, type: ProfileType ->
             viewModel.profileShow(level = level, type = type)
-
-            val navOptions: NavOptions = navOptions {
-                popUpTo(com.st.user_profiling.R.id.user_profiling_nav_graph) { inclusive = true }
-            }
-
-            navController.navigate(
-                directions = HomeFragmentDirections.actionUserProfilingNavGraphToHomeFragment(), navOptions = navOptions
-            )
+            backState.removeLastOrNull()
+            backState.add(BlueMSApplicationNavKey)
         }
     }
 
-    private fun setUpWelcome() {
+    private fun setUpWelcome(backState: NavBackStack<NavKey>) {
         StWelcomeConfig.welcomePages = listOf(
             WelcomePage(
                 title = getString(R.string.st_welcome_title1),
@@ -214,40 +285,17 @@ class MainActivity : AppCompatActivity() {
 
         StWelcomeConfig.onSkip = {
             viewModel.welcomeShow()
-
-            when {
-                viewModel.shouldShowProfile -> WelcomeFragmentDirections.actionWelcomeFragmentToProfileNavGraph()
-                else -> null
-            }?.let { destination ->
-                navController.navigate(directions = destination)
-            }
+            backState.removeLastOrNull()
+            backState.add(UserProfilingNavKey)
         }
     }
 
-    private fun setUpTerms() {
+    private fun setUpTerms(backState: NavBackStack<NavKey>) {
         StTermsConfig.onDone = { isAccepted ->
             viewModel.termsAccepted(isAccepted)
 
-            when {
-                viewModel.shouldShowWelcome -> TermsFragmentDirections.actionTermsFragmentToWelcomeFragment()
-                viewModel.shouldShowProfile -> TermsFragmentDirections.actionTermsFragmentToProfileNavGraph()
-                else -> null
-            }?.let { destination ->
-                navController.navigate(directions = destination)
-            } ?: run {
-                navController.popBackStack()
-            }
+            backState.removeLastOrNull()
+            backState.add(WelcomeNavKey)
         }
     }
-
-    private fun setUpDemoShowCase() {
-        DemoShowCaseConfig.onClose = {
-            navController.popBackStack()
-        }
-    }
-//
-//    companion object {
-//        private const val TAG = "FireBase"
-//        private const val LOADING_PHRASE_CONFIG_KEY = "D183G"
-//    }
 }

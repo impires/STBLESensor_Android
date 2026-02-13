@@ -7,11 +7,7 @@
  */
 package com.st.catalog.composable
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,26 +27,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import androidx.compose.ui.unit.sp
 import com.st.blue_sdk.board_catalog.models.BoardDescription
 import com.st.blue_sdk.board_catalog.models.BoardFirmware
 import com.st.blue_sdk.board_catalog.models.BoardStatus
-import com.st.blue_sdk.board_catalog.models.FirmwareMaturity
-import com.st.blue_sdk.board_catalog.models.FotaDetails
 import com.st.catalog.R
 import com.st.ui.theme.ErrorText
 import com.st.ui.theme.Grey6
 import com.st.ui.theme.LocalDimensions
-import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.SecondaryBlue
 import com.st.ui.theme.Shapes
 import com.st.ui.theme.SuccessText
-import com.st.ui.utils.asString
 import com.st.ui.utils.getBlueStBoardImages
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun BoardHeader(
     modifier: Modifier = Modifier,
@@ -58,121 +47,117 @@ fun BoardHeader(
     boardDescOrNull: BoardDescription? = null,
     showGoToFw: Boolean = true,
     goToFw: () -> Unit = { /** NOOP **/ },
-    goToDs: () -> Unit = { /** NOOP **/ },
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope
+    goToDs: () -> Unit = { /** NOOP **/ }
 ) {
     //val openComponentDialog = remember { mutableStateOf(false) }
-    with(sharedTransitionScope) {
-        Surface(
-            modifier = modifier.fillMaxWidth().sharedElement(
-                sharedTransitionScope.rememberSharedContentState(key = "surface-${board.brdName}"),
-                animatedVisibilityScope = animatedContentScope
-            ),
-            shape = Shapes.small,
-            shadowElevation = LocalDimensions.current.elevationNormal
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = Shapes.small,
+        shadowElevation = LocalDimensions.current.elevationNormal
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(all = LocalDimensions.current.paddingNormal),
+                text = board.brdName,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 24.sp,
+                letterSpacing = 0.15.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            if (boardDescOrNull != null) {
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(all = LocalDimensions.current.paddingNormal)
-                        .sharedElement(
-                            sharedTransitionScope.rememberSharedContentState(key = "text-${board.brdName}"),
-                            animatedVisibilityScope = animatedContentScope
-                        ),
-                    text = board.brdName,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 24.sp,
-                    letterSpacing = 0.15.sp,
-                    color = MaterialTheme.colorScheme.primary
+                        .padding(all = LocalDimensions.current.paddingNormal),
+                    text = "(${boardDescOrNull.friendlyName})",
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    letterSpacing = 0.25.sp,
+                    color = Grey6
                 )
+            }
 
-                if (boardDescOrNull != null) {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(all = LocalDimensions.current.paddingNormal)
-                            .sharedElement(
-                                sharedTransitionScope.rememberSharedContentState(key = "friendly-${boardDescOrNull.friendlyName}"),
-                        animatedVisibilityScope = animatedContentScope
-                    ),
-                        text = "(${boardDescOrNull.friendlyName})",
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        letterSpacing = 0.25.sp,
-                        color = Grey6
-                    )
-                }
-
-                Box(
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(height = LocalDimensions.current.imageMedium)
+                //.background(color = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Image(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(height = LocalDimensions.current.imageMedium)
-                    //.background(color = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Image(
-                        modifier = Modifier
-                            .padding(all = LocalDimensions.current.paddingNormal)
-                            .size(size = LocalDimensions.current.imageLarge)
-                            //.fillMaxHeight()
-                            .align(alignment = Alignment.Center)
-                            .sharedElement(
-                                sharedTransitionScope.rememberSharedContentState(key = "image-${board.boardModel().name}"),
-                                animatedVisibilityScope = animatedContentScope
-                            )
+                        .padding(all = LocalDimensions.current.paddingNormal)
+                        .size(size = LocalDimensions.current.imageLarge)
+                        //.fillMaxHeight()
+                        .align(alignment = Alignment.Center)
 //                        .clickable {
 //                            openComponentDialog.value = true
 //                        },
-                        ,
-                        painter = painterResource(id = getBlueStBoardImages(boardType = board.boardModel().name)),
-                        contentDescription = null
+                    ,
+                    painter = painterResource(id = getBlueStBoardImages(boardType = board.boardModel().name)),
+                    contentDescription = null
+                )
+            }
+
+            if (boardDescOrNull != null) {
+                when (boardDescOrNull.status) {
+                    BoardStatus.ACTIVE -> Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(all = LocalDimensions.current.paddingNormal),
+                        textAlign = TextAlign.Right,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.25.sp,
+                        color = SuccessText,
+                        text = boardDescOrNull.status.name
+                    )
+
+                    BoardStatus.NRND -> Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(all = LocalDimensions.current.paddingNormal),
+                        textAlign = TextAlign.Right,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.25.sp,
+                        color = ErrorText,
+                        text = boardDescOrNull.status.name
                     )
                 }
+            }
 
-                if (boardDescOrNull != null) {
-                    when (boardDescOrNull.status) {
-                        BoardStatus.ACTIVE -> Text(
+            HorizontalDivider()
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                if (showGoToFw) {
+                    TextButton(
+                        modifier = Modifier.weight(0.4f), onClick = goToFw
+                    ) {
+                        Text(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 16.sp,
+                            letterSpacing = 1.25.sp,
+                            color = SecondaryBlue,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(all = LocalDimensions.current.paddingNormal).sharedElement(
-                                    sharedTransitionScope.rememberSharedContentState(key = "statusAct-${board.brdName}"),
-                                    animatedVisibilityScope = animatedContentScope
-                                ),
-                            textAlign = TextAlign.Right,
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp,
-                            letterSpacing = 0.25.sp,
-                            color = SuccessText,
-                            text = boardDescOrNull.status.name
-                        )
-
-                        BoardStatus.NRND -> Text(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(all = LocalDimensions.current.paddingNormal).sharedElement(
-                                    sharedTransitionScope.rememberSharedContentState(key = "statusNrn-${board.brdName}"),
-                                    animatedVisibilityScope = animatedContentScope
-                                ),
-                            textAlign = TextAlign.Right,
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp,
-                            letterSpacing = 0.25.sp,
-                            color = ErrorText,
-                            text = boardDescOrNull.status.name
+                                .padding(start = LocalDimensions.current.paddingNormal),
+                            textAlign = TextAlign.Left,
+                            text = stringResource(id = R.string.st_catalog_board_fwBtn).uppercase()
                         )
                     }
                 }
 
-                HorizontalDivider()
-
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    if (showGoToFw) {
+                boardDescOrNull?.let {
+                    if (boardDescOrNull.docURL != null) {
                         TextButton(
-                            modifier = Modifier.weight(0.4f), onClick = goToFw
+                            modifier = Modifier.weight(0.6f), onClick = goToDs
                         ) {
                             Text(
                                 fontSize = 14.sp,
@@ -182,31 +167,10 @@ fun BoardHeader(
                                 color = SecondaryBlue,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = LocalDimensions.current.paddingNormal),
-                                textAlign = TextAlign.Left,
-                                text = stringResource(id = R.string.st_catalog_board_fwBtn).uppercase()
+                                    .padding(end = LocalDimensions.current.paddingNormal),
+                                textAlign = TextAlign.Right,
+                                text = stringResource(id = R.string.st_catalog_board_dsBtn).uppercase()
                             )
-                        }
-                    }
-
-                    boardDescOrNull?.let {
-                        if (boardDescOrNull.docURL != null) {
-                            TextButton(
-                                modifier = Modifier.weight(0.6f), onClick = goToDs
-                            ) {
-                                Text(
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    lineHeight = 16.sp,
-                                    letterSpacing = 1.25.sp,
-                                    color = SecondaryBlue,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(end = LocalDimensions.current.paddingNormal),
-                                    textAlign = TextAlign.Right,
-                                    text = stringResource(id = R.string.st_catalog_board_dsBtn).uppercase()
-                                )
-                            }
                         }
                     }
                 }

@@ -43,6 +43,7 @@ import com.st.ui.theme.Grey3
 import com.st.ui.theme.Grey6
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.Shapes
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -94,10 +95,8 @@ fun BlueVoiceFullDuplexDemoContent(
             audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
             initAudioTrack(decodeParams)
-        }.onEach {
-            if(it.isNotEmpty()) {
-                sampleReceived = it[0]
-            }
+        }.filter { it.isNotEmpty() }.onEach {
+            sampleReceived = it[0]
         }.map { it.toByteArray() }
             .collect {
                 playAudio(it)
@@ -129,10 +128,12 @@ fun BlueVoiceFullDuplexDemoContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = LocalDimensions.current.paddingNormal,
+            .padding(
+                top = LocalDimensions.current.paddingNormal,
                 start = LocalDimensions.current.paddingNormal,
                 end = LocalDimensions.current.paddingNormal,
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingLarge)
     ) {
@@ -267,7 +268,10 @@ fun BlueVoiceFullDuplexDemoContent(
 
 private fun initAudioTrack(decodeParams: DecodeParams) {
 
-    Log.i("initAudioTrack", "initAudioDecoder4: ${decodeParams.samplingFreq} ${if (decodeParams.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO}")
+    Log.i(
+        "initAudioTrack",
+        "initAudioDecoder4: ${decodeParams.samplingFreq} ${if (decodeParams.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO}"
+    )
 
     val minBufSize = AudioTrack.getMinBufferSize(
         decodeParams.samplingFreq,

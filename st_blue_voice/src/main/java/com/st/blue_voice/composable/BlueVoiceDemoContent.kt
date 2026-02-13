@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,6 +58,7 @@ import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PrimaryBlue
 import com.st.ui.theme.SecondaryBlue
 import com.st.ui.theme.Shapes
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -133,9 +135,14 @@ fun BlueVoiceDemoContent(
                     currentVolume = maxVolume / 2
                 }
 
-            audioWavDump = initializeAudioDump(viewModel.getFeatureName(nodeId).replace("Feature", ""), context)
+            audioWavDump = initializeAudioDump(
+                viewModel.getFeatureName(nodeId).replace("Feature", ""),
+                context
+            )
 
             initAudioTrack(decodeParams)
+        }.filter {
+            it.isNotEmpty()
         }.onEach {
             sample = it[0]
             if (isRecording) {
@@ -149,7 +156,7 @@ fun BlueVoiceDemoContent(
 
     ComposableLifecycle { _, event ->
         when (event) {
-            Lifecycle.Event.ON_STOP ->  {
+            Lifecycle.Event.ON_STOP -> {
                 mAudioTrack?.pause()
                 mAudioTrack?.flush()
                 if (isRecording) {
@@ -163,10 +170,12 @@ fun BlueVoiceDemoContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = LocalDimensions.current.paddingNormal,
+            .padding(
+                start = LocalDimensions.current.paddingNormal,
                 end = LocalDimensions.current.paddingNormal,
                 top = LocalDimensions.current.paddingNormal,
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingLarge)
     ) {
@@ -293,7 +302,7 @@ fun BlueVoiceDemoContent(
                             inactiveTrackColor = Grey6
                         ),
                         valueRange =
-                        0f..maxVolume,
+                            0f..maxVolume,
                         thumb = {
                             SliderLabel(
                                 isEnable = !isMute,
@@ -349,7 +358,7 @@ fun BlueVoiceDemoContent(
             shadowElevation = LocalDimensions.current.elevationNormal
         ) {
 
-            WaveFormPlotView(name = "Audio In",sample = sample)
+            WaveFormPlotView(name = "Audio In", sample = sample)
         }
     }
 }
@@ -375,6 +384,12 @@ fun SliderLabel(isEnable: Boolean, label: String, minWidth: Dp, modifier: Modifi
 }
 
 private fun initAudioTrack(decodeParams: DecodeParams) {
+
+    Log.i(
+        "initAudioTrack",
+        "initAudioDecoder4: ${decodeParams.samplingFreq} ${if (decodeParams.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO}"
+    )
+
     val minBufSize = AudioTrack.getMinBufferSize(
         decodeParams.samplingFreq,
         if (decodeParams.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO,
@@ -400,7 +415,7 @@ private fun playAudio(sample: ByteArray) {
     )
 }
 
-private fun initializeAudioDump(name: String, context: Context): AudioRecorder? {
+private fun initializeAudioDump(name: String, context: Context): AudioRecorder {
     return AudioRecorder(
         context,
         name

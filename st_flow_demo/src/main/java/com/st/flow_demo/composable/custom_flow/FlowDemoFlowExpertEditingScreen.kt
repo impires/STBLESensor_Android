@@ -31,7 +31,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.R
 import com.st.flow_demo.composable.common.ClickableTest
@@ -44,10 +45,10 @@ import com.st.flow_demo.models.Flow
 import com.st.flow_demo.models.Function
 import com.st.flow_demo.models.Output
 import com.st.blue_sdk.board_catalog.models.Sensor
-import com.st.flow_demo.DestinationFlowDemoFlowSaveScreen
-import com.st.flow_demo.DestinationFlowDemoFunctionConfigurationScreen
-import com.st.flow_demo.DestinationFlowDemoOutputConfigurationScreen
-import com.st.flow_demo.DestinationFlowDemoSensorConfigurationScreen
+import com.st.flow_demo.FlowDemoFlowSaveNavKey
+import com.st.flow_demo.FlowDemoFunctionConfigurationNavKey
+import com.st.flow_demo.FlowDemoOutputConfigurationNavKey
+import com.st.flow_demo.FlowDemoSensorConfigurationNavKey
 import com.st.flow_demo.models.createNewFlow
 import com.st.ui.composables.BlueMsButton
 import com.st.ui.theme.LocalDimensions
@@ -55,7 +56,7 @@ import com.st.ui.theme.LocalDimensions
 @Composable
 fun FlowDemoFlowExpertEditingScreen(
     viewModel: FlowDemoViewModel,
-    navController: NavHostController,
+    backState: NavBackStack<NavKey>,
     paddingValues: PaddingValues
 ) {
     //we start with the Flow
@@ -90,7 +91,7 @@ fun FlowDemoFlowExpertEditingScreen(
                     bottom = LocalDimensions.current.paddingNormal
                 ),
                 fontSize = 18.sp,
-                text = flow!!.description
+                text = flow.description
             )
         } else {
             Text(
@@ -104,10 +105,10 @@ fun FlowDemoFlowExpertEditingScreen(
             flow = createNewFlow(viewModel.getBoardType().name)
         }
 
-        var functions by remember(key1 = flow!!.functions) { mutableStateOf(value = flow!!.functions) }
-        val inputs by remember(key1 = flow!!.sensors) { mutableStateOf(value = flow!!.sensors) }
-        val outputs by remember(key1 = flow!!.outputs) { mutableStateOf(value = flow!!.outputs) }
-        val flows by remember(key1 = flow!!.flows) { mutableStateOf(value = flow!!.flows) }
+        var functions by remember(key1 = flow.functions) { mutableStateOf(value = flow.functions) }
+        val inputs by remember(key1 = flow.sensors) { mutableStateOf(value = flow.sensors) }
+        val outputs by remember(key1 = flow.outputs) { mutableStateOf(value = flow.outputs) }
+        val flows by remember(key1 = flow.flows) { mutableStateOf(value = flow.flows) }
 
         Row(
             modifier = Modifier
@@ -150,13 +151,11 @@ fun FlowDemoFlowExpertEditingScreen(
             if (inputs.isNotEmpty()) {
                 FlowDemoInputsConfigurationList(sensors = inputs, onConfig = { sensor ->
                     viewModel.sensorOnConfig = sensor.copy()
-                    flow!!.sensors = inputs
-                    flow!!.functions = functions
-                    flow!!.outputs = outputs
+                    flow.sensors = inputs
+                    flow.functions = functions
+                    flow.outputs = outputs
                     viewModel.flowOnCreation = flow
-                    navController.navigate(
-                        DestinationFlowDemoSensorConfigurationScreen.route
-                    )
+                    backState.add(FlowDemoSensorConfigurationNavKey)
 
                 })
             }
@@ -213,13 +212,11 @@ fun FlowDemoFlowExpertEditingScreen(
                 functions = functions,
                 onConfig = { function ->
                     viewModel.functionOnConfig = function.copy()
-                    flow!!.sensors = inputs
-                    flow!!.functions = functions
-                    flow!!.outputs = outputs
+                    flow.sensors = inputs
+                    flow.functions = functions
+                    flow.outputs = outputs
                     viewModel.flowOnCreation = flow
-                    navController.navigate(
-                        DestinationFlowDemoFunctionConfigurationScreen.route
-                    )
+                    backState.add(FlowDemoFunctionConfigurationNavKey)
                 },
                 onDelete = {
                     val tmp = functions.toMutableList()
@@ -271,13 +268,11 @@ fun FlowDemoFlowExpertEditingScreen(
         } else {
             FlowDemoOutputsConfigurationList(outputs = outputs, onConfig = { output ->
                 viewModel.outputOnConfig = output.copy()
-                flow!!.sensors = inputs
-                flow!!.functions = functions
-                flow!!.outputs = outputs
+                flow.sensors = inputs
+                flow.functions = functions
+                flow.outputs = outputs
                 viewModel.flowOnCreation = flow
-                navController.navigate(
-                    DestinationFlowDemoOutputConfigurationScreen.route
-                )
+                backState.add(FlowDemoOutputConfigurationNavKey)
             })
 
             ClickableTest(
@@ -311,19 +306,15 @@ fun FlowDemoFlowExpertEditingScreen(
                 onClick = {
                     if (outputs.isNotEmpty()) {
                         //Save the Flow on the Disk
-                        flow?.let {
-                            flow!!.sensors = inputs
-                            flow!!.functions = functions
-                            flow!!.outputs = outputs
-                        }
-                        flow?.let {
-                            //Create new Flow Id
-                            flow!!.generateId()
-                        }
+
+                        flow.sensors = inputs
+                        flow.functions = functions
+                        flow.outputs = outputs
+
+                        //Create new Flow Id
+                        flow.generateId()
                         viewModel.flowSelected = flow
-                        navController.navigate(
-                            DestinationFlowDemoFlowSaveScreen.route
-                        )
+                        backState.add(FlowDemoFlowSaveNavKey)
 //                    } else {
 //                        Toast.makeText(context, "Flow Could not be saved", Toast.LENGTH_SHORT)
 //                            .show()
@@ -333,35 +324,36 @@ fun FlowDemoFlowExpertEditingScreen(
         }
 
         if (openAddInputDialog) {
-            flow?.let {
-                flow!!.sensors = inputs
-                flow!!.functions = functions
-                flow!!.outputs = outputs
-            }
-            viewModel.flowOnCreation = flow?.copy()
-            FlowDemoAddInputDialog(viewModel = viewModel,
+            flow.sensors = inputs
+            flow.functions = functions
+            flow.outputs = outputs
+
+            viewModel.flowOnCreation = flow.copy()
+            FlowDemoAddInputDialog(
+                viewModel = viewModel,
                 onDismissRequest = { openAddInputDialog = false })
         }
 
         if (openAddFunctionDialog) {
-            flow?.let {
-                flow!!.sensors = inputs
-                flow!!.functions = functions
-                flow!!.outputs = outputs
-            }
-            viewModel.flowOnCreation = flow?.copy()
-            FlowDemoAddFunctionDialog(viewModel = viewModel,
+
+            flow.sensors = inputs
+            flow.functions = functions
+            flow.outputs = outputs
+            viewModel.flowOnCreation = flow.copy()
+            FlowDemoAddFunctionDialog(
+                viewModel = viewModel,
                 onDismissRequest = { openAddFunctionDialog = false })
         }
 
         if (openAddOutputDialog) {
-            flow?.let {
-                flow!!.sensors = inputs
-                flow!!.functions = functions
-                flow!!.outputs = outputs
-            }
-            viewModel.flowOnCreation = flow?.copy()
-            FlowDemoAddOutputDialog(viewModel = viewModel,
+
+            flow.sensors = inputs
+            flow.functions = functions
+            flow.outputs = outputs
+
+            viewModel.flowOnCreation = flow.copy()
+            FlowDemoAddOutputDialog(
+                viewModel = viewModel,
                 onDismissRequest = { openAddOutputDialog = false })
         }
 
@@ -370,7 +362,7 @@ fun FlowDemoFlowExpertEditingScreen(
                 title = stringResource(id = context.applicationInfo.labelRes),
                 message = "Losing all changes.\r\tContinue?",
                 onDismiss = { openConfirmationDialog = false },
-                onConfirmation = { navController.popBackStack() }
+                onConfirmation = { backState.removeLastOrNull() }
             )
         }
 
@@ -422,15 +414,15 @@ fun FlowDemoInputsFlowConfigurationList(
     flows.forEach { flow ->
         FlowDemoInputFunctionOutputConfigurationListItem(
             iconId =
-            if (isAlsoExp(flow)) {
-                getOutputIconResourceByName("ic_expr")
-            } else {
-                if (flow.outputs.size > 1) {
-                    getOutputIconResourceByName("ic_multi")
+                if (isAlsoExp(flow)) {
+                    getOutputIconResourceByName("ic_expr")
                 } else {
-                    getOutputIconResourceByName(flow.outputs[0].icon)
-                }
-            },
+                    if (flow.outputs.size > 1) {
+                        getOutputIconResourceByName("ic_multi")
+                    } else {
+                        getOutputIconResourceByName(flow.outputs[0].icon)
+                    }
+                },
             label = flow.description,
             hasSettings = false
         )

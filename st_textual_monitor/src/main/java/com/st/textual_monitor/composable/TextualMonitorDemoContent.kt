@@ -6,6 +6,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,7 +45,7 @@ fun TextualMonitorDemoContent(
     val features = viewModel.getNodeFeatureList(nodeId)
 
     //Current Feature
-    var currentFeature by remember { mutableStateOf(features.first()) }
+    var currentFeature by remember { mutableStateOf(features.firstOrNull()) }
 
     var isPlaying by remember { mutableStateOf(false) }
 
@@ -67,87 +68,88 @@ fun TextualMonitorDemoContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingLarge)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextualMonitorDropDownMenu(
-                modifier = Modifier.weight(0.85f),
-                title = "Feature",
-                initialValue = currentFeature.name,
-                values = features.map { it.name },
-                onValueSelected = { eventSelected ->
-                    currentFeature = features.first { it.name == eventSelected }
+        if (currentFeature != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextualMonitorDropDownMenu(
+                    modifier = Modifier.weight(0.85f),
+                    title = "Feature",
+                    initialValue = currentFeature!!.name,
+                    values = features.map { it.name },
+                    onValueSelected = { eventSelected ->
+                        currentFeature = features.first { it.name == eventSelected }
 
-                    //Check if the PrevSelected feature is already notifying something or not
-                    val prevFeature = viewModel.feature
-                    if (prevFeature != null) {
-                        //Disable the notification of previous selected Feature
-                        if (prevFeature.name == RawControlled.NAME) {
-                            viewModel.stopRawPnPLDemo(nodeId)
-                        } else {
-                            viewModel.stopDemo(nodeId)
-                        }
-
-                        // Change the icon for starting button
-                        isPlaying = false
-                    }
-                    //viewModel.setSelectedFeature(currentFeature.feature, currentFeature.bleCharDesc)
-                })
-
-            Icon(
-                modifier = Modifier
-                    .size(size = LocalDimensions.current.iconNormal)
-                    .clickable {
-                        //isPlaying = !isPlaying
-
-                        if (viewModel.feature != null) {
-                            //the feature is already notifying
-                            if (viewModel.feature!!.name == RawControlled.NAME) {
+                        //Check if the PrevSelected feature is already notifying something or not
+                        val prevFeature = viewModel.feature
+                        if (prevFeature != null) {
+                            //Disable the notification of previous selected Feature
+                            if (prevFeature.name == RawControlled.NAME) {
                                 viewModel.stopRawPnPLDemo(nodeId)
                             } else {
                                 viewModel.stopDemo(nodeId)
                             }
 
+                            // Change the icon for starting button
                             isPlaying = false
-                        } else {
-                            if (currentFeature.name != RawControlled.NAME) {
-
-                                //set the current feature
-                                viewModel.setSelectedFeature(
-                                    currentFeature.feature,
-                                    currentFeature.bleCharDesc
-                                )
-
-                                //Start the notification
-                                viewModel.startDemo(nodeId)
-                            } else {
-                                //set the current feature
-                                viewModel.setSelectedFeature(
-                                    currentFeature.feature,
-                                    currentFeature.bleCharDesc
-                                )
-                                viewModel.startRawPnPLDemo(nodeId)
-                            }
-                            isPlaying = true
                         }
-                    }
-                    .weight(0.15f)
-                    .padding(end = LocalDimensions.current.paddingSmall),
-                painter = if (isPlaying) {
-                    painterResource(
-                        R.drawable.ic_stop
-                    )
-                } else {
-                    painterResource(
-                        R.drawable.ic_play_arrow
-                    )
-                },
-                tint = Color.Unspecified,
-                contentDescription = null
-            )
-        }
+                        //viewModel.setSelectedFeature(currentFeature.feature, currentFeature.bleCharDesc)
+                    })
+
+                Icon(
+                    modifier = Modifier
+                        .size(size = LocalDimensions.current.iconNormal)
+                        .clickable {
+                            //isPlaying = !isPlaying
+
+                            if (viewModel.feature != null) {
+                                //the feature is already notifying
+                                if (viewModel.feature!!.name == RawControlled.NAME) {
+                                    viewModel.stopRawPnPLDemo(nodeId)
+                                } else {
+                                    viewModel.stopDemo(nodeId)
+                                }
+
+                                isPlaying = false
+                            } else {
+                                if (currentFeature!!.name != RawControlled.NAME) {
+
+                                    //set the current feature
+                                    viewModel.setSelectedFeature(
+                                        currentFeature!!.feature,
+                                        currentFeature!!.bleCharDesc
+                                    )
+
+                                    //Start the notification
+                                    viewModel.startDemo(nodeId)
+                                } else {
+                                    //set the current feature
+                                    viewModel.setSelectedFeature(
+                                        currentFeature!!.feature,
+                                        currentFeature!!.bleCharDesc
+                                    )
+                                    viewModel.startRawPnPLDemo(nodeId)
+                                }
+                                isPlaying = true
+                            }
+                        }
+                        .weight(0.15f)
+                        .padding(end = LocalDimensions.current.paddingSmall),
+                    painter = if (isPlaying) {
+                        painterResource(
+                            R.drawable.ic_stop
+                        )
+                    } else {
+                        painterResource(
+                            R.drawable.ic_play_arrow
+                        )
+                    },
+                    tint = Color.Unspecified,
+                    contentDescription = null
+                )
+            }
 
 //        Text(
 //            modifier = Modifier
@@ -163,20 +165,30 @@ fun TextualMonitorDemoContent(
 //            text = dataValues
 //        )
 
-        DrawScrollableView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(2f)
-                .padding(
-                    start = LocalDimensions.current.paddingNormal,
-                    end = LocalDimensions.current.paddingNormal),
-            content = {
+            DrawScrollableView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(2f)
+                    .padding(
+                        start = LocalDimensions.current.paddingNormal,
+                        end = LocalDimensions.current.paddingNormal
+                    ),
+                content = {
+                    Text(
+                        style = MaterialTheme.typography.bodySmall,
+                        text = dataValues
+                    )
+                }
+
+            )
+        } else {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    style = MaterialTheme.typography.bodySmall,
-                    text = dataValues
+                    style = MaterialTheme.typography.titleLarge,
+                    text = "Features not found for the Node"
                 )
             }
-        )
+        }
     }
 }
 

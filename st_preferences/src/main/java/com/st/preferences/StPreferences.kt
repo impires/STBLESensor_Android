@@ -19,11 +19,15 @@ interface StPreferences {
 
     fun hasAcceptedTerms(): Boolean
 
+    fun hasAcceptedDownloadTerms(): Boolean
+
     fun getLevelProficiency(): String
 
     fun getProfileType(): String
 
     fun setTermsFlag(accepted: Boolean)
+
+    fun setDownloadTermsFlag(accepted: Boolean)
 
     fun setLevelProficiency(level: String)
 

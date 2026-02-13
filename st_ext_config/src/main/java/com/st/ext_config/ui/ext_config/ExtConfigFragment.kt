@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -36,10 +34,15 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.findNavController
-import androidx.navigation.fragment.navArgs
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
 import com.st.blue_sdk.features.extended.ext_configuration.CustomCommand
 import com.st.blue_sdk.features.extended.ext_configuration.ExtConfigCommandAnswers
+import com.st.core.ARG_NODE_ID
+import com.st.ext_config.CertRegistrationNavScreen
 import com.st.ext_config.R
 import com.st.ext_config.composable.BoardControlCard
 import com.st.ext_config.composable.BoardCustomCommandsCard
@@ -48,57 +51,60 @@ import com.st.ext_config.composable.BoardSecurityCard
 import com.st.ext_config.composable.BoardSettingsCard
 import com.st.ui.composables.ComposableLifecycle
 import com.st.ui.theme.BlueMSTheme
-import com.st.ui.theme.LocalDimensions
 import dagger.hilt.android.AndroidEntryPoint
-
+import com.st.ext_config.ExtConfigurationNavKey
+import com.st.ext_config.CertRequestNavScreen
+import com.st.ext_config.ExtConfigurationNavScreen
+import com.st.ext_config.FwDownloadNavScreen
+import com.st.ext_config.FwUpgradeNavScreen
 @AndroidEntryPoint
 class ExtConfigFragment : Fragment() {
 
     private val viewModel: ExtConfigViewModel by viewModels()
-    private val navArgs: ExtConfigFragmentArgs by navArgs()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val nodeId = navArgs.nodeId
+        val nodeId = arguments?.getString(ARG_NODE_ID)
+            ?: throw IllegalArgumentException("Missing string $ARG_NODE_ID arguments")
 
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 BlueMSTheme {
-                    ExtConfigScreen(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(all = LocalDimensions.current.paddingNormal),
-                        viewModel = viewModel,
-                        nodeId = nodeId,
-                        goToFwDownload = {
-                            findNavController().navigate(
-                                ExtConfigFragmentDirections.actionExtConfigFragmentToFwDownload(nodeId,viewModel.banksStatus)
-                            )
-                        },
-                        goToCertRequest = {
-                            findNavController().navigate(
-                                ExtConfigFragmentDirections.actionExtConfigFragmentToCertRequest(
-                                    nodeId
-                                )
-                            )
-                        },
-                        goToCertRegistration = {
-                            findNavController().navigate(
-                                ExtConfigFragmentDirections.actionExtConfigFragmentToCertRegistration(
-                                    nodeId
-                                )
-                            )
-                        }
-                    )
+                    ExtConfigurationNavScreen(viewModel= viewModel,
+                        nodeId = nodeId)
                 }
             }
         }
     }
 }
+
+@Composable
+fun ExtConfigurationNavScreen(
+    viewModel: ExtConfigViewModel,
+    nodeId: String
+) {
+    val backState = rememberNavBackStack(ExtConfigurationNavKey(nodeId))
+    NavDisplay(
+        backStack = backState,
+        onBack = { backState.removeLastOrNull() },
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator()
+        ),
+        entryProvider = entryProvider {
+            ExtConfigurationNavScreen(backState, viewModel)
+            FwDownloadNavScreen(backState)
+            FwUpgradeNavScreen()
+            CertRequestNavScreen()
+            CertRegistrationNavScreen()
+            //DownloadTermsNavScreen(backState)
+        })
+}
+
 
 const val NAME_PAD_END_LEN = 7
 

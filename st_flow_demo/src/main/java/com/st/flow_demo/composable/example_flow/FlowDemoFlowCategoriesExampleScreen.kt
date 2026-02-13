@@ -23,9 +23,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import com.st.flow_demo.DestinationFlowDemoFlowCategoryExampleScreen
-import com.st.flow_demo.DestinationFlowDemoFlowsExpertScreen
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import com.st.flow_demo.FlowDemoFlowCategoryExampleNavKey
+import com.st.flow_demo.FlowDemoFlowsExpertNavKey
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.R
 import com.st.ui.composables.BlueMsButton
@@ -35,10 +36,9 @@ import com.st.ui.theme.LocalDimensions
 @Composable
 fun FlowDemoFlowCategoriesExampleScreen(
     viewModel: FlowDemoViewModel,
-    navController: NavHostController,
+    backState: NavBackStack<NavKey>,
     paddingValues: PaddingValues
 ) {
-    //navController.popBackStack(route = "categoriesExample", inclusive = false)
     val flowsExampleList by viewModel.flowsExampleList.collectAsStateWithLifecycle()
     Column(
         modifier = Modifier.padding(paddingValues)
@@ -74,9 +74,7 @@ fun FlowDemoFlowCategoriesExampleScreen(
             if (flowsExampleList.isNotEmpty()) {
                 items(categoriesList.toList()) { category ->
                     FlowDemoCategoryListItem(category = category, onCategorySelected = {
-                        navController.navigate(
-                            DestinationFlowDemoFlowCategoryExampleScreen.route + category
-                        )
+                        backState.add(FlowDemoFlowCategoryExampleNavKey(category = category))
                     })
                 }
             }
@@ -95,9 +93,7 @@ fun FlowDemoFlowCategoriesExampleScreen(
                     BlueMsButton(
                         text = stringResource(id = R.string.expert_view),
                         onClick = {
-                            navController.navigate(
-                                DestinationFlowDemoFlowsExpertScreen.route
-                            )
+                            backState.add(FlowDemoFlowsExpertNavKey)
                         }
                     )
                 }

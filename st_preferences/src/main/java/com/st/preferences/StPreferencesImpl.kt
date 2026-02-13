@@ -56,6 +56,12 @@ class StPreferencesImpl @Inject constructor(
         return runBlocking { dataStore.data.first()[TERMS_KEY] ?: false }
     }
 
+    override fun hasAcceptedDownloadTerms(): Boolean {
+        //return runBlocking { dataStore.data.first()[DOWNLOAD_TERMS_KEY] ?: false }
+        //Tmp for waiting to receive the real License
+        return runBlocking { dataStore.data.first()[DOWNLOAD_TERMS_KEY] ?: true }
+    }
+
     override fun getLevelProficiency(): String {
         val retValue: String = runBlocking { dataStore.data.first()[LEVEL_KEY] ?: "" }
 
@@ -81,6 +87,12 @@ class StPreferencesImpl @Inject constructor(
     override fun setTermsFlag(accepted: Boolean) {
         runBlocking {
             dataStore.edit { prefs -> prefs[TERMS_KEY] = accepted }
+        }
+    }
+
+    override fun setDownloadTermsFlag(accepted: Boolean) {
+        runBlocking {
+            dataStore.edit { prefs -> prefs[DOWNLOAD_TERMS_KEY] = accepted }
         }
     }
 
@@ -285,6 +297,7 @@ class StPreferencesImpl @Inject constructor(
     companion object {
         private const val FORMATTER_KEY = "propose_fw_update_for%s_%s"
         private val TERMS_KEY = booleanPreferencesKey("terms_key")
+        private val DOWNLOAD_TERMS_KEY = booleanPreferencesKey("download_terms_key")
         private val FAVOURITE_DEVICES_KEY = stringPreferencesKey("favourite_devices_key")
         private val WELCOME_KEY = booleanPreferencesKey("welcome_key")
         private val PROFILE_KEY = booleanPreferencesKey("profile_key")
@@ -295,5 +308,6 @@ class StPreferencesImpl @Inject constructor(
         private val SERVER_FORCED_KEY = booleanPreferencesKey("server_forced_key")
         private val MQTT_SERVER_KEY = stringPreferencesKey("mqtt_server_key")
         private val BOARD_CATALOG_STATUS = stringPreferencesKey("boardCatalogStatus")
+
     }
 }

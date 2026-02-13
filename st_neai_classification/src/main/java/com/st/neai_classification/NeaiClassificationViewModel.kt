@@ -7,31 +7,33 @@
  */
 package com.st.neai_classification
 
-import android.content.Context
-import androidx.core.content.ContentProviderCompat.requireContext
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.preference.PreferenceManager
 import com.st.blue_sdk.BlueManager
 import com.st.blue_sdk.features.Feature
-import com.st.blue_sdk.features.extended.neai_anomaly_detection.NeaiAnomalyDetectionInfo
 import com.st.blue_sdk.features.extended.neai_class_classification.NeaiClassClassification
 import com.st.blue_sdk.features.extended.neai_class_classification.NeaiClassClassificationInfo
 import com.st.blue_sdk.features.extended.neai_class_classification.request.WriteStartClassificationCommand
 import com.st.blue_sdk.features.extended.neai_class_classification.request.WriteStopClassificationCommand
+import com.st.neai_classification.model.NeaiCustomClassName
+import com.st.preferences.StPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
+
+
+const val USER_CUSTOM_NEAI_CLASS_NAMES_KEY = "user_custom_nei_class_names"
 
 @HiltViewModel
 class NeaiClassificationViewModel @Inject constructor(
     private val blueManager: BlueManager,
+    private val stPreferences: StPreferences,
     private val coroutineScope: CoroutineScope
 ) :
     ViewModel() {
@@ -61,9 +63,7 @@ class NeaiClassificationViewModel @Inject constructor(
         }
     }
 
-
-    var customNames = ArrayList<String>()
-    var useDefaultNames: Boolean=true
+    var neaiCustomClassName = NeaiCustomClassName()
 
     fun writeStartClassificationCommand(nodeId: String) {
         blueManager.nodeFeatures(nodeId = nodeId).find {
@@ -80,25 +80,36 @@ class NeaiClassificationViewModel @Inject constructor(
         }
     }
 
-    fun readCustomNames(context: Context) {
-        val pref = PreferenceManager.getDefaultSharedPreferences(context)
-        customNames.clear()
-        customNames.add(pref.getString("neai_classification_custom_class_1","CL 1") ?: "CL 1")
-        customNames.add(pref.getString("neai_classification_custom_class_2","CL 2") ?: "CL 2")
-        customNames.add(pref.getString("neai_classification_custom_class_3","CL 3") ?: "CL 3")
-        customNames.add(pref.getString("neai_classification_custom_class_4","CL 4") ?: "CL 4")
-        customNames.add(pref.getString("neai_classification_custom_class_5","CL 5") ?: "CL 5")
-        customNames.add(pref.getString("neai_classification_custom_class_6","CL 6") ?: "CL 6")
-        customNames.add(pref.getString("neai_classification_custom_class_7","CL 7") ?: "CL 7")
-        customNames.add(pref.getString("neai_classification_custom_class_8","CL 8") ?: "CL 8")
+    fun readCustomNames() {
+        val jsonDec = Json {
+            encodeDefaults = true
+            ignoreUnknownKeys = true
+        }
 
-        useDefaultNames = pref.getBoolean("neai_classification_default_names",true)
+        val serializedString =
+            stPreferences.getCustomStringFromKey(USER_CUSTOM_NEAI_CLASS_NAMES_KEY)
 
-        if(useDefaultNames) {
-            customNames.forEachIndexed { index, _ ->
-                customNames[index] = "CL ${index+1}"
+        serializedString?.let { neaiCustomClassNameString ->
+            try {
+                neaiCustomClassName = jsonDec.decodeFromString<NeaiCustomClassName>(
+                    neaiCustomClassNameString
+                )
+            } catch (e: Exception) {
+                Log.i("NeaiClassificationViewModel", e.stackTraceToString())
             }
         }
+    }
+
+    fun saveCustomNames() {
+        val jsonEnc = Json { encodeDefaults = true }
+
+        val serializedString =
+            jsonEnc.encodeToString(neaiCustomClassName)
+
+        stPreferences.setCustomStringForKey(
+            USER_CUSTOM_NEAI_CLASS_NAMES_KEY,
+            serializedString
+        )
     }
 
 

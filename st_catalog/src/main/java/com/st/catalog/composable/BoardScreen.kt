@@ -8,9 +8,6 @@
 package com.st.catalog.composable
 
 import android.content.Intent
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,7 +36,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.st.blue_sdk.board_catalog.models.BoardDescription
 import com.st.blue_sdk.board_catalog.models.BoardFirmware
 import com.st.blue_sdk.board_catalog.models.FirmwareMaturity
@@ -57,17 +53,17 @@ import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PrimaryBlue
 import com.st.ui.theme.PrimaryYellow
 import androidx.core.net.toUri
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import com.st.catalog.FirmwaresListNavKey
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun BoardScreen(
     modifier: Modifier = Modifier,
-    navController: NavController,
+    backStack: NavBackStack<NavKey>,
     boardId: String,
     boardPart: String,
-    viewModel: CatalogViewModel,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope
+    viewModel: CatalogViewModel
 ) {
     ComposableLifecycle { _, event ->
         when (event) {
@@ -120,17 +116,13 @@ fun BoardScreen(
             demos = allDemo.toList(),
             onDemoSelected = { demoName ->
                 viewModel.setSelectedDemo(demoName)
-                navController.navigate(
-                    "detail/$boardPart/firmwares"
-                )
+                backStack.add(FirmwaresListNavKey(boardPart = boardPart))
             },
             goToFw = {
-                navController.navigate(
-                    "detail/$boardPart/firmwares"
-                )
+                backStack.add(FirmwaresListNavKey(boardPart = boardPart))
             },
             onBack = {
-                navController.popBackStack()
+                backStack.removeLastOrNull()
             },
             goToDs = {
                 Intent(Intent.ACTION_VIEW).also { intent ->
@@ -156,9 +148,7 @@ fun BoardScreen(
                     intent.data = uri.toUri()
                     context.startActivity(intent)
                 }
-            },
-            sharedTransitionScope = sharedTransitionScope,
-            animatedContentScope = animatedContentScope
+            }
         )
     } else {
         boardDescOrNull?.let { boardDesc ->
@@ -181,7 +171,7 @@ fun BoardScreen(
                 demos = emptyList(),
                 showGoToFw = false,
                 onBack = {
-                    navController.popBackStack()
+                    backStack.removeLastOrNull()
                 },
                 goToDs = {
                     Intent(Intent.ACTION_VIEW).also { intent ->
@@ -220,15 +210,12 @@ fun BoardScreen(
                         intent.data = uri.toUri()
                         context.startActivity(intent)
                     }
-                },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedContentScope = animatedContentScope
+                }
             )
         }
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun BoardScreen(
     modifier: Modifier = Modifier,
@@ -241,9 +228,7 @@ fun BoardScreen(
     goToDs: () -> Unit = { /** NOOP **/ },
     onDemoSelected: (String) -> Unit = { /** NOOP **/ },
     onOrderClick: () -> Unit = { /** NOOP **/ },
-    onWikiClick: () -> Unit = { /** NOOP **/ },
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope
+    onWikiClick: () -> Unit = { /** NOOP **/ }
 ) {
     Column(modifier = modifier.fillMaxSize()) {
 
@@ -267,9 +252,7 @@ fun BoardScreen(
                     boardDescOrNull = boardDescOrNull,
                     showGoToFw = showGoToFw,
                     goToFw = goToFw,
-                    goToDs = goToDs,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = animatedContentScope
+                    goToDs = goToDs
                 )
             }
 

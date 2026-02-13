@@ -24,10 +24,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import com.st.flow_demo.DestinationFlowDemoFlowDetailScreen
-import com.st.flow_demo.DestinationFlowDemoFlowUploadScreen
-import com.st.flow_demo.DestinationFlowDemoFlowsExpertScreen
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import com.st.flow_demo.FlowDemoFlowDetailNavKey
+import com.st.flow_demo.FlowDemoFlowUploadNavKey
+import com.st.flow_demo.FlowDemoFlowsExpertNavKey
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.R
 import com.st.ui.composables.BlueMsButton
@@ -38,11 +39,11 @@ import com.st.ui.theme.LocalDimensions
 fun FlowDemoFlowCategoryExampleScreen(
     viewModel: FlowDemoViewModel,
     category: String,
-    navController: NavHostController,
+    backState: NavBackStack<NavKey>,
     paddingValues: PaddingValues
 ) {
     BackHandler {
-        navController.popBackStack()
+        backState.removeLastOrNull()
     }
 
     val flowsExampleList by viewModel.flowsExampleList.collectAsStateWithLifecycle()
@@ -76,9 +77,7 @@ fun FlowDemoFlowCategoryExampleScreen(
                 items(appsExampleList.toList()) { flow ->
                     FlowDemoFlowListItem(flow, onFlowSelected = {
                         viewModel.flowSelected = flow
-                        navController.navigate(
-                            DestinationFlowDemoFlowDetailScreen.route
-                        )
+                        backState.add(FlowDemoFlowDetailNavKey)
                     }, onPlayFlow = {
                         if ((flow.expression != null) && (flow.statements.isNotEmpty())) {
                             viewModel.flowSelected = flow.statements[0]
@@ -90,9 +89,7 @@ fun FlowDemoFlowCategoryExampleScreen(
                             viewModel.expressionSelected = null
                         }
                         viewModel.reportExampleAppAnalytics(viewModel.flowSelected!!)
-                        navController.navigate(
-                            DestinationFlowDemoFlowUploadScreen.route
-                        )
+                        backState.add(FlowDemoFlowUploadNavKey)
                     })
                 }
             }
@@ -111,9 +108,7 @@ fun FlowDemoFlowCategoryExampleScreen(
                     BlueMsButton(
                         text = stringResource(id = R.string.expert_view),
                         onClick = {
-                            navController.navigate(
-                                DestinationFlowDemoFlowsExpertScreen.route
-                            )
+                            backState.add(FlowDemoFlowsExpertNavKey)
                         }
                     )
                 }

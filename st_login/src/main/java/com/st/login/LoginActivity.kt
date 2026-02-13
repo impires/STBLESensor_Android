@@ -28,7 +28,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.Observer
-import com.bumptech.glide.Glide
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import com.st.login.LoginActivityViewModel.LoginStatus
@@ -45,7 +44,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     //private val Auth_config_token = "TokenCollection"
-    private val redirectUri: Uri = Uri.parse("stblesensor://callback")
+    private val redirectUri: Uri = "stblesensor://callback".toUri()
     private lateinit var pbLoadingLogin: ProgressBar
     private lateinit var webView: WebView
     private lateinit var loginLayout: NestedScrollView
@@ -230,15 +229,15 @@ class LoginActivity : AppCompatActivity() {
         textType: Int,
         logoProvider: Int
     ) {
-        if (provider == LoginProviderFactory.LoginProviderType.COGNITO) {
+        //if (provider == LoginProviderFactory.LoginProviderType.COGNITO) {
             ivLoginLogo.setImageResource(imageType)
-        } else {
-            Glide
-                .with(applicationContext)
-                .load(imageType)
-                .fitCenter()
-                .into(ivLoginLogo)
-        }
+//        } else {
+//            Glide
+//                .with(applicationContext)
+//                .load(imageType)
+//                .fitCenter()
+//                .into(ivLoginLogo)
+//        }
         btnLogin.text = resources.getString(textType)
         btnLogin.icon = ContextCompat.getDrawable(applicationContext, logoProvider)
     }

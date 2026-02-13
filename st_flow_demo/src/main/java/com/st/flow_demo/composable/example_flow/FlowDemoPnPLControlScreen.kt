@@ -25,7 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
-import androidx.navigation.NavHostController
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.ui.composables.ComposableLifecycle
 import com.st.pnpl.composable.Component
@@ -35,7 +34,6 @@ import com.st.ui.theme.LocalDimensions
 @Composable
 fun FlowDemoPnPLControlScreen(
     viewModel: FlowDemoViewModel,
-    navController: NavHostController,
     paddingValues: PaddingValues
 ) {
 
@@ -110,10 +108,15 @@ fun FlowDemoPnPLControlScreen(
                         )
                     }
 
-                    if(contents.isEmpty()) {
+                    if (contents.isEmpty()) {
                         item {
                             Text(
-                                modifier = Modifier.fillMaxWidth().padding(top = LocalDimensions.current.paddingLarge,bottom = LocalDimensions.current.paddingLarge),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        top = LocalDimensions.current.paddingLarge,
+                                        bottom = LocalDimensions.current.paddingLarge
+                                    ),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp,
                                 textAlign = TextAlign.Center,

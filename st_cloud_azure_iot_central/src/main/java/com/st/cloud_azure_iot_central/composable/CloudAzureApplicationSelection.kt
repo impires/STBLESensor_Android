@@ -17,22 +17,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import com.st.cloud_azure_iot_central.ApplicationDetailsNavKey
 import com.st.cloud_azure_iot_central.CloudAzureIotCentralViewModel
-import com.st.cloud_azure_iot_central.CloudAzureNavigationApplicationDetails
+import com.st.cloud_azure_iot_central.DeviceSelectionNavKey
 import com.st.ui.composables.ComposableLifecycle
 import com.st.ui.theme.Grey6
 import com.st.ui.theme.LocalDimensions
@@ -41,7 +36,7 @@ import com.st.ui.theme.LocalDimensions
 fun CloudAzureApplicationSelection(
     modifier: Modifier = Modifier,
     viewModel: CloudAzureIotCentralViewModel,
-    navController: NavHostController
+    backState: NavBackStack<NavKey>
 ) {
     ComposableLifecycle { _, event ->
         when (event) {
@@ -54,8 +49,6 @@ fun CloudAzureApplicationSelection(
     val isOneCloudAppConfig = viewModel.isOneCloudAppConfig.value
 
     val isCloudAppSelected by viewModel.selectedCloudAppNum.collectAsStateWithLifecycle()
-
-    var oneCloudSelected by rememberSaveable { mutableStateOf(false) }
 
     val haptic = LocalHapticFeedback.current
 
@@ -80,26 +73,6 @@ fun CloudAzureApplicationSelection(
             text = if (isOneCloudAppConfig) "Select one of the following application" else "Configure one of the following Cloud applications"
         )
 
-        if (oneCloudSelected) {
-            Text(
-                modifier = Modifier.padding(LocalDimensions.current.paddingNormal),
-                style = MaterialTheme.typography.bodyLarge,
-                color = Grey6,
-                textAlign = TextAlign.Center,
-                text = buildAnnotatedString {
-                    append("Click on  '")
-                    withStyle(
-                        style = SpanStyle(
-                            fontWeight = FontWeight.Bold
-                        )
-                    ) {
-                        append("Dev Config")
-                    }
-                    append("'")
-                }
-            )
-        }
-
         Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingNormal))
 
         LazyColumn(
@@ -118,19 +91,17 @@ fun CloudAzureApplicationSelection(
                         isSelected = index == isCloudAppSelected,
                         //isSelected = isCloudAppSelected != viewModel.DEVICE_NOT_SELECTED,
                         onCloudAppSelection = {
-                            oneCloudSelected = true
+                            backState.add(DeviceSelectionNavKey)
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.setSelectedCloudApp(cloudApp.appIndex)
                         },
                         onCloudAppEditing = {
-                            navController.navigate(
-                                CloudAzureNavigationApplicationDetails.route + cloudApp.appIndex.toString()
-                            )
+                            backState.add(ApplicationDetailsNavKey(cloudApp.appIndex))
                         })
                 }
             }
 
-            item{
+            item {
                 Spacer(
                     Modifier.windowInsetsBottomHeight(
                         WindowInsets.systemBars

@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -40,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,7 +60,9 @@ import com.st.blue_sdk.features.extended.neai_class_classification.StateType
 import com.st.neai_classification.NeaiClassificationViewModel
 import com.st.neai_classification.R
 import com.st.ui.composables.BlueMsButton
+import com.st.ui.composables.BooleanProperty
 import com.st.ui.composables.ComposableLifecycle
+import com.st.ui.composables.StringProperty
 import com.st.ui.theme.Grey3
 import com.st.ui.theme.Grey5
 import com.st.ui.theme.Grey6
@@ -78,7 +83,11 @@ fun NeaiClassificationDemoContent(
     ComposableLifecycle { _, event ->
         when (event) {
             Lifecycle.Event.ON_START -> {
-                viewModel.readCustomNames(context)
+                viewModel.readCustomNames()
+            }
+
+            Lifecycle.Event.ON_PAUSE -> {
+                viewModel.saveCustomNames()
             }
 
             else -> Unit
@@ -123,6 +132,10 @@ fun NeaiClassificationDemoContent(
     }
 
     var showAllClassesSwitch by remember { mutableStateOf(false) }
+
+    var showCustomNameSettingDialog by remember {
+        mutableStateOf(false)
+    }
 
     Column(
         modifier = modifier
@@ -228,6 +241,20 @@ fun NeaiClassificationDemoContent(
                         text = "Resource busy"
                     )
                 }
+
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showCustomNameSettingDialog = true
+                        },
+                    textAlign = TextAlign.Start,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textDecoration = TextDecoration.Underline,
+                    color = PrimaryBlue,
+                    text = "Change default Classes name"
+                )
+
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -480,6 +507,78 @@ fun NeaiClassificationDemoContent(
         }
     }
 
+    if (showCustomNameSettingDialog) {
+        var useCustomNames by remember { mutableStateOf(value = viewModel.neaiCustomClassName.useCustomNames) }
+        AlertDialog(
+            onDismissRequest = { showCustomNameSettingDialog = false },
+            confirmButton = {
+                BlueMsButton(
+                    onClick = {
+                        showCustomNameSettingDialog = false
+                    },
+                    text = "OK"
+                )
+            },
+            title = {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    text = "Classes Name"
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingNormal),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    BooleanProperty(
+                        value = Pair(
+                            viewModel.neaiCustomClassName.useCustomNames,
+                            System.currentTimeMillis()
+                        ),
+                        label = "Default Names",
+                        enabled = true,
+                        onValueChange = {
+                            viewModel.neaiCustomClassName.useCustomNames = it
+                            useCustomNames = it
+                        }
+                    )
+
+                    AnimatedVisibility(
+                        visible = !useCustomNames,
+                        enter = expandVertically(),
+                        exit = shrinkVertically()
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingSmall),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            viewModel.neaiCustomClassName.customNames.forEachIndexed { index, name ->
+                                StringProperty(
+                                    label = "CL ${index + 1}",
+                                    value = name,
+                                    enabled = true,
+                                    commandBehavior = true,
+                                    minLength = 1,
+                                    maxLength = 20,
+                                    onValueChange = { value, isValid ->
+                                        if (isValid) {
+                                            viewModel.neaiCustomClassName.customNames[index] =
+                                                value as String
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+
     if (askIfForceStartCommand) {
         AlertDialog(
             onDismissRequest = { askIfForceStartCommand = false },
@@ -597,13 +696,13 @@ private fun setMostProbClass(
 ): String {
     val mostProb = (mostProbClass ?: 0).toInt()
     return if (mostProb != 0) {
-        if (viewModel.useDefaultNames) {
+        if (viewModel.neaiCustomClassName.useCustomNames) {
             "$mostProbClass"
         } else {
-            if ((mostProb < 1) || (mostProb > viewModel.customNames.size)) {
+            if ((mostProb < 1) || (mostProb > viewModel.neaiCustomClassName.customNames.size)) {
                 "UNKNOWN"
             } else {
-                viewModel.customNames[mostProb - 1]
+                viewModel.neaiCustomClassName.customNames[mostProb - 1]
             }
         }
     } else {
@@ -612,10 +711,10 @@ private fun setMostProbClass(
 }
 
 private fun setClassName(classNumber: Int, viewModel: NeaiClassificationViewModel): String {
-    return if (viewModel.useDefaultNames) {
+    return if (viewModel.neaiCustomClassName.useCustomNames) {
         "CL_${classNumber}"
     } else {
-        viewModel.customNames[classNumber - 1]
+        viewModel.neaiCustomClassName.customNames[classNumber - 1]
     }
 }
 

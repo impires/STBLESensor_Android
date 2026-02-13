@@ -15,23 +15,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.ui.composables.BlueMsButton
 import com.st.ui.composables.StTopBar
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.Grey6
-import com.st.user_profiling.LevelProficiencyFragmentDirections
 import com.st.user_profiling.ProfileViewModel
 import com.st.user_profiling.R
 import com.st.user_profiling.levels
 import com.st.user_profiling.model.LevelProficiency
 import com.st.user_profiling.model.RadioButtonItem
 
+
 @Composable
 fun LevelProficiencyScreen(
     viewModel: ProfileViewModel,
-    navController: NavController
+    backState: NavBackStack<NavKey>
 ) {
     LevelProficiencyScreen(
         levels = levels,
@@ -40,9 +41,7 @@ fun LevelProficiencyScreen(
             viewModel.levelSelected.value = selectedLevel
         },
         goToNext = {
-            val directions =
-                LevelProficiencyFragmentDirections.actionLevelProficiencyFragmentToProfileSelectionFragment()
-            navController.navigate(directions = directions)
+            backState.add(UserProfileNavKey)
         }
     )
 }
@@ -56,13 +55,18 @@ fun LevelProficiencyScreen(
     onLevelSelected: (LevelProficiency) -> Unit = { /** NOOP **/ },
     goToNext: () -> Unit = { /** NOOP **/ }
 ) {
-    Scaffold(modifier = modifier, topBar = {
-        StTopBar(
-            title = stringResource(id = R.string.st_userProfiling_levelProficiency_titleScreen)
-        )
-    }) { contentPadding ->
+    Scaffold(
+        modifier = modifier,
+        contentWindowInsets = WindowInsets.statusBars,
+        topBar = {
+            StTopBar(
+                title = stringResource(id = R.string.st_userProfiling_levelProficiency_titleScreen)
+            )
+        }) { contentPadding ->
         LevelProficiencyContentScreen(
-            modifier = Modifier.padding(paddingValues = contentPadding),
+            modifier = Modifier
+                .consumeWindowInsets(contentPadding)
+                .padding(paddingValues = contentPadding),
             levels = levels,
             levelSelected = levelSelected,
             onLevelSelected = onLevelSelected,
@@ -127,6 +131,8 @@ fun LevelProficiencyContentScreen(
                 onClick = goToNext
             )
         }
+
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
 }
 

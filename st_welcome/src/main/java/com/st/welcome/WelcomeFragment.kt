@@ -11,9 +11,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
@@ -35,12 +32,10 @@ class WelcomeFragment : Fragment() {
             )
             setContent {
                 BlueMSTheme {
-                    Box(Modifier.safeDrawingPadding()) {
-                        WelcomeScreen(
-                            welcomePages = StWelcomeConfig.welcomePages,
-                            onSkip = StWelcomeConfig.onSkip
-                        )
-                    }
+                    WelcomeScreen(
+                        welcomePages = StWelcomeConfig.welcomePages,
+                        onSkip = StWelcomeConfig.onSkip
+                    )
                 }
             }
         }

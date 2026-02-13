@@ -19,6 +19,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,7 +47,7 @@ fun UpdateAvailableDialog(
     onInstall: () -> Unit = { /** NOOP **/ },
     dismissUpdateDialog: (Boolean) -> Unit = { /** NOOP **/ }
 ) {
-    var showDialog by remember { mutableStateOf(value = show) }
+    var showDialog by remember(key1 = show) { mutableStateOf(show) }
     var checked by remember { mutableStateOf(value = false) }
     if (showDialog) {
         val onDismissRequest = {

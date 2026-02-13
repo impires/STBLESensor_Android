@@ -14,7 +14,8 @@ import android.util.Log
 import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavDestination
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.blue_sdk.BlueManager
 import com.st.blue_sdk.board_catalog.models.DtmiModel
 import com.st.blue_sdk.models.Boards
@@ -23,6 +24,8 @@ import com.st.blue_sdk.services.audio.AudioService
 import com.st.blue_sdk.services.debug.DebugMessage
 import com.st.core.api.ApplicationAnalyticsService
 import com.st.demo_showcase.models.Demo
+import com.st.demo_showcase.ui.demo_list.DemoListNavKey
+import com.st.demo_showcase.ui.demo_list.PnplNavKey
 import com.st.demo_showcase.utils.DTMIModelLoadedStatus
 import com.st.demo_showcase.utils.isBetaRequired
 import com.st.login.api.StLoginManager
@@ -99,27 +102,41 @@ class DemoShowCaseViewModel @Inject constructor(
 
     private var activityResultRegistryOwner: ActivityResultRegistryOwner? = null
 
-    private val destinationWithoutSettingsMenu = listOf(
-        "FwUpgrade",
-        "PnplFragment",
-        "DebugConsole",
-        "LogSettings"
-    )
-
     var onBack: () -> Unit = { /** NOOP**/ }
 
-    fun onDestinationChanged(
-        prevDestination: NavDestination?,
-        destination: NavDestination
-    ) {
-        val isDemoList = destination.label == "DemoList"
-        val isDemoHome = prevDestination?.label == "DemoList"
+    private val _isDemoList = MutableStateFlow(true)
+    val isDemoList = _isDemoList.asStateFlow()
+
+    var hasAcceptedDownloadTerms: Boolean = false
+
+    fun onNavKeyChange(backState: NavBackStack<NavKey>) {
+
+        val isDemoList: Boolean
+        val isDemoHome: Boolean
+
+        val currentScreen = backState.last()
+
+        if (currentScreen == DemoListNavKey) {
+            //We are in the DemoList
+            isDemoList = true
+            isDemoHome = false
+        } else {
+            //We are in one Demo
+            isDemoList = false
+            isDemoHome = true
+        }
+
+        _isDemoList.value = isDemoList
+
+//        _showSettingsMenu.value =
+//            isDemoList || (
+//                    isDemoHome && destinationWithoutSettingsMenu.contains(destination.label)
+//                        .not()
+//                    )
 
         _showSettingsMenu.value =
             isDemoList || (
-                    isDemoHome && destinationWithoutSettingsMenu.contains(destination.label)
-                        .not()
-                    )
+                    currentScreen !is PnplNavKey)
 
         //Start Demo
         if (isDemoHome) {
@@ -134,12 +151,16 @@ class DemoShowCaseViewModel @Inject constructor(
             }
         }
 
+        if (isDemoHome) {
+            _hasPnplSettings.value = _currentDemo.value?.let {
+                val currentDemoName = it.displayName.lowercase().replace(" ", "_")
 
-        _hasPnplSettings.value = _currentDemo.value?.let {
-            val currentDemoName = it.displayName.lowercase().replace(" ", "_")
+                _modelUpdates.value?.extractComponents(demoName = currentDemoName).isNullOrEmpty()
+                    .not()
+            } == true
+        }
 
-            _modelUpdates.value?.extractComponents(demoName = currentDemoName).isNullOrEmpty().not()
-        } == true
+
     }
 
     fun setCurrentDemo(demo: Demo?) {
@@ -225,7 +246,10 @@ class DemoShowCaseViewModel @Inject constructor(
                         Log.i("DemoShowCaseViewModel", "try to Rename back Demo: ${renameDemo.new}")
                         match?.let { demo ->
                             demo.displayName = renameDemo.old
-                            Log.i("DemoShowCaseViewModel", "Renamed back Demo: ${renameDemo.old} -> ")
+                            Log.i(
+                                "DemoShowCaseViewModel",
+                                "Renamed back Demo: ${renameDemo.old} -> "
+                            )
                         }
                     }
                 }
@@ -252,6 +276,14 @@ class DemoShowCaseViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun checkIfDownloadTermsIsAccepted() {
+        hasAcceptedDownloadTerms = stPreferences.hasAcceptedDownloadTerms()
+    }
+
+    fun setDownloadTermsFlag(accepted: Boolean) {
+        stPreferences.setDownloadTermsFlag(accepted)
     }
 
     fun setDtmiModel(nodeId: String, fileUri: Uri) {
@@ -282,6 +314,8 @@ class DemoShowCaseViewModel @Inject constructor(
     }
 
     private fun checkFwUpdate() {
+
+        Log.i("Pezz","checkFwUpdate")
         viewModelScope.launch {
             _device.value?.let { currentFirmwareInfo ->
                 val updateFirmware = currentFirmwareInfo.fwUpdate
@@ -363,9 +397,10 @@ class DemoShowCaseViewModel @Inject constructor(
         }
 
         //We need to search if there are demos that must be filtered by board type
-        val boardsDependentDemos =buildDemoList.filter { it.isBoardTypeDependent }
-        if(boardsDependentDemos.isNotEmpty()) {
-            val demosToRemove = boardsDependentDemos.filter { it.boardTypesAllowed.contains(boardType).not()}
+        val boardsDependentDemos = buildDemoList.filter { it.isBoardTypeDependent }
+        if (boardsDependentDemos.isNotEmpty()) {
+            val demosToRemove =
+                boardsDependentDemos.filter { it.boardTypesAllowed.contains(boardType).not() }
             buildDemoList.removeAll(demosToRemove)
         }
 
@@ -416,17 +451,17 @@ class DemoShowCaseViewModel @Inject constructor(
         }
         if (_device.value != null) {
             //Add Demo Flow if the board is the Old SensorTile.box without a Fw db entry
-            if((boardType== Boards.Model.SENSOR_TILE_BOX) && (_device.value!!.catalogInfo==null)) {
-               if(buildDemoList.contains(Demo.Flow).not()) {
-                   buildDemoList.add(Demo.Flow)
-               }
+            if ((boardType == Boards.Model.SENSOR_TILE_BOX) && (_device.value!!.catalogInfo == null)) {
+                if (buildDemoList.contains(Demo.Flow).not()) {
+                    buildDemoList.add(Demo.Flow)
+                }
             }
         }
 
         //Add the FoTA only to WB/WBA boards
         if ((familyType != Boards.Family.WB_FAMILY) && (familyType != Boards.Family.WBA_FAMILY) && (boardType != Boards.Model.WB0X_NUCLEO_BOARD)) {
             buildDemoList.remove(Demo.WbsOtaFUOTA)
-        } 
+        }
 
         //Remove applications in Beta
         if (!stPreferences.isBetaApplication()) {
@@ -486,6 +521,12 @@ class DemoShowCaseViewModel @Inject constructor(
         }
     }
 
+    fun setExpert(level: LevelProficiency) {
+        viewModelScope.launch {
+            _isExpert.emit(level == LevelProficiency.EXPERT)
+        }
+    }
+
     fun initIsBeta() {
         viewModelScope.launch {
             _isBeta.emit(stPreferences.isBetaApplication())
@@ -516,7 +557,7 @@ class DemoShowCaseViewModel @Inject constructor(
     }
 
     fun exitFromDemoShowCase(nodeId: String) {
-        disconnect(nodeId)
+        //disconnect(nodeId)
         onBack()
     }
 }

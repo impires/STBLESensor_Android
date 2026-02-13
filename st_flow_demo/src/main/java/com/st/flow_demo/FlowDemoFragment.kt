@@ -39,8 +39,6 @@ class FlowDemoFragment : Fragment() {
         val nodeId = arguments?.getString(ARG_NODE_ID)
             ?: throw IllegalArgumentException("Missing string $ARG_NODE_ID arguments")
 
-//        viewModel.onBack = {findNavController().popBackStack()}
-
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {

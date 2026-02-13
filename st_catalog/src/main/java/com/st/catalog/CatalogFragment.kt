@@ -11,29 +11,19 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.findNavController
-import androidx.navigation.navArgument
-import com.st.catalog.composable.BoardScreen
-import com.st.catalog.composable.CatalogList
-import com.st.catalog.composable.FirmwareList
-import com.st.core.ARG_BOARD_ID
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import com.st.ui.theme.BlueMSTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -47,91 +37,50 @@ class CatalogFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val directNodeId = arguments?.getString(ARG_BOARD_ID)
-
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 BlueMSTheme {
-                    CatalogScreen(nodeId = directNodeId,viewModel = viewModel) {
-                        findNavController().popBackStack()
-                    }
+                    CatalogScreen(viewModel = viewModel)
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CatalogScreen(
-    nodeId: String? = null,
     viewModel: CatalogViewModel,
     onCloseCatalog: () -> Unit = { /** NOOP**/ }
 ) {
-    var jumpDirectFirstTime by remember { mutableStateOf(true) }
+    val backState = rememberNavBackStack(CatalogListNavKey)
 
-    val navController = rememberNavController()
-    SharedTransitionLayout {
-        NavHost(
-            navController = navController,
-            startDestination = "list"
-        ) {
-            composable(route = "list") {
-                if (jumpDirectFirstTime) {
-                    jumpDirectFirstTime = false
-                    CatalogList(
-                        nodeId = nodeId,
-                        navController = navController,
-                        viewModel = viewModel,
-                        onBack = onCloseCatalog,
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@composable
-                    )
-                } else {
-                    CatalogList(
-                        navController = navController,
-                        viewModel = viewModel,
-                        onBack = onCloseCatalog,
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@composable
-                    )
-                }
-            }
-
-            composable(
-                route = "detail/{boardPart}",
-                arguments = listOf(navArgument(name = "boardPart") { type = NavType.StringType })
-            ) { backStackEntry ->
-                backStackEntry.arguments?.getString("boardPart")?.let { boardPart ->
-                    val boardId =
-                        viewModel.boardsDescription.value.first { it.boardPart == boardPart }.bleDevId
-                    BoardScreen(
-                        boardId = boardId,
-                        boardPart = boardPart,
-                        navController = navController,
-                        viewModel = viewModel,
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@composable
-                    )
-                }
-            }
-
-            composable(
-                route = "detail/{boardPart}/firmwares",
-                arguments = listOf(navArgument(name = "boardPart") { type = NavType.StringType })
-            ) { backStackEntry ->
-                backStackEntry.arguments?.getString("boardPart")?.let { boardPart ->
-
-                    FirmwareList(
-                        boardPart = boardPart,
-                        navController = navController,
-                        viewModel = viewModel
-                    )
-                }
-            }
+    NavDisplay(
+        backStack = backState,
+        onBack = { backState.removeLastOrNull() },
+        entryProvider = entryProvider {
+            CatalogListScreen(backState, viewModel, onCloseCatalog)
+            BoardScreen(viewModel, backState)
+            FirmwaresListScreen(backState, viewModel)
+        },
+        transitionSpec = {
+            // Slide in from right when navigating forward
+            slideInHorizontally(initialOffsetX = { it }) togetherWith
+                    slideOutHorizontally(
+                        targetOffsetX = { -it })
+        },
+        popTransitionSpec = {
+            // Slide in from left when navigating back
+            slideInHorizontally(
+                initialOffsetX = { -it }) togetherWith
+                    slideOutHorizontally(targetOffsetX = { it })
+        },
+        predictivePopTransitionSpec = {
+            // Slide in from left when navigating back
+            slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                    slideOutHorizontally(targetOffsetX = { it })
         }
-    }
+    )
 }
 
 /** ----------------------- PREVIEW --------------------------------------- **/

@@ -21,7 +21,6 @@ import androidx.compose.ui.window.Dialog
 import com.st.blue_sdk.models.ConnectionStatus
 import com.st.blue_sdk.models.NodeState
 import com.st.bluems.R
-import com.st.ui.theme.BlueMSTheme
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.Grey6

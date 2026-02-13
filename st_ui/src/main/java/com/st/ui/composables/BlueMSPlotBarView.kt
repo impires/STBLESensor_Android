@@ -226,3 +226,71 @@ fun BlueMSPlotBarView(
         }
     }
 }
+
+@Composable
+fun BlueMSSimplePlotBarView(
+    modifier: Modifier = Modifier,
+    historyValues: List<Float>,
+    minValue: Float,
+    maxValue: Float,
+    showXAxis: Boolean = true,
+    showYAxis: Boolean = true,
+    animateIn: Boolean = true
+) {
+    val modelProducer = remember { CartesianChartModelProducer() }
+
+    val positiveColumn =
+        rememberLineComponent(
+            fill = fill(PrimaryPink),
+            thickness = 8.dp,
+            shape = CorneredShape.rounded(topLeftPercent = 40, topRightPercent = 40),
+        )
+
+    LaunchedEffect(key1 = historyValues) {
+        modelProducer.runTransaction {
+            columnSeries {
+                series(historyValues)
+            }
+        }
+    }
+
+    CartesianChartHost(
+        modifier = modifier.padding(LocalDimensions.current.paddingNormal),
+        chart = rememberCartesianChart(
+            layers = arrayOf(
+                rememberColumnCartesianLayer(
+                    rangeProvider = CartesianLayerRangeProvider.fixed(
+                        minY = minValue.toDouble(),
+                        maxY = maxValue.toDouble()
+                    ),
+                    columnProvider = remember(positiveColumn) {
+                        getColumnProvider(positiveColumn)
+                    }
+                    //dataLabel =  rememberTextComponent()
+                )
+            ),
+            startAxis = if(showYAxis) VerticalAxis.rememberStart(
+                label = rememberTextComponent(
+                    color = Grey10,
+                    textSize = MaterialTheme.typography.bodySmall.fontSize,
+                    typeface = MaterialTheme.typography.bodySmall.toGraphicsTypeFace()
+                ),
+                guideline = null
+            ) else null,
+            //marker = rememberVicoMarker(valueFormatter = MarkerValueFormatter),
+            bottomAxis = if(showXAxis) HorizontalAxis.rememberBottom(
+                itemPlacer = remember { HorizontalAxis.ItemPlacer.aligned() },
+                label = rememberAxisLabelComponent(
+                    color = Grey10,
+                    textSize = MaterialTheme.typography.bodySmall.fontSize,
+                    typeface = MaterialTheme.typography.bodySmall.toGraphicsTypeFace()
+                ),
+                labelRotationDegrees = -90f,
+                guideline = null
+            ) else null
+        ),
+        modelProducer = modelProducer,
+        scrollState = rememberVicoScrollState(scrollEnabled = false),
+        animateIn = animateIn
+    )
+}

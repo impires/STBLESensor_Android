@@ -107,25 +107,23 @@ dependencies {
     // Compat
     api(libs.bundles.compat)
 
-    // Glide
-    api(libs.glide)
 
     // Customize Splash screen
     api(libs.androidx.splashscreen)
 
     // UI Test
-    androidTestApi(platform(libs.androidx.compose.bom))
-    androidTestApi(libs.bundles.composeTest)
-    androidTestApi(libs.bundles.test)
+    //androidTestApi(platform(libs.androidx.compose.bom))
+    //androidTestApi(libs.bundles.composeTest)
+   // androidTestApi(libs.bundles.test)
 
     // Blue ST SDK
     implementation(libs.st.sdk)
 
     // Test
-    testApi(libs.junit.core)
+    //testApi(libs.junit.core)
 
     //Vico Chart
-    implementation(libs.bundles.vico)
+    implementation(libs.vico.compose.m3)
 
     // Dependency required for API desugaring.
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)

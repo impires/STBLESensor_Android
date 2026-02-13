@@ -64,9 +64,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.cloud_azure_iot_central.CloudAzureIotCentralViewModel
-import com.st.cloud_azure_iot_central.CloudAzureNavigationDeviceSelection
 import com.st.ui.composables.BlueMSFeatureItem
 import com.st.ui.composables.BlueMSSnackBarMaterial3
 import com.st.ui.composables.BlueMsButton
@@ -84,7 +84,7 @@ import com.st.cloud_azure_iot_central.R
 fun CloudAzureDeviceConnection(
     modifier: Modifier = Modifier,
     viewModel: CloudAzureIotCentralViewModel,
-    navController: NavHostController
+    backState: NavBackStack<NavKey>
 ) {
     val deviceConnected by viewModel.deviceConnected.collectAsStateWithLifecycle()
 
@@ -116,15 +116,8 @@ fun CloudAzureDeviceConnection(
                 )
             }
         } else {
-            navController.navigate(CloudAzureNavigationDeviceSelection.route) {
-                navController.graph.startDestinationRoute?.let { screenRoute ->
-                    popUpTo(screenRoute) {
-                        saveState = false
-                    }
-                }
-                launchSingleTop = true
-                restoreState = false
-            }
+            viewModel.unSelectedCloudDevice()
+            backState.removeLastOrNull()
         }
     }
 
@@ -157,7 +150,9 @@ fun CloudAzureDeviceConnection(
             Surface(
                 modifier = modifier.fillMaxWidth(),
                 shape = Shapes.small,
-                shadowElevation = LocalDimensions.current.elevationSmall
+                shadowElevation = LocalDimensions.current.elevationSmall,
+                enabled = deviceConnected.not(),
+                onClick = { viewModel.connectDevice() }
             ) {
 
                 Box(
@@ -167,7 +162,9 @@ fun CloudAzureDeviceConnection(
                     contentAlignment = Alignment.TopEnd
                 ) {
 
-                    IconButton(onClick = { if (deviceConnected) viewModel.disconnectDevice() else viewModel.connectDevice() }) {
+                    IconButton(
+                        enabled = deviceConnected,
+                        onClick = { viewModel.disconnectDevice() }) {
 
                         if (deviceConnected) {
                             Icon(
@@ -351,7 +348,7 @@ fun CloudAzureDeviceConnection(
                                     })
                             }
 
-                            item{
+                            item {
                                 Spacer(
                                     Modifier.windowInsetsBottomHeight(
                                         WindowInsets.systemBars
@@ -378,7 +375,8 @@ fun CloudAzureDeviceConnection(
         }
 
         if (openUpdateIntervalSelectionDialog) {
-            UpdateIntervalSelectionDialog(possibleUpdateIntervals = possibleUpdateIntervals,
+            UpdateIntervalSelectionDialog(
+                possibleUpdateIntervals = possibleUpdateIntervals,
                 updateInterval = updateInterval,
                 onDismiss = { openUpdateIntervalSelectionDialog = false },
                 onConfirmation = { value ->

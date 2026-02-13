@@ -1,7 +1,5 @@
 package com.st.cloud_mqtt.composable
 
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -10,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
@@ -18,24 +15,21 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.st.cloud_mqtt.CloudMqttNavigationApplicationConfiguration
-import com.st.cloud_mqtt.CloudMqttNavigationDeviceConnection
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
+import com.st.cloud_mqtt.ApplicationConfigurationNavKey
+import com.st.cloud_mqtt.CloudMqttConfigurationScreen
+import com.st.cloud_mqtt.CloudMqttDeviceConnectionScreen
 import com.st.cloud_mqtt.CloudMqttViewModel
+import com.st.cloud_mqtt.DeviceConnectionNavKey
 import com.st.cloud_mqtt.R
 import com.st.ui.theme.Grey7
 import com.st.ui.theme.Shapes
@@ -44,17 +38,17 @@ import com.st.ui.theme.Shapes
 @Composable
 fun CloudMqttStartScreen(
     modifier: Modifier,
-    viewModel: CloudMqttViewModel,
-    navController: NavHostController = rememberNavController()
+    viewModel: CloudMqttViewModel
 ) {
 
-    var selectedIndex by remember {
-        mutableIntStateOf(0)
+    val backState = rememberNavBackStack(ApplicationConfigurationNavKey)
+
+    val lastState = backState.lastOrNull()
+    val selectedIndex by remember(key1 = lastState) {
+        derivedStateOf {
+            if (lastState == DeviceConnectionNavKey) 1 else 0
+        }
     }
-
-    val isBrokerConfigured by viewModel.isBrokerConfigured.collectAsStateWithLifecycle()
-
-    val haptic = LocalHapticFeedback.current
 
     Scaffold(
         modifier = modifier,
@@ -63,8 +57,9 @@ fun CloudMqttStartScreen(
             if (CloudMqttConfig.CloudTabBar != null) {
                 CloudMqttConfig.CloudTabBar?.invoke("Cloud MQTT")
             } else {
-                PrimaryTabRow(modifier = Modifier
-                    .fillMaxWidth(),
+                PrimaryTabRow(
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     selectedTabIndex = selectedIndex,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -82,19 +77,9 @@ fun CloudMqttStartScreen(
                     }) {
                     Tab(
                         selected = 0 == selectedIndex,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            selectedIndex = 0
-                            navController.navigate(CloudMqttNavigationApplicationConfiguration.route) {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = false
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        },
+                        unselectedContentColor = Grey7,
+                        enabled = false,
+                        onClick = {},
                         icon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.cloud_app_config),
@@ -107,21 +92,9 @@ fun CloudMqttStartScreen(
 
                     Tab(
                         selected = 1 == selectedIndex,
-                        unselectedContentColor = if (isBrokerConfigured) LocalContentColor.current else Grey7,
-                        enabled = isBrokerConfigured,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            selectedIndex = 1
-                            navController.navigate(CloudMqttNavigationDeviceConnection.route) {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = false
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        },
+                        unselectedContentColor = Grey7,
+                        enabled = false,
+                        onClick = {},
                         icon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.cloud_dev_upload),
@@ -134,51 +107,19 @@ fun CloudMqttStartScreen(
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.consumeWindowInsets(paddingValues).padding(paddingValues)) {
-            NavHost(
-                navController = navController,
-                startDestination = CloudMqttNavigationApplicationConfiguration.route
-            ) {
-                composable(route = CloudMqttNavigationApplicationConfiguration.route,
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(500)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(500)
-                        )
-                    }) {
-                    selectedIndex = 0
-                    CloudMqttApplicationConfiguration(
-                        viewModel = viewModel
-                    )
+        Box(
+            modifier = Modifier
+                .consumeWindowInsets(paddingValues)
+                .padding(paddingValues)
+        ) {
+            NavDisplay(
+                backStack = backState,
+                onBack = { backState.removeLastOrNull() },
+                entryProvider = entryProvider {
+                    CloudMqttConfigurationScreen(viewModel, backState)
+                    CloudMqttDeviceConnectionScreen(viewModel, backState)
                 }
-
-
-                composable(route = CloudMqttNavigationDeviceConnection.route,
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(500)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(500)
-                        )
-                    }) {
-                    selectedIndex = 1
-                    CloudMqttDeviceConnection(
-                        viewModel = viewModel,
-                        navController = navController
-                    )
-                }
-            }
+            )
         }
     }
 }

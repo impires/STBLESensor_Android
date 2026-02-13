@@ -3,9 +3,9 @@
 Application ST BLE Sensors
 
 
-# Compilation
+## Compilation
 
-Code compiled using gradle 8.14.3
+Code compiled using gradle 9.3.1
 
 set on Gradle properties the Github Login name and SSO authentication
 Example:

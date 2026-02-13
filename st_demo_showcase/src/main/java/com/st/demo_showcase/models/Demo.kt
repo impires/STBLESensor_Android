@@ -9,9 +9,8 @@ package com.st.demo_showcase.models
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.Keep
-import androidx.navigation.NavController
-import androidx.navigation.NavOptions
-import androidx.navigation.navOptions
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.blue_sdk.BlueManager
 import com.st.blue_sdk.features.acceleration_event.AccelerationEvent
 import com.st.blue_sdk.features.activity.Activity
@@ -45,6 +44,8 @@ import com.st.blue_sdk.features.extended.predictive.PredictiveSpeedStatus
 import com.st.blue_sdk.features.extended.qvar.QVAR
 import com.st.blue_sdk.features.extended.raw_controlled.RawControlled
 import com.st.blue_sdk.features.extended.registers_feature.RegistersFeature
+import com.st.blue_sdk.features.extended.robotics_movement.RoboticsMovement
+import com.st.blue_sdk.features.extended.scene_description.SceneDescription
 import com.st.blue_sdk.features.extended.tof_multi_object.ToFMultiObject
 import com.st.blue_sdk.features.external.std.HeartRate
 import com.st.blue_sdk.features.external.stm32.led_and_reboot.ControlLedAndReboot
@@ -65,10 +66,11 @@ import com.st.blue_sdk.features.switchfeature.SwitchFeature
 import com.st.blue_sdk.features.temperature.Temperature
 import com.st.blue_sdk.models.Boards
 import com.st.blue_sdk.services.audio.AudioService
-import com.st.demo_showcase.DemoShowcaseNavGraphDirections
 import com.st.demo_showcase.R
-import com.st.demo_showcase.ui.demo_list.DemoListFragmentDirections
-import com.st.neai_classification.NEAI_CLASSIFICATION_SETTINGS
+import com.st.demo_showcase.ui.demo_list.BeamFormingNavKey
+import com.st.demo_showcase.ui.demo_list.CompassNavKey
+import com.st.demo_showcase.ui.demo_list.EnvironmentalNavKey
+import com.st.demo_showcase.ui.demo_list.FitnessActivityNavKey
 import com.st.plot.utils.PLOTTABLE_FEATURE
 import com.st.blue_sdk.features.compass.Compass as CompassFeature
 import com.st.blue_sdk.features.event_counter.EventCounter as EventCounterFeature
@@ -80,8 +82,12 @@ import com.st.blue_sdk.features.extended.neai_extrapolation.NeaiExtrapolation as
 import com.st.external_app.model.ExternalAppType
 import com.st.external_app.ExternalAppAIoTCraft
 import com.st.external_app.ExternalAppRobotics
+
+import com.st.demo_showcase.ui.demo_list.*
+import com.st.demo_showcase.ui.demo_show_case.DemoShowCasePnplSettingsNavKey
+import com.st.registers_demo.common.RegistersDemoType
+
 const val LOG_SETTINGS = "Log Settings"
-const val SERIAL_CONSOLE = "Serial Console"
 
 val DEFAULT_MENU_ACTIONS = listOf(
     LOG_SETTINGS
@@ -130,9 +136,8 @@ enum class Demo(
         group = listOf(DemoGroup.AI),
         icon = com.st.neai_classification.R.drawable.neai_icon,
         features = listOf(NeaiClassClassificationFeature.NAME),
-        settings = listOf(LOG_SETTINGS, NEAI_CLASSIFICATION_SETTINGS)
     ),
-    NeaiExtrapolation(
+    NEAIExtrapolation(
         displayName = "NEAI Extrapolation",
         group = listOf(DemoGroup.AI),
         icon = com.st.neai_extrapolation.R.drawable.neai_icon,
@@ -327,7 +332,7 @@ enum class Demo(
         icon = com.st.registers_demo.R.drawable.registers_demo_icon,
         features = listOf(RegistersFeature.ML_CORE_NAME)
     ),
-    RegistersFMSDemo(
+    RegistersFSMDemo(
         displayName = "Finite State Machine",
         group = listOf(DemoGroup.InertialSensors, DemoGroup.AI),
         icon = com.st.registers_demo.R.drawable.registers_demo_icon,
@@ -531,9 +536,9 @@ enum class Demo(
     ExternalAppLinkToRobotics(
         displayName = ExternalAppRobotics.appTitle,
         icon = ExternalAppRobotics.appIcon,
-        couldBeEnabledOutside = true,
+        couldBeEnabledOutside = false,
         group = listOf(DemoGroup.AI, DemoGroup.DataLog, DemoGroup.EnvironmentalSensors,DemoGroup.Control),
-        features = emptyList()
+        features = listOf(RoboticsMovement.NAME,SceneDescription.NAME)
     )
         // *** NEW_DEMO_TEMPLATE ANCHOR1 ***\
     ,
@@ -562,250 +567,123 @@ enum class Demo(
         features = listOf(AssetTrackingEvent.NAME)
     );
 
-    fun navigateToPnplSettings(navController: NavController?, nodeId: String) {
+    fun navigateToPnplSettings(backState: NavBackStack<NavKey>, nodeId: String) {
 
-        val direction =
-            DemoShowcaseNavGraphDirections.globalActionToPnplFragment(
-                nodeId = nodeId,
-                demoName = displayName.lowercase().replace(" ", "_")
-            )
+        val direction = DemoShowCasePnplSettingsNavKey(nodeId = nodeId,
+            demoName =  displayName.lowercase().replace(" ", "_"),
+            currentDemo = this)
 
-        navController?.navigate(directions = direction)
+        backState.add(direction)
     }
 
-    fun navigateTo(navController: NavController, nodeId: String, isExpert: Boolean = false) {
 
+    fun navigateTo(backState: NavBackStack<NavKey>, nodeId: String, isExpert: Boolean = false) {
         val direction = when (this) {
-            Flow -> DemoListFragmentDirections.actionDemoListToFlowDemoFragment(nodeId)
-            BeamFormingDemo -> DemoListFragmentDirections.actionDemoListToBeamFormingFragment(
-                nodeId
-            )
-
-            BeamFormingDemoADPCM -> DemoListFragmentDirections.actionDemoListToBeamFormingFragment(
-                nodeId
-            )
-
-            Environmental -> DemoListFragmentDirections.actionDemoListToEnvironmentalDemoFragment(
-                nodeId
-            )
-
-            Level -> DemoListFragmentDirections.actionDemoListToLevelDemoFragment(nodeId)
-            FitnessActivity -> DemoListFragmentDirections.actionDemoListToFitnessActivityDemoFragment(
-                nodeId
-            )
-
-            Compass -> DemoListFragmentDirections.actionDemoListToCompassDemoGraph(nodeId)
-            HighSpeedDataLog2 -> DemoListFragmentDirections.actionDemoListToHighSpeedDataLogFragment(
-                nodeId
-            )
-
-            SimpleHighSpeedDataLog2 -> DemoListFragmentDirections.actionDemoListToSimpleHighSpeedDataLogFragment(
-                nodeId
-            )
-            AIoTCraftHighSpeedDataLog2 -> DemoListFragmentDirections.actionDemoListToAIoTCraftHighSpeedDataLogFragment(
-                nodeId
-            )
-
-            BlueVoiceADPCM -> DemoListFragmentDirections.actionDemoListToBlueVoiceFragment(
-                nodeId
-            )
-
-            BlueVoiceOpus -> DemoListFragmentDirections.actionDemoListToBlueVoiceFragment(
-                nodeId
-            )
-
-            BlueVoiceFullDuplex -> DemoListFragmentDirections.actionDemoListToBlueVoiceFullDuplexFragment(
-                nodeId
-            )
-
-            NavigationGesture -> DemoListFragmentDirections.actionDemoListToGestureNavigationDemoFragment(
-                nodeId
-            )
-
-            NEAIAnomalyDetection -> DemoListFragmentDirections.actionDemoListToNeaiAnomalyDetectionFragment(
-                nodeId
-            )
-
-            NEAIClassification -> DemoListFragmentDirections.actionDemoListToNeaiClassificationFragment(
-                nodeId
-            )
-
-            NeaiExtrapolation -> DemoListFragmentDirections.actionDemoListToNeaiExtrapolationFragment(
-                nodeId
-            )
-
-            EventCounter -> DemoListFragmentDirections.actionDemoListToEventCounterFragment(
-                nodeId
-            )
-
-            PianoDemo -> DemoListFragmentDirections.actionDemoListToPianoFragment(
-                nodeId
-            )
-
-            Pnpl -> DemoListFragmentDirections.actionDemoListToPnplFragment(nodeId)
-            Plot -> DemoListFragmentDirections.actionDemoListToPlotFragment(nodeId, isExpert)
-            NfcWriting -> DemoListFragmentDirections.actionDemoListToNfcWritingFragment(nodeId)
-            BinaryContentDemo -> DemoListFragmentDirections.actionDemoListToBinaryContentFragment(
-                nodeId
-            )
-
-            ExtConfig -> DemoListFragmentDirections.actionDemoListToExtConfigDemoGraph(nodeId)
-            TofObjectsDetection -> DemoListFragmentDirections.actionDemoListToTofObjectsDetectionFragment(
-                nodeId
-            )
-
-            ColorAmbientLightDemo -> DemoListFragmentDirections.actionDemoListToColorAmbientLightFragment(
-                nodeId
-            )
-
-            Gnss -> DemoListFragmentDirections.actionDemoListToGnssFragment(nodeId)
-            ElectricChargeVariation -> DemoListFragmentDirections.actionDemoListToElectricChargeVariationFragment(
-                nodeId
-            )
-
-            MotionIntensityDemo -> DemoListFragmentDirections.actionDemoListToMotionIntensityFragment(
-                nodeId
-            )
-
-            ActivityRecognition -> DemoListFragmentDirections.actionDemoListToActivityRecognitionFragment(
-                nodeId
-            )
-
-            CarryPositionDemo -> DemoListFragmentDirections.actionDemoListToCarryPositionFragment(
-                nodeId
-            )
-
-            MemsGestureDemo -> DemoListFragmentDirections.actionDemoListToMemsGestureFragment(
-                nodeId
-            )
-
-            MotionAlgorithms -> DemoListFragmentDirections.actionDemoListToMotionAlgorithmsFragment(
-                nodeId
-            )
-
-            PedometerDemo -> DemoListFragmentDirections.actionDemoListToPedometerFragment(nodeId)
-            ProximityGestureRecognition ->
-                DemoListFragmentDirections.actionDemoListToProximityGestureRecognitionFragment(
-                    nodeId
-                )
-
-            SwitchDemo -> DemoListFragmentDirections.actionDemoListToSwitchDemoFragment(nodeId)
-            RegistersFMSDemo -> DemoListFragmentDirections.actionDemoListToRegistersDemoFragment(
-                nodeId,
-                "FSM"
-            )
-
-            RegistersMLCDemo -> DemoListFragmentDirections.actionDemoListToRegistersDemoFragment(
-                nodeId,
-                "MLC"
-            )
-
-            RegistersSTREDDemo -> DemoListFragmentDirections.actionDemoListToRegistersDemoFragment(
-                nodeId,
-                "STRED"
-            )
-
-            AccelerationEventDemo -> DemoListFragmentDirections.actionDemoListToAccelerationEventFragment(
-                nodeId
-            )
-
-            SourceLocalization -> DemoListFragmentDirections.actionDemoListToSourceLocalizationFragment(
-                nodeId
-            )
-
-            AudioClassificationDemo -> DemoListFragmentDirections.actionDemoListToAudioClassificationDemoFragment(
-                nodeId
-            )
-
-            LedControl -> DemoListFragmentDirections.actionDemoListToLedControlFragment(nodeId)
-            NodeStatus -> DemoListFragmentDirections.actionDemoListToNodeStatusFragment(nodeId)
-            TextualMonitor -> DemoListFragmentDirections.actionDemoListToTextualMonitorFragment(
-                nodeId
-            )
-
-            HeartRateDemo -> DemoListFragmentDirections.actionDemoListToHeartRateDemoFragment(nodeId)
-            SensorFusion -> DemoListFragmentDirections.actionDemoListToSensorFusionFragment(nodeId)
-            PredictedMaintenance -> DemoListFragmentDirections.actionDemoListToPredictedMaintenanceFragment(
-                nodeId
-            )
-
-            FftAmplitude -> DemoListFragmentDirections.actionDemoListToFftAmplitudeFragment(nodeId)
-            MultiNeuralNetwork -> DemoListFragmentDirections.actionDemoListToMultiNeuralNetworkFragment(
-                nodeId
-            )
-
-            HighSpeedDataLog1 -> DemoListFragmentDirections.actionDemoListToLegacyDemoFragment(
-                nodeId
-            )
-
-            SdLoggingDemo -> DemoListFragmentDirections.actionDemoListToLegacyDemoFragment(
-                nodeId
-            )
-
-            CoSensorDemo -> DemoListFragmentDirections.actionDemoListToLegacyDemoFragment(
-                nodeId
-            )
-
-            AiLoggingDemo -> DemoListFragmentDirections.actionDemoListToLegacyDemoFragment(
-                nodeId
-            )
-
-            AssetTrackingEventDemo -> DemoListFragmentDirections.actionDemoListToAssetTrackingEventFragment(
-                nodeId
-            )
-
-            SpeechToTextDemo -> DemoListFragmentDirections.actionDemoListToLegacyDemoFragment(
-                nodeId
-            )
-
-            SpeechToTextDemoAPDCM -> DemoListFragmentDirections.actionDemoListToLegacyDemoFragment(
-                nodeId
-            )
-
-            RawPnpl -> DemoListFragmentDirections.actionDemoListToRawPnplFragment(nodeId)
-            SmartMotorControl -> DemoListFragmentDirections.actionDemoListToSmartMotorControlFragment(
-                nodeId
-            )
-
-            CloudAzureIotCentral -> DemoListFragmentDirections.actionDemoListToCloudAzureIotCentralFragment(
-                nodeId
-            )
-
-            CloudMqtt -> DemoListFragmentDirections.actionDemoListToCloudMqttFragment(nodeId)
-
-            MedicalSignal -> DemoListFragmentDirections.actionDemoListToMedicalSignalFragment(nodeId)
-
-            // *** NEW_DEMO_TEMPLATE ANCHOR2 ***
-            BlueVoiceFullBand -> DemoListFragmentDirections.actionDemoListToLegacyDemoFragment(
-                nodeId
-            )
-
-            WbsOtaFUOTA -> DemoListFragmentDirections.actionDemoListToFwUpgrade(nodeId)
-
-            ExternalAppLinkToAIoTCraft -> DemoListFragmentDirections.actionDemoListToExternalAppDemoFragment(
+            Flow -> FlowNavKey(nodeId)
+            BeamFormingDemo -> BeamFormingNavKey(nodeId)
+            BeamFormingDemoADPCM -> BeamFormingNavKey(nodeId)
+            Environmental -> EnvironmentalNavKey(nodeId)
+            Level -> LevelNavKey(nodeId)
+            FitnessActivity -> FitnessActivityNavKey(nodeId)
+            Compass -> CompassNavKey(nodeId)
+            HighSpeedDataLog2 -> HighSpeedDataLogNavKey(nodeId)
+            SimpleHighSpeedDataLog2 -> SimpleHighSpeedDataLog2NavKey(nodeId)
+            AIoTCraftHighSpeedDataLog2 -> AIoTCraftHighSpeedDataLog2NavKey(nodeId)
+            BlueVoiceADPCM -> BlueVoiceOpusNavKey(nodeId)
+            BlueVoiceOpus -> BlueVoiceOpusNavKey(nodeId)
+            BlueVoiceFullDuplex -> BlueVoiceFullDuplexNavKey(nodeId)
+            NavigationGesture -> NavigationGestureNavKey(nodeId)
+            NEAIAnomalyDetection -> NEAIAnomalyDetectionNavKey(nodeId)
+            NEAIClassification -> NEAIClassificationNavKey(nodeId)
+            NEAIExtrapolation -> NEAIExtrapolationNavKey(nodeId)
+            EventCounter -> EventCounterNavKey(nodeId)
+            PianoDemo -> PianoNavKey(nodeId)
+            Pnpl -> PnplNavKey(nodeId)
+            Plot -> PlotNavKey(nodeId, isExpert)
+            NfcWriting -> NfcWritingNavKey(nodeId)
+            BinaryContentDemo -> BinaryContentNavKey(nodeId)
+            ExtConfig -> ExtConfigNavKey(nodeId)
+            TofObjectsDetection -> TofObjectsDetectionNavKey(nodeId)
+            ColorAmbientLightDemo -> ColorAmbientLightNavKey(nodeId)
+            Gnss -> GnssNavKey(nodeId)
+            ElectricChargeVariation -> ElectricChargeVariationNavKey(nodeId)
+            MotionIntensityDemo -> MotionIntensityNavKey(nodeId)
+            ActivityRecognition -> ActivityRecognitionNavKey(nodeId)
+            CarryPositionDemo -> CarryPositionNavKey(nodeId)
+            MemsGestureDemo -> MemsGestureNavKey(nodeId)
+            MotionAlgorithms -> MotionAlgorithmsNavKey(nodeId)
+            PedometerDemo -> PedometerNavKey(nodeId)
+            ProximityGestureRecognition -> ProximityGestureRecognitionNavKey(nodeId)
+            SwitchDemo -> SwitchNavKey(nodeId)
+            RegistersFSMDemo -> RegistersNavKey(
                 nodeId = nodeId,
-                externalAppType = ExternalAppType.AIOTCRAFT.code
+                demoType = RegistersDemoType.FSM
             )
-
-            ExternalAppLinkToRobotics -> DemoListFragmentDirections.actionDemoListToExternalAppDemoFragment(
+            RegistersMLCDemo -> RegistersNavKey(
                 nodeId = nodeId,
-                externalAppType = ExternalAppType.ROBOTICS.code
+                demoType = RegistersDemoType.MLC
+            )
+            RegistersSTREDDemo -> RegistersNavKey(
+                nodeId = nodeId,
+                demoType = RegistersDemoType.STRED
+            )
+            AccelerationEventDemo -> AccelerationEventNavKey(nodeId)
+            SourceLocalization -> SourceLocalizationNavKey(nodeId)
+            AudioClassificationDemo -> AudioClassificationNavKey(nodeId)
+            LedControl -> LedControlNavKey(nodeId)
+            NodeStatus -> NodeStatusNavKey(nodeId)
+            TextualMonitor -> TextualMonitorNavKey(nodeId)
+            HeartRateDemo -> HeartRateNavKey(nodeId)
+            SensorFusion -> SensorFusionNavKey(nodeId)
+            PredictedMaintenance -> PredictedMaintenanceNavKey(nodeId)
+            FftAmplitude -> FftAmplitudeNavKey(nodeId)
+            MultiNeuralNetwork -> MultiNeuralNetworkNavKey(nodeId)
+            HighSpeedDataLog1 -> ExternalAppNavKey(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.BLESENSORCLASSIC
+            )
+            SdLoggingDemo -> ExternalAppNavKey(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.BLESENSORCLASSIC
+            )
+            CoSensorDemo -> ExternalAppNavKey(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.BLESENSORCLASSIC
+            )
+            AiLoggingDemo -> ExternalAppNavKey(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.BLESENSORCLASSIC
+            )
+            AssetTrackingEventDemo -> AssetTrackingEventNavKey(nodeId)
+            SpeechToTextDemo -> ExternalAppNavKey(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.BLESENSORCLASSIC
+            )
+            SpeechToTextDemoAPDCM -> ExternalAppNavKey(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.BLESENSORCLASSIC
+            )
+            RawPnpl -> RawPnplNavKey(nodeId)
+            SmartMotorControl -> SmartMotorControlNavKey(nodeId)
+            CloudAzureIotCentral -> CloudAzureIotCentralNavKey(nodeId)
+            CloudMqtt -> CloudMqttNavKey(nodeId)
+            MedicalSignal -> MedicalSignalNavKey(nodeId)
+            BlueVoiceFullBand -> ExternalAppNavKey(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.BLESENSORCLASSIC
+            )
+            WbsOtaFUOTA -> WbsOtaFUOTA(nodeId)
+            ExternalAppLinkToAIoTCraft -> ExternalAppNavKey(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.AIOTCRAFT
+            )
+            ExternalAppLinkToRobotics -> ExternalAppNavKey(
+                nodeId = nodeId,
+                externalAppType = ExternalAppType.ROBOTICS
             )
         }
 
-        direction.let {
-            val navOptions: NavOptions = navOptions {
-                anim {
-                    enter = com.st.ui.R.anim.slide_in_from_right
-                    exit = com.st.ui.R.anim.fade_out
-                    popEnter = com.st.ui.R.anim.fade_in
-                    popExit = com.st.ui.R.anim.slide_out_to_right
-                }
-            }
-            navController.navigate(directions = it, navOptions = navOptions)
-        }
-
-        //direction.let { navController.navigate(directions = it) }
+        backState.add(direction)
     }
 
     companion object {

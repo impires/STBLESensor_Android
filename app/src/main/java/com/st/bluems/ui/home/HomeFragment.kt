@@ -36,12 +36,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavOptions
-import androidx.navigation.fragment.findNavController
-import androidx.navigation.navOptions
 import com.st.bluems.NFCConnectionViewModel
 import com.st.bluems.ui.composable.ConnectionStatusDialog
-import com.st.bluems.ui.composable.DeviceListScreen
+import com.st.bluems.ui.composable.HomeScreenNavigation
 import com.st.ui.theme.BlueMSTheme
 import com.st.user_profiling.StUserProfilingConfig
 import com.st.user_profiling.model.LevelProficiency
@@ -80,9 +77,7 @@ class HomeFragment : Fragment() {
 
     private val locationRequestLauncher: ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-            //if (result.resultCode == Activity.RESULT_OK) {
             _isLocationEnabled.value = isLocationEnable(requireContext())
-            //}
         }
 
     private val _isLocationEnabled = MutableStateFlow(false)
@@ -180,15 +175,6 @@ class HomeFragment : Fragment() {
 
         StUserProfilingConfig.onDone = { level: LevelProficiency, type: ProfileType ->
             viewModel.profileShow(level = level, type = type)
-
-            val navOptions: NavOptions = navOptions {
-                popUpTo(com.st.bluems.R.id.homeFragment) { inclusive = true }
-            }
-
-            findNavController().navigate(
-                directions = HomeFragmentDirections.actionUserProfilingNavGraphToHomeFragment(),
-                navOptions = navOptions
-            )
         }
     }
 
@@ -226,11 +212,10 @@ class HomeFragment : Fragment() {
 
                     val isPairingRequest by viewModel.isPairingRequest.collectAsStateWithLifecycle()
 
-                    DeviceListScreen(
+                    HomeScreenNavigation(
                         viewModel = viewModel,
                         nfcViewModel = nfcViewModel,
                         isBleEnabled = isBleEnabled,
-                        navController = findNavController(),
                         onEnableBle = {
                             bleRequestLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
                         },
@@ -256,7 +241,7 @@ class HomeFragment : Fragment() {
 }
 
 
-fun isLocationEnable(context: Context): Boolean {
+private fun isLocationEnable(context: Context): Boolean {
     val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     return LocationManagerCompat.isLocationEnabled(manager)
 }

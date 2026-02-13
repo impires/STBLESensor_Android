@@ -408,7 +408,11 @@ class SimpleHighSpeedDataLogViewModel @Inject constructor(
     }
 
     fun disconnect(nodeId: String) {
-        GlobalConfig.navigateBack?.invoke(nodeId)
+        if(GlobalConfig.navigateBack!=null) {
+            GlobalConfig.navigateBack?.let { it(nodeId) }
+        } else {
+            GlobalConfig.navigateBack3(nodeId)
+        }
     }
 
     fun cleanStatusMessage() {

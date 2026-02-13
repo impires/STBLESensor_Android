@@ -41,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -60,11 +61,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.blue_sdk.board_catalog.models.FirmwareMaturity
 import com.st.blue_sdk.features.extended.ext_configuration.BanksStatus
+import com.st.ext_config.DownloadTermsNavKey
+import com.st.ext_config.FwUpgradeNavKey
 import com.st.ext_config.R
-import com.st.ext_config.ui.fw_download.FwDownloadFragmentDirections
 import com.st.ext_config.ui.fw_download.FwDownloadUiState
 import com.st.ext_config.ui.fw_download.FwDownloadViewModel
 import com.st.ui.composables.BlueMsButtonOutlined
@@ -79,12 +82,13 @@ import com.st.ui.theme.SecondaryBlue
 import com.st.ui.theme.Shapes
 import com.st.ui.theme.TITLE_MAX_LINES
 
+
 @Composable
-fun FwDownloadScreen(
+fun FwDownloadNavScreen(
     modifier: Modifier = Modifier,
     nodeId: String,
     viewModel: FwDownloadViewModel,
-    navController: NavController,
+    backState: NavBackStack<NavKey>,
     banksStatus: BanksStatus?
 ) {
     ComposableLifecycle { _, event ->
@@ -106,15 +110,22 @@ fun FwDownloadScreen(
         modifier = modifier,
         state = state,
         onCancelClick = {
-            navController.popBackStack()
+            backState.removeLastOrNull()
         },
         onInstallClick = { url ->
             url?.let {
-                navController.navigate(
-                    FwDownloadFragmentDirections.actionFwDownloadFragmentToFwUpgrade(
-                        nodeId, it
-                    )
-                )
+                //if(viewModel.hasAcceptedDownloadTerms) {
+                    backState.add(FwUpgradeNavKey(nodeId, it))
+//                } else {
+//                    StDownloadTermsConfig.fullScreen = false
+//                    StDownloadTermsConfig.onDone = { decision ->
+//                        if(decision) {
+//                            viewModel.setDownloadTermsFlag(true)
+//                            backState.add(FwUpgradeNavKey(nodeId, it))
+//                        }
+//                    }
+//                    backState.add(DownloadTermsNavKey)
+//                }
             }
         },
         onSwap = {

@@ -83,9 +83,18 @@ val ExternalAppRobotics = ExternalAppDetailType(
     appLink = "https://play.google.com/store/apps/details?id=com.st.robotics"
 )
 
+val  ExternalAppBlueMSClassic = ExternalAppDetailType(
+    appIcon = R.drawable.st_ble_sensor_classic_app_icon,
+    appTitle = "ST BlueMS Classic (Legacy)",
+    appShortDescription = "Application used for connecting ST Development boards",
+    appLongDescription = "This demo is no more supported on current version of the app.\nTry to use the ST BLE Sensor Classic application for this old demo.",
+    appLink = "https://play.google.com/store/apps/details?id=com.st.bluemsclassic&hl=en&pli=1"
+)
+
 val ExternalAppMap: Map<ExternalAppType, ExternalAppDetailType> = mapOf(
     ExternalAppType.AIOTCRAFT to ExternalAppAIoTCraft,
     ExternalAppType.ROBOTICS to ExternalAppRobotics,
+    ExternalAppType.BLESENSORCLASSIC to ExternalAppBlueMSClassic,
     ExternalAppType.UNDEF to ExternalAppDetailType(
         appIcon = R.drawable.external_app_icon,
         appTitle = "Application Not Recognized",

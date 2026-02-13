@@ -14,12 +14,12 @@ enum class LevelProficiency(val permissions: List<AuthorizedActions>) {
             AuthorizedActions.SWAP_BANK
         )
     ),
-    EXPERT(permissions = AuthorizedActions.values().toList());
+    EXPERT(permissions = AuthorizedActions.entries);
 
     fun isAuthorizedTo(permission: AuthorizedActions) =
         permissions.contains(permission)
 
     companion object {
-        fun fromString(value: String) = LevelProficiency.values().firstOrNull { it.name == value }
+        fun fromString(value: String) = entries.firstOrNull { it.name == value }
     }
 }

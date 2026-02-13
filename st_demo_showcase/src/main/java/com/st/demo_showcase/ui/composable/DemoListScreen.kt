@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -41,6 +40,7 @@ import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PreviewBlueMSTheme
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.remember
 import sh.calvin.reorderable.ReorderableItem
 
 @SuppressLint("MissingPermission")
@@ -63,11 +63,11 @@ fun DemoListScreen(
     onCustomDTMIClicked: () -> Unit = { /** NOOP **/ },
     onDemoReordered: (Int, Int) -> Unit = { _, _ -> /** NOOP **/ }
 ) {
-    var openDeniedLoginDemoDialog by rememberSaveable { mutableStateOf(value = false) }
-    var openDeniedExpertDemoDialog by rememberSaveable { mutableStateOf(value = false) }
-    var openDeniedExpertLoginDemoDialog by rememberSaveable { mutableStateOf(value = false) }
-    var openDeniedPnPLDemoDialog by rememberSaveable { mutableStateOf(value = false) }
-    var openDeniedLastFwDialog by rememberSaveable {
+    var openDeniedLoginDemoDialog by remember { mutableStateOf(value = false) }
+    var openDeniedExpertDemoDialog by remember { mutableStateOf(value = false) }
+    var openDeniedExpertLoginDemoDialog by remember { mutableStateOf(value = false) }
+    var openDeniedPnPLDemoDialog by remember { mutableStateOf(value = false) }
+    var openDeniedLastFwDialog by remember {
         mutableStateOf(value = false)
     }
 
@@ -160,14 +160,20 @@ fun DemoListScreen(
 
     if (openDeniedLoginDemoDialog) {
         LoginRestrictionDialog(
-            onLoginRequired = onLoginRequired,
+            onLoginRequired ={
+                openDeniedLoginDemoDialog = false
+                onLoginRequired()
+            },
             onDismiss = { openDeniedLoginDemoDialog = false }
         )
     }
 
     if (openDeniedExpertDemoDialog) {
         ExpertRestrictionDialog(
-            onExpertRequired = onExpertRequired,
+            onExpertRequired = {
+                openDeniedExpertDemoDialog = false
+                onExpertRequired()
+            },
             onDismiss = { openDeniedExpertDemoDialog = false }
         )
     }
@@ -180,7 +186,11 @@ fun DemoListScreen(
 
     if (openDeniedExpertLoginDemoDialog) {
         ExpertLoginRestrictionDialog(
-            onOk = { openDeniedExpertLoginDemoDialog = false }
+            onDismiss = {openDeniedExpertLoginDemoDialog = false},
+             onOk= {
+                 openDeniedExpertLoginDemoDialog = false
+                 onExpertRequired()
+             }
         )
     }
 
@@ -320,16 +330,17 @@ fun PnPLRestrictionDialog(
 @SuppressLint("MissingPermission")
 @Composable
 fun ExpertLoginRestrictionDialog(
+    onDismiss: () -> Unit,
     onOk: () -> Unit
 ) {
     AlertDialog(
-        onDismissRequest = onOk,
+        onDismissRequest = onDismiss,
         title = {
             Text(text = "Demo Locked")
         },
         text = {
             Text(
-                "This functionality is only for expert user and after the login.\nChange the profile level and make the login for enabling it"
+                "This functionality is only for expert user and after the login.\nPressing Ok the application will open the Profile selection page."
             )
         },
         confirmButton = {

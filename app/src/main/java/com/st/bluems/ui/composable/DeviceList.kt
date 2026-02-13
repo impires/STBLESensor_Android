@@ -33,14 +33,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.st.blue_sdk.models.Boards
 import com.st.blue_sdk.models.Node
 import com.st.bluems.NFCConnectionViewModel
 import com.st.bluems.R
-import com.st.bluems.ui.home.HomeFragmentDirections
 import com.st.bluems.ui.home.HomeViewModel
 import com.st.ui.composables.BlueMsButton
 import com.st.ui.composables.BlueMsButtonOutlined
@@ -52,11 +50,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
-import androidx.navigation.NavOptions
-import androidx.navigation.navOptions
+import androidx.lifecycle.Lifecycle
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.blue_sdk.board_catalog.models.isDeprecated
 import com.st.blue_sdk.board_catalog.models.isDismissed
 import com.st.ui.composables.BlueMSPullToRefreshBox
+import com.st.ui.composables.ComposableLifecycle
 import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.PrimaryBlue
 import com.st.ui.theme.SecondaryBlue
@@ -64,10 +64,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+
 @Composable
-fun DeviceListScreen(
+fun DeviceListScreenNavigation(
     modifier: Modifier = Modifier,
-    navController: NavController,
+    backState: NavBackStack<NavKey>,
     viewModel: HomeViewModel,
     nfcViewModel: NFCConnectionViewModel,
     isBleEnabled: Boolean,
@@ -110,6 +111,13 @@ fun DeviceListScreen(
         }
     }
 
+    ComposableLifecycle { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_START -> viewModel.startHomeFragment()
+            else -> Unit
+        }
+    }
+
     DeviceListWithPermissionsCheck(
         modifier = modifier,
         devices = devices,
@@ -136,33 +144,13 @@ fun DeviceListScreen(
         onEnableBle = onEnableBle,
         onEnableLocation = onEnableLocation,
         goToProfile = {
-            navController.navigate(
-                HomeFragmentDirections.actionHomeFragmentToProfileNavGraph()
-            )
+            backState.add(HomeScreenProfileNavKey)
         },
         goToCatalog = {
             if (boardsDescription.isEmpty()) {
                 Toast.makeText(context, "Boards Catalog not Available", Toast.LENGTH_SHORT).show()
             } else {
-
-                val navOptions: NavOptions = navOptions {
-                    anim {
-                        //enter = com.st.ui.R.anim.slide_in_from_left
-                        enter = com.st.ui.R.anim.fade_in
-                        exit = com.st.ui.R.anim.fade_out
-                        popEnter = com.st.ui.R.anim.fade_in
-                        //popExit = com.st.ui.R.anim.slide_out_to_left
-                        popExit = com.st.ui.R.anim.fade_out
-                    }
-                }
-                navController.navigate(
-                    directions = HomeFragmentDirections.actionHomeFragmentToCatalog(),
-                    navOptions = navOptions
-                )
-
-//                navController.navigate(
-//                    HomeFragmentDirections.actionHomeFragmentToCatalog()
-//                )
+                backState.add(CatalogNavKey)
             }
         },
         goToSourceCode = {
@@ -175,9 +163,7 @@ fun DeviceListScreen(
             viewModel.openPrivacyPolicyPage()
         },
         goToThirdPartiesLicenses = {
-            navController.navigate(
-                HomeFragmentDirections.actionHomeFragmentToLicensesFragment()
-            )
+            backState.add(LicensesNavKey)
         },
         switchVersionBetaRelease = {
             viewModel.switchVersionBetaRelease()
@@ -217,11 +203,7 @@ fun DeviceListScreen(
                 maxPayloadSize = maxPayloadSize,
                 enableServer = enableServer
             ) {
-                navController.navigate(
-                    HomeFragmentDirections.actionHomeFragmentToDemoShowCase(
-                        nodeId
-                    )
-                )
+                backState.add(DemoShowCaseNavKey(nodeId = nodeId))
             }
         },
         onStartScan = {

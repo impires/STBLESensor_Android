@@ -1,5 +1,6 @@
 package com.st.cloud_azure_iot_central.composable
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,19 +33,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.cloud_azure_iot_central.CloudAzureIotCentralViewModel
+import com.st.cloud_azure_iot_central.DeviceConnectionNavKey
 import com.st.ui.composables.BlueMSPullToRefreshBox
 import com.st.ui.composables.BlueMSSnackBarMaterial3
 import com.st.ui.composables.ComposableLifecycle
@@ -59,7 +58,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun CloudAzureDeviceSelection(
     modifier: Modifier = Modifier,
-    viewModel: CloudAzureIotCentralViewModel
+    viewModel: CloudAzureIotCentralViewModel,
+    backState: NavBackStack<NavKey>
 ) {
     ComposableLifecycle { _, event ->
         when (event) {
@@ -74,6 +74,10 @@ fun CloudAzureDeviceSelection(
 
             else -> Unit
         }
+    }
+
+    BackHandler {
+        backState.removeLastOrNull()
     }
 
     val cloudDevices by viewModel.cloudDevices.collectAsStateWithLifecycle()
@@ -96,9 +100,12 @@ fun CloudAzureDeviceSelection(
 
     val pullRefreshState = rememberPullToRefreshState()
 
-    var oneDeviceSelected by rememberSaveable { mutableStateOf(false) }
-
     val snackBarHostState = remember { SnackbarHostState() }
+
+    BackHandler {
+        viewModel.unSelectedCloudApp()
+        backState.removeLastOrNull()
+    }
 
     Scaffold(
         modifier = modifier.padding(all = LocalDimensions.current.paddingNormal),
@@ -142,26 +149,6 @@ fun CloudAzureDeviceSelection(
                 text = "Select on of the following devices or create a new one"
             )
 
-            if (oneDeviceSelected) {
-                Text(
-                    modifier = Modifier.padding(LocalDimensions.current.paddingNormal),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Grey6,
-                    textAlign = TextAlign.Center,
-                    text = buildAnnotatedString {
-                        append("Click on  '")
-                        withStyle(
-                            style = SpanStyle(
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append("Dev Upload")
-                        }
-                        append("'")
-                    }
-                )
-            }
-
             Spacer(modifier = Modifier.height(height = LocalDimensions.current.paddingNormal))
 
             BlueMSPullToRefreshBox(
@@ -185,7 +172,7 @@ fun CloudAzureDeviceSelection(
                                 isSelected = index == selectedDevice,
                                 cloudDevice = cloudDevice,
                                 onCloudDeviceSelection = {
-                                    oneDeviceSelected = true
+                                    backState.add(DeviceConnectionNavKey)
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     cloudDevice.selected = true
                                     viewModel.setSelectedCloudDevice(index)
@@ -214,7 +201,7 @@ fun CloudAzureDeviceSelection(
                         }
                     }
 
-                    item{
+                    item {
                         Spacer(
                             Modifier.windowInsetsBottomHeight(
                                 WindowInsets.systemBars

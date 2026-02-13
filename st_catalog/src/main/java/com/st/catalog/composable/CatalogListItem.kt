@@ -7,9 +7,6 @@
  */
 package com.st.catalog.composable
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,14 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import com.st.blue_sdk.board_catalog.models.BoardStatus
 import com.st.ui.theme.*
-import com.st.ui.utils.asString
 import com.st.ui.utils.getBlueStBoardImages
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CatalogListItem(
     modifier: Modifier = Modifier,
@@ -40,18 +33,11 @@ fun CatalogListItem(
     releaseDate: String? = null,
     boardTypeName: String,
     onClickItem: () -> Unit = { /** NOOP **/ },
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope
 ) {
-    with(sharedTransitionScope) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(height = LocalDimensions.current.catalogCardHeight)
-            .sharedElement(
-                sharedTransitionScope.rememberSharedContentState(key = "surface-${boardPart}"),
-                animatedVisibilityScope = animatedContentScope
-            ),
+            .height(height = LocalDimensions.current.catalogCardHeight),
         shape = Shapes.small,
         shadowElevation = LocalDimensions.current.elevationNormal,
         onClick = onClickItem
@@ -63,110 +49,91 @@ fun CatalogListItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-                Image(
-                    modifier = Modifier
-                        .padding(all = LocalDimensions.current.paddingNormal)
-                        .size(size = LocalDimensions.current.imageMedium)
-                        .sharedElement(
-                            sharedTransitionScope.rememberSharedContentState(key = "image-${boardTypeName}"),
-                            animatedVisibilityScope = animatedContentScope
-                        ),
-                    painter = painterResource(id = getBlueStBoardImages(boardTypeName)),
-                    contentDescription = null
+            Image(
+                modifier = Modifier
+                    .padding(all = LocalDimensions.current.paddingNormal)
+                    .size(size = LocalDimensions.current.imageMedium),
+                painter = painterResource(id = getBlueStBoardImages(boardTypeName)),
+                contentDescription = null
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(weight = 1f)
+                    .fillMaxHeight()
+                    .background(color = MaterialTheme.colorScheme.background)
+                    .padding(all = LocalDimensions.current.paddingNormal)
+                    .padding(start = LocalDimensions.current.paddingMedium)
+            ) {
+                Text(
+                    modifier = Modifier.padding(bottom = LocalDimensions.current.paddingSmall),
+                    text = boardPart,
+                    maxLines = TITLE_MAX_LINES,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
 
-                Column(
-                    modifier = Modifier
-                        .weight(weight = 1f)
-                        .fillMaxHeight()
-                        .background(color = MaterialTheme.colorScheme.background)
-                        .padding(all = LocalDimensions.current.paddingNormal)
-                        .padding(start = LocalDimensions.current.paddingMedium)
-                ) {
+
+
+                if (friendlyName != null) {
                     Text(
-                        modifier = Modifier.padding(bottom = LocalDimensions.current.paddingSmall)
-                            .sharedElement(
-                                sharedTransitionScope.rememberSharedContentState(key = "text-${boardPart}"),
-                                animatedVisibilityScope = animatedContentScope
-                            ),
-                        text = boardPart,
-                        maxLines = TITLE_MAX_LINES,
-                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = LocalDimensions.current.paddingSmall),
+                        text = friendlyName,
+                        maxLines = SUBTITLE_MAX_LINES,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
+                }
+
+                if (releaseDate != null) {
+                    Text(
+                        modifier = Modifier.padding(bottom = LocalDimensions.current.paddingSmall),
+                        text = releaseDate.replace('_', '/'),
+                        maxLines = 1,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
 
 
+                if (description != null) {
+                    Text(
+                        text = description,
+                        maxLines = DESCRIPTION_MAX_LINES,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                when (boardStatus) {
+                    BoardStatus.ACTIVE -> Text(
+                        modifier = Modifier
+                            .padding(
+                                end = LocalDimensions.current.paddingSmall,
+                                bottom = LocalDimensions.current.paddingSmall
+                            )
+                            .fillMaxWidth(),
+                        textAlign = TextAlign.Right,
+                        text = boardStatus.name,
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SuccessText
+                    )
 
-                    if (friendlyName != null) {
-                        Text(
-                            modifier = Modifier.padding(bottom = LocalDimensions.current.paddingSmall)
-                            .sharedElement(
-                                    sharedTransitionScope.rememberSharedContentState(key = "friendly-${friendlyName}"),
-                            animatedVisibilityScope = animatedContentScope
-                        ),
-                            text = friendlyName,
-                            maxLines = SUBTITLE_MAX_LINES,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    BoardStatus.NRND -> Text(
+                        modifier = Modifier
+                            .padding(
+                                end = LocalDimensions.current.paddingSmall,
+                                bottom = LocalDimensions.current.paddingSmall
+                            ),
+                        text = boardStatus.name,
+                        textAlign = TextAlign.Right,
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ErrorText
+                    )
 
-                    if (releaseDate != null) {
-                        Text(
-                            modifier = Modifier.padding(bottom = LocalDimensions.current.paddingSmall),
-                            text = releaseDate.replace('_', '/'),
-                            maxLines = 1,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-
-                    if (description != null) {
-                        Text(
-                            text = description,
-                            maxLines = DESCRIPTION_MAX_LINES,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    when (boardStatus) {
-                        BoardStatus.ACTIVE -> Text(
-                            modifier = Modifier
-                                .padding(
-                                    end = LocalDimensions.current.paddingSmall,
-                                    bottom = LocalDimensions.current.paddingSmall
-                                )
-                                .fillMaxWidth().sharedElement(
-                                    sharedTransitionScope.rememberSharedContentState(key = "statusAct-${boardPart}"),
-                                    animatedVisibilityScope = animatedContentScope
-                                ),
-                            textAlign = TextAlign.Right,
-                            text = boardStatus.name,
-                            maxLines = 1,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = SuccessText
-                        )
-
-                        BoardStatus.NRND -> Text(
-                            modifier = Modifier
-                                .padding(
-                                    end = LocalDimensions.current.paddingSmall,
-                                    bottom = LocalDimensions.current.paddingSmall
-                                ).sharedElement(
-                                    sharedTransitionScope.rememberSharedContentState(key = "statusNrn-${boardPart}"),
-                                    animatedVisibilityScope = animatedContentScope
-                                ),
-                            text = boardStatus.name,
-                            textAlign = TextAlign.Right,
-                            maxLines = 1,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = ErrorText
-                        )
-
-                        else -> {}
-                    }
+                    else -> {}
                 }
             }
         }

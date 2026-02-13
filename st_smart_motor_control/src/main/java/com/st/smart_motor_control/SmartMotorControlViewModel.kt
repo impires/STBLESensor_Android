@@ -287,26 +287,6 @@ class SmartMotorControlViewModel
             true
         }
 
-    private fun List<DtmiContent>.hideDisabledTagWhenConfigHasTag() =
-        filter { content -> //  tag not enabled when MotorControlConfig has tag label override is hide
-            if (MotorControlConfig.tags.isNotEmpty()) {
-                val tagsInfoJson = _componentStatusUpdates.value.find {
-                    it.containsKey(TAGS_INFO_JSON_KEY)
-                }?.get(TAGS_INFO_JSON_KEY)?.jsonObject
-                if (tagsInfoJson?.containsKey(content.name) == true) {
-                    val propJson = tagsInfoJson[content.name]
-                    if (propJson is JsonObject) {
-                        if (propJson.containsKey(ENABLED_JSON_KEY)) {
-                            return@filter propJson[ENABLED_JSON_KEY]?.jsonPrimitive?.booleanOrNull
-                                ?: true
-                        }
-                    }
-                }
-            }
-
-            true
-        }
-
     private fun List<DtmiContent>.enableOrStatusPropertyMap() =
         map { content -> //  tag component when not logging hide enabled toggle/show status toggle and vice versa
             if (content.type == DtmiType.PROPERTY && content is DtmiContent.DtmiPropertyContent.DtmiComplexPropertyContent) {
@@ -331,11 +311,7 @@ class SmartMotorControlViewModel
                 if (content.schema is DtmiContent.DtmiObjectContent) {
                     val schema = content.schema as DtmiContent.DtmiObjectContent
                     return@map content.copy(schema = schema.copy(fields = schema.fields.filter {
-                        if (MotorControlConfig.tags.isNotEmpty()) {
-                            it.name != ENABLED_JSON_KEY
-                        } else {
-                            true
-                        }
+                        true
                     }))
                 }
             }
@@ -356,7 +332,6 @@ class SmartMotorControlViewModel
                                     .enableOrStatusPropertyMap()
                                     .enablePropertyMap()
                                     .hideDisabledTagWhenLoggingFilter()
-                                    .hideDisabledTagWhenConfigHasTag()
                             )
                         )
                     }
@@ -748,7 +723,11 @@ class SmartMotorControlViewModel
 
     fun disconnect() {
         nodeIdLocal?.let { nodeId ->
-            GlobalConfig.navigateBack?.let { it1 -> it1(nodeId) }
+            if(GlobalConfig.navigateBack!=null) {
+                GlobalConfig.navigateBack?.let { it(nodeId) }
+            } else {
+                GlobalConfig.navigateBack3(nodeId)
+            }
         }
     }
 
@@ -791,14 +770,16 @@ class SmartMotorControlViewModel
                 .filter { it.name == PnPL.NAME || it.name == RawControlled.NAME }
         )
 
-        observeFeatureJob = blueManager.getFeatureUpdates(nodeId = nodeId,
+        observeFeatureJob = blueManager.getFeatureUpdates(
+            nodeId = nodeId,
             features = pnplFeatures,
             onFeaturesEnabled = {
                 viewModelScope.launch {
 
                     val node = blueManager.getNodeWithFirmwareInfo(nodeId = nodeId)
                     var maxWriteLength =
-                        node?.catalogInfo?.characteristics?.firstOrNull { it.name == PnPL.NAME }?.maxWriteLength ?:20
+                        node?.catalogInfo?.characteristics?.firstOrNull { it.name == PnPL.NAME }?.maxWriteLength
+                            ?: 20
                     node?.let {
                         if (maxWriteLength > (node.maxPayloadSize)) {
                             maxWriteLength = (node.maxPayloadSize)
@@ -1053,109 +1034,38 @@ class SmartMotorControlViewModel
                                     shouldRenameTags = false
                                     //for (index in 0..4) {
                                     for (index in 0..<numberOfTags) {
-                                        if (index in 0..MotorControlConfig.tags.lastIndex) {
-                                            val tagName = MotorControlConfig.tags[index]
-
-                                            if (pnplBleResponses) {
-                                                //add the command to the list
-                                                addCommandToQueueAndCheckSend(
-                                                    nodeId = nodeId,
-                                                    newCommand = SetCommandPnPLRequest(
-                                                        typeOfCommand = PnPLTypeOfCommand.Set,
-                                                        pnpLCommand = PnPLCmd(
-                                                            command = TAGS_INFO_JSON_KEY,
-                                                            request = "$TAG_JSON_KEY$index",
-                                                            fields = mapOf(LABEL_JSON_KEY to tagName)
-                                                        ),
-                                                        askTheStatus = false
-                                                    )
-                                                )
-
-                                                //add the command to the list
-                                                addCommandToQueueAndCheckSend(
-                                                    nodeId = nodeId,
-                                                    newCommand = SetCommandPnPLRequest(
-                                                        typeOfCommand = PnPLTypeOfCommand.Set,
-                                                        pnpLCommand = PnPLCmd(
-                                                            command = TAGS_INFO_JSON_KEY,
-                                                            request = "$TAG_JSON_KEY$index",
-                                                            fields = mapOf(ENABLED_JSON_KEY to true)
-                                                        ),
-                                                        askTheStatus = index == MotorControlConfig.tags.lastIndex
-                                                    )
-                                                )
-
-                                            } else {
-                                                _isLoading.value = true
-                                                val renameCommand = PnPLCommand(
-                                                    feature = pnplFeatures.filterIsInstance<PnPL>()
-                                                        .first(),
-                                                    cmd = PnPLCmd(
-                                                        command = TAGS_INFO_JSON_KEY,
-                                                        request = "$TAG_JSON_KEY$index",
-                                                        fields = mapOf(LABEL_JSON_KEY to tagName)
-                                                    )
-                                                )
-
-                                                blueManager.writeFeatureCommand(
-                                                    responseTimeout = 0,
-
-                                                    nodeId = nodeId, featureCommand = renameCommand
-                                                )
-
-
-                                                val enableCommand = PnPLCommand(
-                                                    feature = pnplFeatures.filterIsInstance<PnPL>()
-                                                        .first(),
-                                                    cmd = PnPLCmd(
-                                                        command = TAGS_INFO_JSON_KEY,
-                                                        request = "$TAG_JSON_KEY$index",
-                                                        fields = mapOf(ENABLED_JSON_KEY to true)
-                                                    )
-                                                )
-
-                                                //delay(50L)
-
-                                                blueManager.writeFeatureCommand(
-                                                    responseTimeout = 0,
-
-                                                    nodeId = nodeId, featureCommand = enableCommand
-                                                )
-                                            }
-                                        } else {
-                                            if (pnplBleResponses) {
-                                                //add the command to the list
-                                                addCommandToQueueAndCheckSend(
-                                                    nodeId = nodeId,
-                                                    newCommand = SetCommandPnPLRequest(
-                                                        typeOfCommand = PnPLTypeOfCommand.Set,
-                                                        pnpLCommand = PnPLCmd(
-                                                            command = TAGS_INFO_JSON_KEY,
-                                                            request = "$TAG_JSON_KEY$index",
-                                                            fields = mapOf(ENABLED_JSON_KEY to false)
-                                                        ),
-                                                        askTheStatus = false
-                                                    )
-                                                )
-                                            } else {
-                                                _isLoading.value = true
-                                                val disableCommand = PnPLCommand(
-                                                    feature = pnplFeatures.filterIsInstance<PnPL>()
-                                                        .first(),
-                                                    cmd = PnPLCmd(
+                                        if (pnplBleResponses) {
+                                            //add the command to the list
+                                            addCommandToQueueAndCheckSend(
+                                                nodeId = nodeId,
+                                                newCommand = SetCommandPnPLRequest(
+                                                    typeOfCommand = PnPLTypeOfCommand.Set,
+                                                    pnpLCommand = PnPLCmd(
                                                         command = TAGS_INFO_JSON_KEY,
                                                         request = "$TAG_JSON_KEY$index",
                                                         fields = mapOf(ENABLED_JSON_KEY to false)
-                                                    )
+                                                    ),
+                                                    askTheStatus = false
                                                 )
-
-                                                // viewModelScope.launch {
-                                                blueManager.writeFeatureCommand(
-                                                    responseTimeout = 0,
-
-                                                    nodeId = nodeId, featureCommand = disableCommand
+                                            )
+                                        } else {
+                                            _isLoading.value = true
+                                            val disableCommand = PnPLCommand(
+                                                feature = pnplFeatures.filterIsInstance<PnPL>()
+                                                    .first(),
+                                                cmd = PnPLCmd(
+                                                    command = TAGS_INFO_JSON_KEY,
+                                                    request = "$TAG_JSON_KEY$index",
+                                                    fields = mapOf(ENABLED_JSON_KEY to false)
                                                 )
-                                            }
+                                            )
+
+                                            // viewModelScope.launch {
+                                            blueManager.writeFeatureCommand(
+                                                responseTimeout = 0,
+
+                                                nodeId = nodeId, featureCommand = disableCommand
+                                            )
                                         }
                                         //delay(50L)
                                     }
@@ -1276,51 +1186,6 @@ class SmartMotorControlViewModel
     fun refresh(nodeId: String) {
         viewModelScope.launch {
             sendGetAllCommand(nodeId)
-        }
-    }
-
-    fun onTagChangeState(nodeId: String, tag: String, newState: Boolean) {
-        viewModelScope.launch {
-            if (pnplBleResponses) {
-                //add the command to the list
-                addCommandToQueueAndCheckSend(
-                    nodeId = nodeId, newCommand = SetCommandPnPLRequest(
-                        typeOfCommand = PnPLTypeOfCommand.Set, pnpLCommand = PnPLCmd(
-                            command = TAGS_INFO_JSON_KEY,
-                            request = "$TAG_JSON_KEY$tag",
-                            fields = mapOf(STATUS_JSON_KEY to newState)
-                        ),
-                        askTheStatus = false
-                    )
-                )
-                val oldTagsStatus = _vespucciTags.value.toMutableMap()
-                oldTagsStatus[tag] = newState
-
-                _vespucciTags.emit(oldTagsStatus)
-            } else {
-                val enableCommand = PnPLCommand(
-                    feature = pnplFeatures.filterIsInstance<PnPL>().first(),
-                    cmd = PnPLCmd(
-                        command = TAGS_INFO_JSON_KEY,
-                        request = "$TAG_JSON_KEY$tag",
-                        fields = mapOf(STATUS_JSON_KEY to newState)
-                    )
-                )
-
-                val oldTagsStatus = _vespucciTags.value.toMutableMap()
-                oldTagsStatus[tag] = newState
-
-                _vespucciTags.emit(oldTagsStatus)
-
-                //delay(50L)
-
-                blueManager.writeFeatureCommand(
-                    responseTimeout = 0,
-
-                    nodeId = nodeId,
-                    featureCommand = enableCommand
-                )
-            }
         }
     }
 

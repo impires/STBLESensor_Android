@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -86,6 +87,8 @@ class HomeViewModel @Inject constructor(
 
     private var activityResultRegistryOwner: ActivityResultRegistryOwner? = null
 
+    var currentNodeId: String? = null
+
     init {
         val boardCatalogStatusSerialized = stPreferences.getBoardCatalogStatus()
         val jsonDec = Json {
@@ -106,6 +109,7 @@ class HomeViewModel @Inject constructor(
 
     fun startScan() {
         viewModelScope.launch {
+            _scanBleDevices.emit(emptyList())
             blueManager.scanNodes().map { resource ->
                 _isLoading.tryEmit(value = resource.status == Status.LOADING)
 
@@ -123,6 +127,7 @@ class HomeViewModel @Inject constructor(
         enableServer: Boolean,
         onNodeReady: (() -> Unit)? = null
     ) {
+        currentNodeId = nodeId
         connectionJob?.cancel()
         connectionJob = viewModelScope.launch {
             var retryCount = 0
@@ -170,6 +175,12 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun startHomeFragment() {
+        viewModelScope.launch {
+            _scanBleDevices.emit(emptyList())
+        }
+    }
+
     fun getNodeFromNodeId(nodeId: String): Node? {
         var node: Node?
         runBlocking {
@@ -192,18 +203,20 @@ class HomeViewModel @Inject constructor(
     }
 
     fun readBetaCatalog() {
-        //viewModelScope.launch {
-        //    val url: String = BuildConfig.BLUESTSDK_DB_BASE_BETA_URL
-        //    blueManager.reset(url)
-        //    _boardsDescription.value = blueManager.getBoardsDescription()
-        //    //Log.i("DB","readBetaCatalog checkBoardsCatalogPresence = ${ _boardsDescription.value.size}")
-        //
-        //}
+//        viewModelScope.launch {
+//            _scanBleDevices.emit(emptyList())
+//            val url: String = BuildConfig.BLUESTSDK_DB_BASE_BETA_URL
+//            blueManager.reset(url)
+//            _boardsDescription.value = blueManager.getBoardsDescription()
+//            //Log.i("DB","readBetaCatalog checkBoardsCatalogPresence = ${ _boardsDescription.value.size}")
+//
+//        }
         //checkBoardsCatalogPresence()
     }
 
     fun readReleaseCatalog() {
         viewModelScope.launch {
+            _scanBleDevices.emit(emptyList())
             blueManager.reset()
             _boardsDescription.value = blueManager.getBoardsDescription()
             Log.i(
@@ -224,7 +237,7 @@ class HomeViewModel @Inject constructor(
 
     fun openGitHubSourceCode() {
         Intent(Intent.ACTION_VIEW).also { intent ->
-            intent.data = Uri.parse("https://github.com/STMicroelectronics/STBlueMS_Android")
+            intent.data = "https://github.com/STMicroelectronics/STBlueMS_Android".toUri()
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         }
@@ -233,7 +246,7 @@ class HomeViewModel @Inject constructor(
     fun openAboutUsPage() {
         Intent(Intent.ACTION_VIEW).also { intent ->
             intent.data =
-                Uri.parse("https://www.st.com/content/st_com/en/about/st_company_information/who-we-are.html")
+                "https://www.st.com/content/st_com/en/about/st_company_information/who-we-are.html".toUri()
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         }
@@ -242,7 +255,7 @@ class HomeViewModel @Inject constructor(
     fun openPrivacyPolicyPage() {
         Intent(Intent.ACTION_VIEW).also { intent ->
             intent.data =
-                Uri.parse("https://www.st.com/content/st_com/en/common/privacy-portal/corporate-privacy-statement.html")
+                "https://www.st.com/content/st_com/en/common/privacy-portal/corporate-privacy-statement.html".toUri()
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         }
@@ -279,11 +292,14 @@ class HomeViewModel @Inject constructor(
     fun login() {
         viewModelScope.launch {
             activityResultRegistryOwner?.let {
-
                 loginManager.login(it.activityResultRegistry)
                 _isLoggedIn.value = loginManager.isLoggedIn()
             }
         }
+    }
+
+    fun checkLoginStatus() {
+        _isLoggedIn.value = loginManager.isLoggedIn()
     }
 
     fun logout() {

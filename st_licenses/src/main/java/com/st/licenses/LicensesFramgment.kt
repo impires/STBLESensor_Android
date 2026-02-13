@@ -14,7 +14,6 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
-import androidx.navigation.findNavController
 import com.st.ui.theme.BlueMSTheme
 import com.st.licenses.composable.LicensesScreen
 import dagger.hilt.android.AndroidEntryPoint
@@ -33,9 +32,7 @@ class LicensesFragment : Fragment() {
             )
             setContent {
                 BlueMSTheme {
-                    LicensesScreen {
-                        findNavController().popBackStack()
-                    }
+                    LicensesScreen()
                 }
             }
         }

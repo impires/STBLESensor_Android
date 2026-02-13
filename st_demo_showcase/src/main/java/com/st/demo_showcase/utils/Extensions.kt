@@ -7,24 +7,21 @@
  */
 package com.st.demo_showcase.utils
 
-import android.content.Context
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Settings
-import androidx.navigation.NavController
-import com.st.demo_showcase.DemoShowcaseNavGraphDirections
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.demo_showcase.models.Demo
 import com.st.demo_showcase.models.LOG_SETTINGS
-import com.st.neai_classification.NEAI_CLASSIFICATION_SETTINGS
-import com.st.neai_classification.NeaiClassificationFragmentDirections
+import com.st.demo_showcase.ui.demo_show_case.DemoShowCaseLogSettingsNavKey
 import com.st.ui.composables.ActionItem
 import com.st.external_app.ExternalAppAIoTCraft
 import com.st.external_app.ExternalAppRobotics
 
 fun List<String>?.toActions(
     demo: Demo?,
-    navController: NavController?,
-    nodeId: String
+    nodeId: String,
+    backState: NavBackStack<NavKey>,
 ): List<ActionItem> {
     if (this == null) return emptyList()
     return this.map {
@@ -32,31 +29,23 @@ fun List<String>?.toActions(
             label = it,
             imageVector = when (it) {
                 LOG_SETTINGS -> Icons.Default.Settings
-                NEAI_CLASSIFICATION_SETTINGS -> Icons.AutoMirrored.Filled.Label
                 else -> null
             },
             action = {
                 val direction = when (demo) {
+                    //This just for having one example on how add actions to one specific demo... but it's not necessary
                     Demo.Plot ->
                         when (it) {
-                            LOG_SETTINGS -> DemoShowcaseNavGraphDirections.globalActionToLogSettings()
+                            LOG_SETTINGS ->DemoShowCaseLogSettingsNavKey(nodeId = nodeId, currentDemo = demo)
                             else -> null
                         }
-
-                    Demo.NEAIClassification ->
-                        when(it) {
-                            NEAI_CLASSIFICATION_SETTINGS -> NeaiClassificationFragmentDirections.actionNeaiClassificationFragmentToNeaiClassificationSettingFragment(nodeId)
-                            LOG_SETTINGS -> DemoShowcaseNavGraphDirections.globalActionToLogSettings()
-                            else -> null
-                        }
-
                     else -> when (it) {
-                        LOG_SETTINGS -> DemoShowcaseNavGraphDirections.globalActionToLogSettings()
+                        LOG_SETTINGS -> DemoShowCaseLogSettingsNavKey(nodeId = nodeId, currentDemo = demo)
                         else -> null
                     }
                 }
-                direction?.let { dir ->
-                    navController?.navigate(dir)
+                direction?.let {
+                    backState.add(direction)
                 }
             }
         )
@@ -99,8 +88,7 @@ fun Demo.isLastFwVersionMandatory(): Boolean = when (this) {
     else -> false
 }
 
-@Suppress("UNUSED_PARAMETER")
-fun Demo.getDescription(context: Context): String =
+fun Demo.getDescription(): String =
     when (this) {
         Demo.Flow -> "Deploy one application to the board"
         Demo.Environmental -> "Display available temperature, pressure, humidity and Lux sensors values"
@@ -116,7 +104,7 @@ fun Demo.getDescription(context: Context): String =
         Demo.NavigationGesture -> "Recognition of gesture navigation using sensor"
         Demo.NEAIAnomalyDetection -> "AI library (generated using NanoEdgeAIStudio) for predictive maintenance solution"
         Demo.NEAIClassification -> "AI library (generated using NanoEdgeAIStudio) for classification"
-        Demo.NeaiExtrapolation -> "AI library (generated using NanoEdgeAIStudio) for extrapolation"
+        Demo.NEAIExtrapolation -> "AI library (generated using NanoEdgeAIStudio) for extrapolation"
         Demo.EventCounter -> "Display the counter that will be increased at each event detected by board"
         Demo.PianoDemo -> "Display a Piano keyboard for playing audio notes on the board"
         Demo.Pnpl -> "Board Control and Configuration using PnP-Like messages defined by a DTDL-Model"
@@ -136,7 +124,7 @@ fun Demo.getDescription(context: Context): String =
         Demo.PedometerDemo -> "Calculate number of steps and its frequency"
         Demo.ProximityGestureRecognition -> "Gesture recognition (tap/swap) using Time-of-Flight (ToF) sensor"
         Demo.SwitchDemo -> "Switch on/off the LED placed on the board"
-        Demo.RegistersFMSDemo -> "Display the registers output for the Finite State Machine core present on advance accelerometer"
+        Demo.RegistersFSMDemo -> "Display the registers output for the Finite State Machine core present on advance accelerometer"
         Demo.RegistersMLCDemo -> "Display the registers output for the Machine Learning core present on advance accelerometer"
         Demo.RegistersSTREDDemo -> "Display the registers output for the  STRed-ISPU core"
         Demo.AccelerationEventDemo -> "Detect different acceleration event types"

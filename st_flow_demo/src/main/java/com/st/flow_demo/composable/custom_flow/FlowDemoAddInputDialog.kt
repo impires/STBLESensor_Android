@@ -1,5 +1,6 @@
 package com.st.flow_demo.composable.custom_flow
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 
@@ -70,11 +71,14 @@ fun FlowDemoAddInputDialog(
     val availableCustomInput by viewModel.flowsCustomList.collectAsStateWithLifecycle()
 
     val availableExpansionSensor  by viewModel.expansionSensorsList.collectAsStateWithLifecycle()
+    //Log.i("FlowDemoAddInputDialog1", "availableExpansionSensor: $availableExpansionSensor")
     //val availableExpansionSensorFilter = availableExpansionSensor.filter { it.model== viewModel.getMountedDil24FromOptionBytes()}
 
     val possibleMountedDil24s = viewModel.getPossibleMountedDil24sFromOptionBytes()
+    //Log.i("FlowDemoAddInputDialog2", "possibleMountedDil24s: $possibleMountedDil24s")
 
     val availableExpansionSensorFilter = availableExpansionSensor.filter { possibleMountedDil24s.contains(it.model)}
+    //Log.i("FlowDemoAddInputDialog3", "availableExpansionSensorFilter: $availableExpansionSensorFilter")
 
 
     var errorText by remember { mutableStateOf<String?>(value = null) }
@@ -168,53 +172,56 @@ fun FlowDemoAddInputDialog(
                                 })
                         }
 
-                        possibleMountedDil24s.forEach {  dil24Model ->
-                            item {
-                                Text(
-                                    modifier = Modifier.padding(all = LocalDimensions.current.paddingNormal),
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontSize = 16.sp,
-                                    text = "$dil24Model Expansion DIL24"
-                                )
-                            }
+                        if(possibleMountedDil24s.isNotEmpty()) {
+                            possibleMountedDil24s.forEach { dil24Model ->
+                                item {
+                                    Text(
+                                        modifier = Modifier.padding(all = LocalDimensions.current.paddingNormal),
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontSize = 16.sp,
+                                        text = "$dil24Model Expansion DIL24"
+                                    )
+                                }
 
-                            items(availableExpansionSensorFilter.filter { it.model == dil24Model }) {
-                                val currentSensorFlow =
-                                    findSensorById(flowOnCreation.sensors, it.id)
-                                var booleanData = currentSensorFlow != null
+                                items(availableExpansionSensorFilter.filter { it.model == dil24Model }) {
+                                    val currentSensorFlow =
+                                        findSensorById(flowOnCreation.sensors, it.id)
+                                    var booleanData = currentSensorFlow != null
 
-                                FlowDemoBooleanProperty(
-                                    label = it.description,
-                                    value = booleanData,
-                                    onValueChange = { value ->
-                                        booleanData = value
-                                        val tmpList = flowOnCreation.sensors.toMutableList()
-                                        if (booleanData) {
-                                            numberOfSensorSelected++
-                                            tmpList.add(it)
-                                        } else {
-                                            numberOfSensorSelected--
-                                            tmpList.remove(it)
-                                        }
-                                        flowOnCreation.sensors = tmpList.toList()
-
-                                        errorText = if (multipleAccelerometerAreSelected(tmpList)) {
-                                            "Multiple Accelerometers are Selected"
-                                        } else if (multipleDIL24AreSelected(tmpList)) {
-                                            "Multiple DIL24 are Selected"
-                                        } else if (bothMLCAndFSMArePresent(tmpList)) {
-                                            "MLC Virtual Sensor and FSM Virtual Sensor cannot be selected together"
-                                        } else {
-                                            if ((numberOfSensorSelected > 0) && (numberOfExpSelected > 0)) {
-                                                "Input Sensor and Exp could not be selected together"
+                                    FlowDemoBooleanProperty(
+                                        label = it.description,
+                                        value = booleanData,
+                                        onValueChange = { value ->
+                                            booleanData = value
+                                            val tmpList = flowOnCreation.sensors.toMutableList()
+                                            if (booleanData) {
+                                                numberOfSensorSelected++
+                                                tmpList.add(it)
                                             } else {
-                                                null
+                                                numberOfSensorSelected--
+                                                tmpList.remove(it)
                                             }
-                                        }
-                                    })
-                            }
+                                            flowOnCreation.sensors = tmpList.toList()
 
+                                            errorText =
+                                                if (multipleAccelerometerAreSelected(tmpList)) {
+                                                    "Multiple Accelerometers are Selected"
+                                                } else if (multipleDIL24AreSelected(tmpList)) {
+                                                    "Multiple DIL24 are Selected"
+                                                } else if (bothMLCAndFSMArePresent(tmpList)) {
+                                                    "MLC Virtual Sensor and FSM Virtual Sensor cannot be selected together"
+                                                } else {
+                                                    if ((numberOfSensorSelected > 0) && (numberOfExpSelected > 0)) {
+                                                        "Input Sensor and Exp could not be selected together"
+                                                    } else {
+                                                        null
+                                                    }
+                                                }
+                                        })
+                                }
+
+                            }
                         }
 
                         if (availableExprFilter.isNotEmpty()) {

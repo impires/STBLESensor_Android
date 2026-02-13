@@ -72,7 +72,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigationFragment)
+    
     implementation(project(":st_motion_intensity"))
     ksp(libs.hilt.compiler)
 

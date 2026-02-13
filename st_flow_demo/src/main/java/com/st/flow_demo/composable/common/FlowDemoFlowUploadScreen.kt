@@ -27,7 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.core.GlobalConfig
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.helpers.gzip
@@ -42,7 +43,7 @@ import com.st.ui.theme.WarningText
 @Composable
 fun FlowDemoFlowUploadScreen(
     viewModel: FlowDemoViewModel,
-    navController: NavHostController,
+    backState: NavBackStack<NavKey>,
     paddingValues: PaddingValues
 ) {
     val flow = viewModel.flowSelected
@@ -108,6 +109,7 @@ fun FlowDemoFlowUploadScreen(
                     flowReceived = true
 
                 }
+
                 else -> {
                     isError = true
                     loading = false
@@ -176,7 +178,7 @@ fun FlowDemoFlowUploadScreen(
                         .fillMaxWidth()
                         .height(12.dp),
                     drawStopIndicator = {}
-                    )
+                )
             }
 
             if (flowMessageReceived.second != null) {
@@ -215,7 +217,7 @@ fun FlowDemoFlowUploadScreen(
                     onClick = {
                         val nodeId = viewModel.getNodeId()
                         nodeId?.let {
-                            GlobalConfig.navigateBack?.let { it(nodeId)}
+                            GlobalConfig.navigateBack3?.let { it(nodeId) }
                         }
 //                        val navOptions: NavOptions = navOptions {
 //                            popUpTo("categoriesExample") { inclusive = true }
@@ -246,7 +248,8 @@ fun FlowDemoFlowUploadScreen(
                     loading = false
                     flowLoaded = false
                     currentProgress = 0f
-                    navController.popBackStack() }
+                    backState.removeLastOrNull()
+                }
             )
         } else {
             flowLoaded = false
@@ -254,7 +257,7 @@ fun FlowDemoFlowUploadScreen(
             loading = false
             currentProgress = 0f
             openConfirmationDialog = false
-            navController.popBackStack()
+            backState.removeLastOrNull()
         }
     }
 }

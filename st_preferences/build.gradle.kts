@@ -71,7 +71,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigationFragment)
+    
     ksp(libs.hilt.compiler)
 
     // Dependency required for API desugaring.

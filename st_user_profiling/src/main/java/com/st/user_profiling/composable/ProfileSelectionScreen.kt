@@ -17,7 +17,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.ui.composables.BlueMsButton
 import com.st.ui.composables.BlueMsButtonOutlined
 import com.st.ui.composables.StTopBar
@@ -32,7 +33,8 @@ import com.st.user_profiling.model.RadioButtonItem
 @Composable
 fun ProfileSelectionScreen(
     viewModel: ProfileViewModel,
-    navController: NavController
+    backState: NavBackStack<NavKey>,
+    onCloseUserProfiling: () -> Unit = { /** NOOP**/ }
 ) {
     ProfileSelectionScreen(
         profileTypes = profileTypes,
@@ -47,9 +49,10 @@ fun ProfileSelectionScreen(
                 viewModel.levelSelected.value,
                 viewModel.profileTypeSelected.value
             )
+            onCloseUserProfiling()
         },
         goBack = {
-            navController.popBackStack()
+            backState.removeLastOrNull()
         }
     )
 }
@@ -66,6 +69,7 @@ fun ProfileSelectionScreen(
 ) {
     Scaffold(
         modifier = modifier,
+        contentWindowInsets = WindowInsets.statusBars,
         topBar = {
             StTopBar(
                 title = stringResource(id = R.string.st_userProfiling_profileSelection_titleScreen)
@@ -73,7 +77,9 @@ fun ProfileSelectionScreen(
         }
     ) { contentPadding ->
         ProfileSelectionContentScreen(
-            modifier = Modifier.padding(paddingValues = contentPadding),
+            modifier = Modifier
+                .consumeWindowInsets(contentPadding)
+                .padding(paddingValues = contentPadding),
             profileTypes = profileTypes,
             profileTypeSelected = profileTypeSelected,
             onProfileTypeSelected = onProfileTypeSelected,
@@ -149,6 +155,8 @@ fun ProfileSelectionContentScreen(
                 onClick = onSelectionDone
             )
         }
+
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
 }
 

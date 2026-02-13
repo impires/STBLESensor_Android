@@ -78,12 +78,20 @@ fun FwUpgradeScreen(
         boardModel = viewModel.boardModel(nodeId = nodeId),
         onDismissSuccessDialog = {
             viewModel.clearFwUpdateState()
-            GlobalConfig.navigateBack?.let { it(nodeId) }
+            if(GlobalConfig.navigateBack!=null) {
+                GlobalConfig.navigateBack?.let { it(nodeId) }
+            } else {
+                GlobalConfig.navigateBack3(nodeId)
+            }
         },
         onDismissErrorDialog = {
             viewModel.clearFwUpdateState()
 
-            GlobalConfig.navigateBack?.let { it(nodeId) }
+            if(GlobalConfig.navigateBack!=null) {
+                GlobalConfig.navigateBack?.let { it(nodeId) }
+            } else {
+                GlobalConfig.navigateBack3(nodeId)
+            }
         },
         onChangeFile = {
             //pickFileLauncher.launch(arrayOf("application/octet-stream"))

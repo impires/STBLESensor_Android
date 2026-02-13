@@ -388,6 +388,10 @@ class CloudAzureIotCentralViewModel
         }
     }
 
+    fun unSelectedCloudApp() {
+        _selectedCloudAppNum.value = deviceCloutNotSELECTED
+    }
+
     fun setSelectedCloudDevice(index: Int) {
         _selectedCloudDeviceNum.value = index
         if (index != deviceCloutNotSELECTED) {
@@ -403,6 +407,12 @@ class CloudAzureIotCentralViewModel
             }
         }
     }
+
+    fun unSelectedCloudDevice() {
+        _selectedCloudDeviceNum.value = deviceCloutNotSELECTED
+        _isCloudDeviceConfigured.value = false
+    }
+
 
     private fun readDeviceCredentialsFromCloud() {
         var credentials: CloudDeviceCredentials?

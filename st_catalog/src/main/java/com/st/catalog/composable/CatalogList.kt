@@ -7,9 +7,6 @@
  */
 package com.st.catalog.composable
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -43,9 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.blue_sdk.board_catalog.models.BoardDescription
 import com.st.blue_sdk.board_catalog.models.BoardFirmware
+import com.st.catalog.BoardDetailsNavKey
 import com.st.catalog.CatalogViewModel
 import com.st.catalog.R
 import com.st.catalog.availableDemos
@@ -53,48 +52,31 @@ import com.st.ui.composables.StTopBar
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.SecondaryBlue
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CatalogList(
     modifier: Modifier = Modifier,
-    nodeId: String? = null,
-    navController: NavController,
+    backStack: NavBackStack<NavKey>,
     onBack: () -> Unit = { /** NOOP **/ },
-    viewModel: CatalogViewModel,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope
+    viewModel: CatalogViewModel
 ) {
-    if (nodeId != null) {
-        //remove the catalog list fragment before to navigate to board details
-        navController.popBackStack()
-        navController.navigate(
-            "detail/${nodeId}"
-        )
-    } else {
-        val boards by viewModel.boards.collectAsStateWithLifecycle()
-        val boardsDescription by viewModel.boardsDescription.collectAsStateWithLifecycle()
+    val boards by viewModel.boards.collectAsStateWithLifecycle()
+    val boardsDescription by viewModel.boardsDescription.collectAsStateWithLifecycle()
 
-        if (boards.isNotEmpty() && boardsDescription.isNotEmpty()) {
-            CatalogList(
-                modifier = modifier,
-                boardFirmwares = boards,
-                allBoardFirmwares = boards,
-                boardsDescription = boardsDescription,
-                isBeta = viewModel.isBeta,
-                onBack = onBack,
-                onBoardSelected = { boardPart ->
-                    navController.navigate(
-                        "detail/${boardPart}"
-                    )
-                },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedContentScope = animatedContentScope
-            )
-        }
+    if (boards.isNotEmpty() && boardsDescription.isNotEmpty()) {
+        CatalogList(
+            modifier = modifier,
+            boardFirmwares = boards,
+            allBoardFirmwares = boards,
+            boardsDescription = boardsDescription,
+            isBeta = viewModel.isBeta,
+            onBack = onBack,
+            onBoardSelected = { boardPart ->
+                backStack.add(BoardDetailsNavKey(boardPart = boardPart))
+            }
+        )
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CatalogList(
     modifier: Modifier = Modifier,
@@ -103,9 +85,7 @@ fun CatalogList(
     boardsDescription: List<BoardDescription>,
     isBeta: Boolean = false,
     onBack: () -> Unit = { /** NOOP **/ },
-    onBoardSelected: (String) -> Unit = { /** NOOP **/ },
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope
+    onBoardSelected: (String) -> Unit = { /** NOOP **/ }
 ) {
     var openFilter by remember { mutableStateOf(value = false) }
     var boardOrder by remember { mutableStateOf(value = BoardOrder.NONE) }
@@ -155,7 +135,8 @@ fun CatalogList(
 
     val releaseDatesPresent = boardsDescription.firstOrNull { it.releaseDate != null } != null
 
-    Scaffold(modifier = modifier.fillMaxSize(),
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets.statusBars,
         floatingActionButtonPosition = FabPosition.End,
         floatingActionButton = {
@@ -203,9 +184,7 @@ fun CatalogList(
                     },
                     onClickItem = {
                         onBoardSelected(it.boardPart)
-                    },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = animatedContentScope
+                    }
                 )
             }
 

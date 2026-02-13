@@ -15,7 +15,8 @@ plugins {
     alias(libs.plugins.googleHilt)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.androidxSafeargs)
+    
+    alias(libs.plugins.kotlinSerialization)
 }
 
 apply {
@@ -74,6 +75,7 @@ dependencies {
     implementation(project(":st_login"))
     // - User Profiling
     implementation(project(":st_user_profiling"))
+
     // - Demos
     implementation(project(":st_compass"))
     implementation(project(":st_level"))
@@ -103,7 +105,6 @@ dependencies {
     implementation(project(":st_pedometer"))
     implementation(project(":st_proximity_gesture_recognition"))
     implementation(project(":st_switch_demo"))
-    implementation(project(":st_legacy_demo"))
     implementation(project(":st_registers_demo"))
     implementation(project(":st_acceleration_event"))
     implementation(project(":st_source_localization"))
@@ -116,7 +117,6 @@ dependencies {
     implementation(project(":st_predicted_maintenance"))
     implementation(project(":st_fft_amplitude"))
     implementation(project(":st_multi_neural_network"))
-    implementation(project(":st_working_in_progress"))
     implementation(project(":st_flow_demo"))
     implementation(project(":st_raw_pnpl"))
     implementation(project(":st_smart_motor_control"))
@@ -126,8 +126,6 @@ dependencies {
     implementation(project(":st_medical_signal"))
     implementation(project(":st_asset_tracking_event"))
     implementation(project(":st_external_app"))
-    // NEW_DEMO_ANCHOR
-    // !!! Leave a row before this comment to allow the script to add the new demo !!!
 
     // Blue ST SDK
     implementation(libs.st.sdk)
@@ -137,7 +135,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigationFragment)
+    
     ksp(libs.hilt.compiler)
 
     // Dependency required for API desugaring.

@@ -31,9 +31,6 @@ plugins {
     alias(libs.plugins.kotlinAndroid) apply false
     alias(libs.plugins.kotlinSerialization) apply false
     alias(libs.plugins.devtoolsKsp) apply false
-    alias(libs.plugins.jlleitschuhKtlint) apply false
-    alias(libs.plugins.littlerobotsVersionCatalogUpdate) apply true
-    alias(libs.plugins.androidxSafeargs) apply false
 }
 
 fun isNonStable(version: String): Boolean {

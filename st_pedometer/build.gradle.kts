@@ -15,7 +15,7 @@ plugins {
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.androidxSafeargs)
+    
     alias(libs.plugins.composeCompiler)
 }
 
@@ -74,7 +74,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigationFragment)
+    
     ksp(libs.hilt.compiler)
 
     // Dependency required for API desugaring.

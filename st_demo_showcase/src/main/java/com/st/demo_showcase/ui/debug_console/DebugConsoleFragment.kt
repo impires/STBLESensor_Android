@@ -8,6 +8,7 @@
 package com.st.demo_showcase.ui.debug_console
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup

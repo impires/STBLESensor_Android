@@ -20,6 +20,7 @@ import com.st.blue_sdk.features.extended.ext_configuration.ExtendedFeatureRespon
 import com.st.blue_sdk.features.extended.ext_configuration.request.ExtConfigCommands
 import com.st.blue_sdk.features.extended.ext_configuration.request.ExtendedFeatureCommand
 import com.st.blue_sdk.models.Node
+import com.st.preferences.StPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,7 @@ class FwDownloadViewModel
 @Inject internal constructor(
     private val blueManager: BlueManager,
     private val coroutineScope: CoroutineScope,
+    private val stPreferences: StPreferences,
     private val catalog: BoardCatalogRepo
 ) : ViewModel() {
 
@@ -47,7 +49,12 @@ class FwDownloadViewModel
     val bankStatus: StateFlow<FwDownloadUiState> = _uiState.asStateFlow()
     private val _device: MutableStateFlow<Node?> = MutableStateFlow(null)
 
+    var hasAcceptedDownloadTerms: Boolean = false
+
     fun startDemo(nodeId: String, banksStatus: BanksStatus? = null) {
+
+        checkIfDownloadTermsIsAccepted()
+
         viewModelScope.launch {
             if (features.isEmpty()) {
                 //if (banksStatus == null) {
@@ -146,6 +153,14 @@ class FwDownloadViewModel
         runBlocking {
             blueManager.disableFeatures(nodeId, features)
         }
+    }
+
+    private fun checkIfDownloadTermsIsAccepted() {
+        hasAcceptedDownloadTerms = stPreferences.hasAcceptedDownloadTerms()
+    }
+
+    fun setDownloadTermsFlag(accepted: Boolean) {
+        stPreferences.setDownloadTermsFlag(accepted)
     }
 
     fun swapBank(nodeId: String) {

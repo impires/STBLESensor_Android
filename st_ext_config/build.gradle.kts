@@ -16,7 +16,7 @@ plugins {
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.androidxSafeargs)
+    
 }
 
 apply {
@@ -68,14 +68,19 @@ dependencies {
     implementation(project(":st_core"))
     // - UI
     implementation(project(":st_ui"))
+    // - Prefs
+    implementation(project(":st_preferences"))
 
     // Blue ST SDK
     implementation(libs.st.sdk)
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigationFragment)
+    
     ksp(libs.hilt.compiler)
+
+    //Compose
+    api(libs.bundles.compose)
 
     // Dependency required for API desugaring.
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)

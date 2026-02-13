@@ -423,6 +423,7 @@ class FlowDemoViewModel
         node?.let {
             val uniqueIds = node!!.catalogInfo?.compatibleSensorAdapters
             uniqueIds?.let { ids ->
+               // Log.i("uniqueIds", "$uniqueIds")
                 val tmpList = mutableListOf<Sensor>()
                 viewModelScope.launch(Dispatchers.IO) {
                     ids.forEach {

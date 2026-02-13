@@ -110,7 +110,7 @@ fun DemoListItem(
                         maxLines = CAPTION_MAX_LINES,
                         style = MaterialTheme.typography.bodySmall,
                         color = Grey6,
-                        text = item.getDescription(context = context),
+                        text = item.getDescription(),
                         overflow = TextOverflow.Ellipsis
                     )
                 }

@@ -21,8 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import com.st.flow_demo.DestinationFlowDemoSensorDetailScreen
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import com.st.flow_demo.FlowDemoSensorDetailNavKey
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.ui.composables.ComposableLifecycle
 import com.st.ui.theme.Grey6
@@ -31,7 +32,7 @@ import com.st.ui.theme.LocalDimensions
 @Composable
 fun FlowDemoSensorsScreen(
     viewModel: FlowDemoViewModel,
-    navController: NavHostController,
+    backState: NavBackStack<NavKey>,
     paddingValues: PaddingValues
 ) {
     ComposableLifecycle { _, event ->
@@ -84,11 +85,10 @@ fun FlowDemoSensorsScreen(
         ) {
             if (sensorsList.isNotEmpty()) {
                 items(sensorsList) { sensor ->
-                    FlowDemoSensorListItem(sensor = sensor,
+                    FlowDemoSensorListItem(
+                        sensor = sensor,
                         onSensorSelected = {
-                            navController.navigate(
-                                DestinationFlowDemoSensorDetailScreen.route + sensor.id
-                            )
+                            backState.add(FlowDemoSensorDetailNavKey(sensor.id))
                         }
                     )
                 }
@@ -120,9 +120,7 @@ fun FlowDemoSensorsScreen(
                         mounted = mountedModels.contains(sensor.model),
                         sensor = sensor,
                         onSensorSelected = {
-                            navController.navigate(
-                                DestinationFlowDemoSensorDetailScreen.route + sensor.id
-                            )
+                            backState.add(FlowDemoSensorDetailNavKey(sensor.id))
                         }
                     )
                 }

@@ -31,7 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
@@ -58,13 +57,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import com.st.high_speed_data_log.composable.HsdlSensors
-import com.st.high_speed_data_log.composable.HsdlTags
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import com.st.pnpl.composable.PnPLInfoWarningSpontaneousMessage
 import com.st.ui.composables.BlueMSPullToRefreshBox
 import com.st.ui.composables.BlueMsButton
@@ -90,6 +85,7 @@ fun HighSpeedDataLog(
             Lifecycle.Event.ON_CREATE -> {
                 viewModel.initDemo()
             }
+
             Lifecycle.Event.ON_PAUSE -> {
                 viewModel.stopDemo(nodeId = nodeId)
             }
@@ -308,19 +304,19 @@ fun HighSpeedDataLog(
     onValueChange: (String, Pair<String, Any>) -> Unit,
     onBeforeUcf: () -> Unit,
     onAfterUcf: () -> Unit,
-    onErrorUcf:(String) -> Unit,
+    onErrorUcf: (String) -> Unit,
     onSendCommand: (String, CommandRequest?) -> Unit,
     onStartStopLog: (Boolean) -> Unit = { /**NOOP **/ },
-    onRefresh: () -> Unit = { /**NOOP **/ },
-    navController: NavHostController = rememberNavController()
+    onRefresh: () -> Unit = { /**NOOP **/ }
 ) {
     val pullRefreshState = rememberPullToRefreshState()
 
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
-    val selectedIndex by remember(key1 = currentRoute) {
+    val backState = rememberNavBackStack(if (isLogging) HsdlTagsNavKey else HsdlSensorsNavKey)
+
+    val lastState = backState.lastOrNull()
+    val selectedIndex by remember(key1 = lastState) {
         derivedStateOf {
-            if (currentRoute == "Tags") 1 else 0
+            if (lastState == HsdlTagsNavKey) 1 else 0
         }
     }
 
@@ -364,8 +360,9 @@ fun HighSpeedDataLog(
             )
         },
         topBar = {
-            PrimaryTabRow(modifier = Modifier
-                .fillMaxWidth(),
+            PrimaryTabRow(
+                modifier = Modifier
+                    .fillMaxWidth(),
                 selectedTabIndex = selectedIndex,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -386,15 +383,8 @@ fun HighSpeedDataLog(
                     onClick = {
                         if (!isLoading) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            navController.navigate("Sensors") {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = true
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            backState.removeLastOrNull()
+                            backState.add(HsdlSensorsNavKey)
                         }
                     },
                     icon = {
@@ -421,15 +411,8 @@ fun HighSpeedDataLog(
                     onClick = {
                         if (!isLoading) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            navController.navigate("Tags") {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = true
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            backState.removeLastOrNull()
+                            backState.add(HsdlTagsNavKey)
                         }
                     },
                     icon = {
@@ -454,57 +437,32 @@ fun HighSpeedDataLog(
         }
     ) { paddingValues ->
         BlueMSPullToRefreshBox(
-            modifier = modifier.consumeWindowInsets(paddingValues).padding(paddingValues),
+            modifier = modifier
+                .consumeWindowInsets(paddingValues)
+                .padding(paddingValues),
             state = pullRefreshState,
             isRefreshing = isLoading,
             isBetaRelease = isBetaApplication,
             onRefresh = onRefresh
         ) {
-            NavHost(
-                //modifier = Modifier.padding(paddingValues),
-                navController = navController,
-                startDestination = "Sensors"
-            ) {
-                composable(
-                    route = "Sensors"
-                ) {
-                    if (isLogging.not()) {
-                        HsdlSensors(
-                            state = lazyState,
-                            sensors = sensors,
-                            status = status,
-                            isLoading = isLoading,
-                            onValueChange = onValueChange,
-                            onAfterUcf = onAfterUcf,
-                            onBeforeUcf = onBeforeUcf,
-                            onErrorUcf = onErrorUcf,
-                            onSendCommand = onSendCommand
-                        )
-                    } else {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(text = stringResource(id = R.string.st_hsdl_logging))
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                        }
-                    }
-                }
-
-                composable(
-                    route = "Tags"
-                ) {
-                    HsdlTags(
-                        state = lazyState,
-                        tags = tags,
-                        status = status,
-                        isLoading = isLoading,
-                        onValueChange = onValueChange,
-                        onSendCommand = onSendCommand
+            NavDisplay(
+                backStack = backState,
+                onBack = { backState.removeLastOrNull() },
+                entryProvider = entryProvider {
+                    HsdlSensorsScreen(
+                        isLogging,
+                        lazyState,
+                        sensors,
+                        status,
+                        isLoading,
+                        onValueChange,
+                        onAfterUcf,
+                        onBeforeUcf,
+                        onErrorUcf,
+                        onSendCommand
                     )
-                }
-            }
+                    HsdlTagsScreen(lazyState, tags, status, isLoading, onValueChange, onSendCommand)
+                })
         }
     }
 }

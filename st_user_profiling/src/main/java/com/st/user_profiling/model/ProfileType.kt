@@ -11,13 +11,13 @@ enum class ProfileType(
     val permissions: List<AuthorizedActions>
 ) {
     AI_DEVELOPER(
-        permissions = AuthorizedActions.values().toList()
+        permissions = AuthorizedActions.entries
     ),
     DEVELOPER(
-        permissions = AuthorizedActions.values().toList()
+        permissions = AuthorizedActions.entries
     ),
     STUDENT(
-        permissions = AuthorizedActions.values().toList()
+        permissions = AuthorizedActions.entries
     ),
     SALES(
         permissions = listOf(
@@ -31,6 +31,6 @@ enum class ProfileType(
     fun isAuthorizedTo(permission: AuthorizedActions) = permissions.contains(permission)
 
     companion object {
-        fun fromString(value: String) = ProfileType.values().firstOrNull { it.name == value }
+        fun fromString(value: String) = entries.firstOrNull { it.name == value }
     }
 }

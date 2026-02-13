@@ -66,8 +66,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import com.st.cloud_mqtt.CloudMqttNavigationApplicationConfiguration
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.ui.composables.BlueMSFeatureItem
 import com.st.ui.composables.BlueMSSnackBarMaterial3
 import com.st.ui.composables.BlueMsButton
@@ -85,7 +85,7 @@ import com.st.ui.theme.WarningText
 fun CloudMqttDeviceConnection(
     modifier: Modifier = Modifier,
     viewModel: CloudMqttViewModel,
-    navController: NavHostController
+    backState: NavBackStack<NavKey>
 ) {
     val deviceConnected by viewModel.deviceConnected.collectAsStateWithLifecycle()
 
@@ -119,15 +119,7 @@ fun CloudMqttDeviceConnection(
                 )
             }
         } else {
-            navController.navigate(CloudMqttNavigationApplicationConfiguration.route) {
-                navController.graph.startDestinationRoute?.let { screenRoute ->
-                    popUpTo(screenRoute) {
-                        saveState = false
-                    }
-                }
-                launchSingleTop = true
-                restoreState = false
-            }
+            backState.removeLastOrNull()
         }
     }
 
@@ -145,7 +137,8 @@ fun CloudMqttDeviceConnection(
     ) { paddingValue ->
 
         Column(
-            modifier = modifier.consumeWindowInsets(paddingValue)
+            modifier = modifier
+                .consumeWindowInsets(paddingValue)
                 .padding(paddingValue)
                 .fillMaxSize()
         ) {
@@ -160,7 +153,9 @@ fun CloudMqttDeviceConnection(
             Surface(
                 modifier = modifier.fillMaxWidth(),
                 shape = Shapes.small,
-                shadowElevation = LocalDimensions.current.elevationSmall
+                shadowElevation = LocalDimensions.current.elevationSmall,
+                enabled = deviceConnected.not(),
+                onClick = { viewModel.connectDevice() }
             ) {
                 Box(
                     modifier = Modifier
@@ -168,7 +163,9 @@ fun CloudMqttDeviceConnection(
                         .padding(LocalDimensions.current.paddingNormal),
                     contentAlignment = Alignment.TopEnd
                 ) {
-                    IconButton(onClick = { if (deviceConnected) viewModel.disconnectDevice() else viewModel.connectDevice() }) {
+                    IconButton(
+                        enabled = deviceConnected,
+                        onClick = { viewModel.disconnectDevice() }) {
 
                         if (deviceConnected) {
                             Icon(
@@ -367,7 +364,7 @@ fun CloudMqttDeviceConnection(
                                     })
                             }
 
-                            item{
+                            item {
                                 Spacer(
                                     Modifier.windowInsetsBottomHeight(
                                         WindowInsets.systemBars
@@ -388,7 +385,8 @@ fun CloudMqttDeviceConnection(
         }
 
         if (openUpdateIntervalSelectionDialog) {
-            UpdateIntervalSelectionDialog(possibleUpdateIntervals = possibleUpdateIntervals,
+            UpdateIntervalSelectionDialog(
+                possibleUpdateIntervals = possibleUpdateIntervals,
                 updateInterval = updateInterval,
                 onDismiss = { openUpdateIntervalSelectionDialog = false },
                 onConfirmation = { value ->

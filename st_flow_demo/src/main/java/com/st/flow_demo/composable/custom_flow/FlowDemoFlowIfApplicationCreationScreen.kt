@@ -33,8 +33,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import com.st.flow_demo.DestinationFlowDemoFlowUploadScreen
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import com.st.flow_demo.FlowDemoFlowUploadNavKey
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.R
 import com.st.flow_demo.composable.common.ClickableTest
@@ -49,7 +50,7 @@ import com.st.ui.theme.WarningText
 fun FlowDemoFlowIfApplicationCreationScreen(
     viewModel: FlowDemoViewModel,
     paddingValues: PaddingValues,
-    navController: NavHostController
+    backState: NavBackStack<NavKey>
 ) {
 
     val context = LocalContext.current
@@ -216,9 +217,7 @@ fun FlowDemoFlowIfApplicationCreationScreen(
                 iconPainter = painterResource(id = R.drawable.ic_upload),
                 enabled = (viewModel.expressionSelected != null) && (viewModel.flowSelected != null),
                 onClick = {
-                    navController.navigate(
-                        DestinationFlowDemoFlowUploadScreen.route
-                    )
+                    backState.add(FlowDemoFlowUploadNavKey)
                 }
             )
         }
@@ -238,18 +237,20 @@ fun FlowDemoFlowIfApplicationCreationScreen(
             onConfirmation = {
                 viewModel.expressionSelected = null
                 viewModel.flowSelected = null
-                navController.popBackStack()
+                backState.removeLastOrNull()
             }
         )
     }
 
     if (openAddSavedExprDialog) {
-        FlowDemoAddSavedExprDialog(viewModel = viewModel,
+        FlowDemoAddSavedExprDialog(
+            viewModel = viewModel,
             onDismissRequest = { openAddSavedExprDialog = false })
     }
 
     if (openAddApplicationDialog) {
-        FlowDemoAddAppExprDialog(viewModel = viewModel,
+        FlowDemoAddAppExprDialog(
+            viewModel = viewModel,
             onDismissRequest = { openAddApplicationDialog = false })
     }
 }

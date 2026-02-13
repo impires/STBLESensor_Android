@@ -1,7 +1,5 @@
 package com.st.cloud_azure_iot_central.composable
 
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -10,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
@@ -18,28 +15,23 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
+import com.st.cloud_azure_iot_central.ApplicationSelectionNavKey
+import com.st.cloud_azure_iot_central.CloudAzureApplicationDetailsScreen
+import com.st.cloud_azure_iot_central.CloudAzureApplicationSelectionScreen
+import com.st.cloud_azure_iot_central.CloudAzureDeviceConnectionScreen
+import com.st.cloud_azure_iot_central.CloudAzureDeviceSelectionScreen
 import com.st.cloud_azure_iot_central.CloudAzureIotCentralViewModel
-import com.st.cloud_azure_iot_central.CloudAzureNavigationApplicationDetails
-import com.st.cloud_azure_iot_central.CloudAzureNavigationApplicationSelection
-import com.st.cloud_azure_iot_central.CloudAzureNavigationDeviceSelection
-import com.st.cloud_azure_iot_central.CloudAzureNavigationDeviceConnection
+import com.st.cloud_azure_iot_central.DeviceSelectionNavKey
 import com.st.cloud_azure_iot_central.R
 import com.st.ui.theme.Grey7
 import com.st.ui.theme.Shapes
@@ -49,17 +41,20 @@ import com.st.ui.theme.Shapes
 fun CloudAzureIotCentralStartScreen(
     modifier: Modifier,
     viewModel: CloudAzureIotCentralViewModel,
-    navController: NavHostController = rememberNavController()
 ) {
-    var selectedIndex by remember {
-        mutableIntStateOf(0)
+    val backState = rememberNavBackStack(ApplicationSelectionNavKey)
+
+    val lastState = backState.lastOrNull()
+    val selectedIndex by remember(key1 = lastState) {
+        derivedStateOf {
+            when (lastState) {
+                ApplicationSelectionNavKey -> 0
+                DeviceSelectionNavKey -> 1
+                else -> 2
+            }
+        }
     }
 
-    val isCloudAppSelected by viewModel.selectedCloudAppNum.collectAsStateWithLifecycle()
-
-    val isCloudDeviceConfigured by viewModel.isCloudDeviceConfigured.collectAsStateWithLifecycle()
-
-    val haptic = LocalHapticFeedback.current
 
     Scaffold(
         modifier = modifier,
@@ -68,8 +63,9 @@ fun CloudAzureIotCentralStartScreen(
             if (CloudAzureConfig.CloudTabBar != null) {
                 CloudAzureConfig.CloudTabBar?.invoke("Cloud Application")
             } else {
-                PrimaryTabRow(modifier = Modifier
-                    .fillMaxWidth(),
+                PrimaryTabRow(
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     selectedTabIndex = selectedIndex,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -88,19 +84,9 @@ fun CloudAzureIotCentralStartScreen(
 
                     Tab(
                         selected = 0 == selectedIndex,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            selectedIndex = 0
-                            navController.navigate(CloudAzureNavigationApplicationSelection.route) {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = false
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        },
+                        unselectedContentColor = Grey7,
+                        enabled = false,
+                        onClick = {},
                         icon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.cloud_app_config),
@@ -112,21 +98,9 @@ fun CloudAzureIotCentralStartScreen(
 
                     Tab(
                         selected = 1 == selectedIndex,
-                        unselectedContentColor = if ((isCloudAppSelected != viewModel.deviceCloutNotSELECTED)) LocalContentColor.current else Grey7,
-                        enabled = (isCloudAppSelected != viewModel.deviceCloutNotSELECTED),
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            selectedIndex = 1
-                            navController.navigate(CloudAzureNavigationDeviceSelection.route) {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = false
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        },
+                        unselectedContentColor = Grey7,
+                        enabled = false,
+                        onClick = {},
                         icon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.cloud_config),
@@ -139,21 +113,9 @@ fun CloudAzureIotCentralStartScreen(
 
                     Tab(
                         selected = 2 == selectedIndex,
-                        unselectedContentColor = if (isCloudDeviceConfigured) LocalContentColor.current else Grey7,
-                        enabled = isCloudDeviceConfigured,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            selectedIndex = 2
-                            navController.navigate(CloudAzureNavigationDeviceConnection.route) {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = false
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        },
+                        unselectedContentColor = Grey7,
+                        enabled = false,
+                        onClick = {},
                         icon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.cloud_dev_upload),
@@ -166,109 +128,20 @@ fun CloudAzureIotCentralStartScreen(
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.consumeWindowInsets(paddingValues).padding(paddingValues)) {
-            NavHost(
-                navController = navController,
-                startDestination = CloudAzureNavigationApplicationSelection.route
-            ) {
-                composable(route = CloudAzureNavigationApplicationSelection.route,
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(500)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(500)
-                        )
-                    }) {
-                    selectedIndex = 0
-                    CloudAzureApplicationSelection(
-                        viewModel = viewModel,
-                        navController = navController
-                    )
-                }
-
-                composable(route = CloudAzureNavigationDeviceSelection.route,
-                    enterTransition = {
-                        if (initialState.destination.route == CloudAzureNavigationApplicationSelection.route) {
-                            slideIntoContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(500)
-                            )
-                        } else {
-                            slideIntoContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(500)
-                            )
-                        }
-                    },
-                    exitTransition = {
-                        if (targetState.destination.route == CloudAzureNavigationApplicationSelection.route) {
-                            slideOutOfContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(500)
-                            )
-                        } else {
-                            slideOutOfContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(500)
-                            )
-                        }
-                    }) {
-                    selectedIndex = 1
-                    CloudAzureDeviceSelection(
-                        viewModel = viewModel
-                    )
-                }
-
-                composable(route = CloudAzureNavigationDeviceConnection.route,
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(500)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(500)
-                        )
-                    }) {
-                    selectedIndex = 2
-                    CloudAzureDeviceConnection(
-                        viewModel = viewModel,
-                        navController = navController
-                    )
-                }
-
-                composable(
-                    route = CloudAzureNavigationApplicationDetails.route + "{${CloudAzureNavigationApplicationDetails.appId}}",
-                    arguments = listOf(navArgument(name = "appId") { type = NavType.StringType }),
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Up,
-                            animationSpec = tween(500)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(500)
-                        )
-                    }
-                ) { backStackEntry ->
-                    backStackEntry.arguments?.getString("appId")?.let { appId ->
-                        CloudAzureApplicationDetails(
-                            viewModel = viewModel,
-                            appId = appId.toInt(),
-                            navController = navController
-                        )
-                    }
-                }
-            }
+        Box(
+            modifier = Modifier
+                .consumeWindowInsets(paddingValues)
+                .padding(paddingValues)
+        ) {
+            NavDisplay(
+                backStack = backState,
+                onBack = { backState.removeLastOrNull() },
+                entryProvider = entryProvider {
+                    CloudAzureApplicationSelectionScreen(viewModel, backState)
+                    CloudAzureDeviceSelectionScreen(viewModel, backState)
+                    CloudAzureDeviceConnectionScreen(viewModel, backState)
+                    CloudAzureApplicationDetailsScreen(viewModel, backState)
+                })
         }
     }
 }

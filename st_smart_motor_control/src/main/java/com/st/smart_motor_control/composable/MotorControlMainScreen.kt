@@ -1,8 +1,6 @@
 package com.st.smart_motor_control.composable
 
 import android.widget.Toast
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
@@ -36,7 +33,6 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,17 +48,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import com.st.blue_sdk.board_catalog.models.DtmiContent
 import com.st.pnpl.composable.PnPLInfoWarningSpontaneousMessage
 import com.st.smart_motor_control.MotorControlConfig
+import com.st.smart_motor_control.MotorControlNavKey
+import com.st.smart_motor_control.MotorControlTagsNavKey
 import com.st.smart_motor_control.R
 import com.st.smart_motor_control.SmartMotorControlViewModel
 import com.st.smart_motor_control.model.MotorControlFault
+import com.st.smart_motor_control.motorControlScreen
+import com.st.smart_motor_control.motorControlTagsScreen
 import com.st.ui.composables.BlueMSPullToRefreshBox
 import com.st.ui.composables.BlueMsButton
 import com.st.ui.composables.CommandRequest
@@ -91,13 +89,10 @@ fun MotorControlMainScreen(
     }
 
     val isLogging by viewModel.isLogging.collectAsStateWithLifecycle()
-    val sensorsActuators by viewModel.sensorsActuators.collectAsStateWithLifecycle()
     val tags by viewModel.tags.collectAsStateWithLifecycle()
     val status by viewModel.componentStatusUpdates.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isSDCardInserted by viewModel.isSDCardInserted.collectAsStateWithLifecycle()
-    val acquisitionName by viewModel.acquisitionName.collectAsStateWithLifecycle()
-    val vespucciTags by viewModel.vespucciTags.collectAsStateWithLifecycle()
 
 
     val faultStatus by viewModel.faultStatus.collectAsStateWithLifecycle()
@@ -125,18 +120,12 @@ fun MotorControlMainScreen(
 
     SmartMotorControlScreen(
         modifier = modifier,
-        sensorsActuators = sensorsActuators,
         tags = tags,
         status = status,
         isSDCardInserted = isSDCardInserted,
         isLogging = isLogging,
         isLoading = isLoading,
         isBetaApplication = viewModel.isBeta,
-        vespucciTags = vespucciTags,
-        acquisitionName = acquisitionName,
-        onTagChangeState = { tag, newState ->
-            viewModel.onTagChangeState(nodeId, tag, newState)
-        },
         onValueChange = { name, value ->
             if (isLoading.not()) {
                 viewModel.sendChange(
@@ -267,18 +256,14 @@ fun MotorControlMainScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 fun SmartMotorControlScreen(
     modifier: Modifier,
-    sensorsActuators: List<Pair<DtmiContent.DtmiComponentContent, DtmiContent.DtmiInterfaceContent>> = emptyList(),
     tags: List<Pair<DtmiContent.DtmiComponentContent, DtmiContent.DtmiInterfaceContent>> = emptyList(),
     status: List<JsonObject>,
-    vespucciTags: Map<String, Boolean>,
     isLogging: Boolean,
     isSDCardInserted: Boolean = false,
     isLoading: Boolean = false,
-    isBetaApplication : Boolean,
-    acquisitionName: String = "",
+    isBetaApplication: Boolean,
     onValueChange: (String, Pair<String, Any>) -> Unit,
     onSendCommand: (String, CommandRequest?) -> Unit,
-    onTagChangeState: (String, Boolean) -> Unit = { _, _ -> /**NOOP**/ },
     onStartStopLog: (Boolean) -> Unit = { /**NOOP **/ },
     onRefresh: () -> Unit = { /**NOOP **/ },
     faultStatus: MotorControlFault = MotorControlFault.None,
@@ -297,7 +282,6 @@ fun SmartMotorControlScreen(
     isMotorRunning: Boolean = false,
     motorSpeed: Int = 1024,
     motorSpeedControl: DtmiContent.DtmiPropertyContent.DtmiIntegerPropertyContent? = null,
-    navController: NavHostController = rememberNavController()
 ) {
     val sensorsActuatorsTitle = stringResource(id = R.string.st_motor_control_configuration)
     val tagsTitle = stringResource(id = R.string.st_motor_control_tags)
@@ -306,12 +290,13 @@ fun SmartMotorControlScreen(
 
     val pullRefreshState = rememberPullToRefreshState()
 
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
+    val backState =
+        rememberNavBackStack(if (isLogging) MotorControlTagsNavKey else MotorControlNavKey)
 
-    val selectedIndex by remember(key1 = currentRoute) {
+    val lastState = backState.lastOrNull()
+    val selectedIndex by remember(key1 = lastState) {
         derivedStateOf {
-            if (currentRoute == "Tags") 1 else 0
+            if (lastState == MotorControlTagsNavKey) 1 else 0
         }
     }
 
@@ -326,11 +311,12 @@ fun SmartMotorControlScreen(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets.statusBars,
         topBar = {
-            if(MotorControlConfig.motorControlTabBar!=null) {
+            if (MotorControlConfig.motorControlTabBar != null) {
                 MotorControlConfig.motorControlTabBar?.invoke(currentTitle, isLoading)
             } else {
-                PrimaryTabRow(modifier = Modifier
-                    .fillMaxWidth(),
+                PrimaryTabRow(
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     selectedTabIndex = selectedIndex,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -351,21 +337,14 @@ fun SmartMotorControlScreen(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             currentTitle = sensorsActuatorsTitle
-                            navController.navigate("MotorControl") {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = true
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            backState.removeLastOrNull()
+                            backState.add(MotorControlNavKey)
                         },
                         icon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_motor_control),
-                                    contentDescription = stringResource(id = R.string.st_motor_control)
-                                )
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_motor_control),
+                                contentDescription = stringResource(id = R.string.st_motor_control)
+                            )
                         },
                         text = { Text(text = stringResource(id = R.string.st_motor_control)) },
                         enabled = !isLoading
@@ -377,22 +356,15 @@ fun SmartMotorControlScreen(
                             if (!isLoading) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 currentTitle = tagsTitle
-                                navController.navigate("Tags") {
-                                    navController.graph.startDestinationRoute?.let { screenRoute ->
-                                        popUpTo(screenRoute) {
-                                            saveState = true
-                                        }
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                                backState.removeLastOrNull()
+                                backState.add(MotorControlTagsNavKey)
                             }
                         },
                         icon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_tags),
-                                    contentDescription = stringResource(id = R.string.st_motor_control_tags)
-                                )
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_tags),
+                                contentDescription = stringResource(id = R.string.st_motor_control_tags)
+                            )
                         },
                         text = { Text(text = stringResource(id = R.string.st_motor_control_tags)) },
                         enabled = !isLoading
@@ -436,127 +408,50 @@ fun SmartMotorControlScreen(
         }
     ) { paddingValues ->
         BlueMSPullToRefreshBox(
-            modifier = modifier.consumeWindowInsets(paddingValues).padding(paddingValues),
+            modifier = modifier
+                .consumeWindowInsets(paddingValues)
+                .padding(paddingValues),
             state = pullRefreshState,
             isRefreshing = isLoading,
             isBetaRelease = isBetaApplication,
             onRefresh = onRefresh
         ) {
-            NavHost(
-                //modifier = Modifier.padding(paddingValues),
-                navController = navController,
-                startDestination = "MotorControl"
-            ) {
-
-                composable(
-                    route = "MotorControl",
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(500)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(500)
-                        )
-                    }
-                ) {
-                    MotorControl(
-                        isLoading = isLoading,
-                        faultStatus = faultStatus,
-                        temperature = temperature,
-                        speedRef = speedRef,
-                        speedMeas = speedMeas,
-                        busVoltage = busVoltage,
-                        neaiClassName = neaiClassName,
-                        neaiClassProb = neaiClassProb,
-                        cubeAiClassName = cubeAiClassName,
-                        cubeAiClassProb = cubeAiClassProb,
-                        isRunning = isMotorRunning,
-                        isLogging = isLogging,
-                        motorSpeed = motorSpeed,
-                        motorSpeedControl = motorSpeedControl,
-                        onSendCommand = onSendCommand,
-                        onValueChange = onValueChange,
-                        temperatureUnit = temperatureUnit,
-                        speedRefUnit = speedRefUnit,
-                        speedMeasUnit = speedMeasUnit,
-                        busVoltageUnit = busVoltageUnit
+            NavDisplay(
+                backStack = backState,
+                onBack = { backState.removeLastOrNull() },
+                entryProvider = entryProvider {
+                    motorControlScreen(
+                        isLoading,
+                        faultStatus,
+                        temperature,
+                        speedRef,
+                        speedMeas,
+                        busVoltage,
+                        neaiClassName,
+                        neaiClassProb,
+                        cubeAiClassName,
+                        cubeAiClassProb,
+                        isMotorRunning,
+                        isLogging,
+                        motorSpeed,
+                        motorSpeedControl,
+                        onSendCommand,
+                        onValueChange,
+                        temperatureUnit,
+                        speedRefUnit,
+                        speedMeasUnit,
+                        busVoltageUnit
                     )
-                }
 
-                composable(
-                    route = "Sensors", enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(500)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(500)
-                        )
-                    }
-                ) {
-                    if (isLogging.not()) {
-                        MotorControlSensors(
-                            lazyState = lazyState,
-                            sensorsActuators = sensorsActuators,
-                            status = status,
-                            isLoading = isLoading,
-                            onValueChange = onValueChange,
-                            onSendCommand = onSendCommand
-                        )
-                    } else {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            androidx.compose.material3.Text(text = stringResource(id = R.string.st_motor_control_logging))
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                        }
-
-                    }
-                }
-
-                composable(
-                    route = "Tags", enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(500)
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(500)
-                        )
-                    }
-                ) {
-                    if (MotorControlConfig.tags.isEmpty()) {
-                        MotorControlTags(
-                            lazyState = lazyState,
-                            tags = tags,
-                            status = status,
-                            isLoading = isLoading,
-                            onValueChange = onValueChange,
-                            onSendCommand = onSendCommand
-                        )
-                    } else {
-                        VespucciMotorControlTags(
-                            acquisitionInfo = acquisitionName,
-                            vespucciTags = vespucciTags,
-                            isLoading = isLoading,
-                            isLogging = isLogging,
-                            onTagChangeState = onTagChangeState
-                        )
-                    }
-                }
-            }
+                    motorControlTagsScreen(
+                        lazyState,
+                        tags,
+                        status,
+                        isLoading,
+                        onValueChange,
+                        onSendCommand
+                    )
+                })
         }
     }
 

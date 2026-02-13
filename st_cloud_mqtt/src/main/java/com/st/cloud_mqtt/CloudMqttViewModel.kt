@@ -30,6 +30,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.lang.Exception
 import javax.inject.Inject
+import kotlin.collections.map
+import kotlin.collections.toMutableList
 
 @HiltViewModel
 class CloudMqttViewModel
@@ -181,6 +183,7 @@ class CloudMqttViewModel
                         blueManager.disableFeatures(nodeId, listOf(feature))
                     }
                     selectedFeatures.clear()
+                    featuresEnabled = (1..availableFeatures!!.size).map { false }.toMutableList()
 
                     //Disconnect the Device
                     val client = CloudMqttV3Connection.provideCloudMqttConnection()

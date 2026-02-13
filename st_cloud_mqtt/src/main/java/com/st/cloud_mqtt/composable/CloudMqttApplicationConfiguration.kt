@@ -37,7 +37,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -49,7 +48,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.cloud_mqtt.CloudMqttViewModel
+import com.st.cloud_mqtt.DeviceConnectionNavKey
 import com.st.cloud_mqtt.model.CloudMqttServerConfig
 import com.st.ui.composables.BlueMsButton
 import com.st.ui.composables.ComposableLifecycle
@@ -61,7 +63,8 @@ import com.st.ui.theme.Shapes
 @Composable
 fun CloudMqttApplicationConfiguration(
     modifier: Modifier = Modifier,
-    viewModel: CloudMqttViewModel
+    viewModel: CloudMqttViewModel,
+    backState: NavBackStack<NavKey>
 ) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -399,7 +402,7 @@ fun CloudMqttApplicationConfiguration(
 
 
                 BlueMsButton(
-                    text = stringResource(id = android.R.string.ok),
+                    text = "Connect",
                     onClick = {
                         cloudConfigured = true
                         viewModel.configureAndSaveMqttCloudApp(
@@ -411,6 +414,7 @@ fun CloudMqttApplicationConfiguration(
                                 deviceId = deviceId
                             )
                         )
+                        backState.add(DeviceConnectionNavKey)
                     }
                 )
             }

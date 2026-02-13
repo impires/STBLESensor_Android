@@ -40,8 +40,8 @@ fun ColorAmbientLightDemoContent(
                 modifier = Modifier.padding(top = LocalDimensions.current.paddingLarge),
                 name = colorData!!.lux.name,
                 value = colorData!!.lux.value,
-                min = colorData!!.lux.min!!.toInt(),
-                max = colorData!!.lux.max!!.toInt(),
+                min = colorData!!.lux.min!!,
+                max = colorData!!.lux.max!!,
                 unit = colorData!!.lux.unit!!
             )
 

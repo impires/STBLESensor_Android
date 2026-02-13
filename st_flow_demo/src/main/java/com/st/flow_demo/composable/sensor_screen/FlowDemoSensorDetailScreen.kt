@@ -33,7 +33,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.helpers.getSensorIconResourceByName
 import com.st.flow_demo.helpers.getSensorPropertiesDescription
@@ -43,12 +44,12 @@ import com.st.ui.theme.LocalDimensions
 fun FlowDemoSensorDetailScreen(
     viewModel: FlowDemoViewModel,
     sensorId: String,
-    navController: NavHostController,
+    backState: NavBackStack<NavKey>,
     paddingValues: PaddingValues
 ) {
 
     BackHandler {
-        navController.popBackStack()
+        backState.removeLastOrNull()
     }
 
     //val format = Json { prettyPrint = true }

@@ -78,7 +78,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigationFragment)
+    
     implementation(libs.androidx.runtime.livedata)
     ksp(libs.hilt.compiler)
 

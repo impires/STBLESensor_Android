@@ -14,7 +14,8 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.androidxSafeargs)
+    
+    alias(libs.plugins.kotlinSerialization)
 }
 
 apply {

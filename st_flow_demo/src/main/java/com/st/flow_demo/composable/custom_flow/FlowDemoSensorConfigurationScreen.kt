@@ -44,7 +44,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.blue_sdk.models.Boards
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.R
@@ -75,7 +76,7 @@ import com.st.ui.theme.Shapes
 fun FlowDemoSensorConfigurationScreen(
     paddingValues: PaddingValues,
     viewModel: FlowDemoViewModel,
-    navController: NavHostController
+    backState: NavBackStack<NavKey>
 ) {
 
     var openConfirmationDialog by remember { mutableStateOf(value = false) }
@@ -110,11 +111,11 @@ fun FlowDemoSensorConfigurationScreen(
             val configOnConfig by remember {
                 mutableStateOf(
                     value =
-                    if (sensorOnConfig.configuration != null) {
-                        sensorOnConfig.configuration!!.copy()
-                    } else {
-                        SensorConfiguration()
-                    }
+                        if (sensorOnConfig.configuration != null) {
+                            sensorOnConfig.configuration!!.copy()
+                        } else {
+                            SensorConfiguration()
+                        }
                 )
             }
 
@@ -1076,7 +1077,7 @@ fun FlowDemoSensorConfigurationScreen(
                         }
 
                         //Come back to previous screen
-                        navController.popBackStack()
+                        backState.removeLastOrNull()
                     }
                 )
             }
@@ -1104,7 +1105,7 @@ fun FlowDemoSensorConfigurationScreen(
                     iconPainter = painterResource(id = R.drawable.ic_close),
                     onClick = {
                         //Don't save the new Sensor Configuration and come back to previous screen
-                        navController.popBackStack()
+                        backState.removeLastOrNull()
                     }
                 )
             }
@@ -1122,7 +1123,7 @@ fun FlowDemoSensorConfigurationScreen(
             title = stringResource(id = context.applicationInfo.labelRes),
             message = "Losing all changes.\r\tContinue?",
             onDismiss = { openConfirmationDialog = false },
-            onConfirmation = { navController.popBackStack() }
+            onConfirmation = { backState.removeLastOrNull() }
         )
     }
 }

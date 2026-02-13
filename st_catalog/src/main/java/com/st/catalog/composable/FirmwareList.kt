@@ -7,6 +7,7 @@
  */
 package com.st.catalog.composable
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,16 +50,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.blue_sdk.board_catalog.models.BoardFirmware
 import com.st.catalog.CatalogViewModel
 import com.st.catalog.R
 import com.st.catalog.StCatalogConfig
 import com.st.catalog.availableDemos
 import com.st.ui.composables.StTopBar
-import com.st.ui.theme.Grey5
+import com.st.ui.theme.Grey0
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PreviewBlueMSTheme
+import com.st.ui.theme.PrimaryYellow
 import com.st.ui.theme.SecondaryBlue
 import kotlinx.coroutines.launch
 
@@ -66,7 +69,7 @@ import kotlinx.coroutines.launch
 fun FirmwareList(
     modifier: Modifier = Modifier,
     boardPart: String,
-    navController: NavController,
+    backStack: NavBackStack<NavKey>,
     viewModel: CatalogViewModel
 ) {
 
@@ -81,7 +84,7 @@ fun FirmwareList(
         firmwareList = firmwareList,
         displayShowLatest = StCatalogConfig.displayShowLatest,
         onBack = {
-            navController.popBackStack()
+            backStack.removeLastOrNull()
         }
     )
 }
@@ -127,7 +130,7 @@ fun FirmwareList(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().background(color = Grey0)) {
 
         val state = rememberLazyListState()
 

@@ -19,30 +19,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -68,16 +58,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import com.st.high_speed_data_log.composable.AIoTCraftHsdlSensors
-import com.st.high_speed_data_log.composable.AIoTCraftHsdlTags
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import com.st.high_speed_data_log.composable.StopLoggingDialog
-import com.st.high_speed_data_log.composable.VespucciCharts
-import com.st.high_speed_data_log.composable.VespucciHsdlTags
 import com.st.high_speed_data_log.model.StreamData
 import com.st.pnpl.composable.PnPLInfoWarningSpontaneousMessage
 import com.st.ui.composables.BlueMSPullToRefreshBox
@@ -86,12 +70,8 @@ import com.st.ui.composables.BlueMsButton
 import com.st.ui.composables.CommandRequest
 import com.st.ui.composables.ComposableLifecycle
 import com.st.ui.theme.ErrorText
-import com.st.ui.theme.Grey0
-import com.st.ui.theme.Grey10
-import com.st.ui.theme.Grey6
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PrimaryBlue
-import com.st.ui.theme.PrimaryBlue2
 import com.st.ui.theme.SecondaryBlue
 import com.st.ui.theme.Shapes
 import kotlinx.coroutines.launch
@@ -208,7 +188,7 @@ fun AIoTCraftHighSpeedDataLog(
     }
 
     ucfError?.let { error ->
-        BasicAlertDialog(onDismissRequest = { ucfError=null })
+        BasicAlertDialog(onDismissRequest = { ucfError = null })
         {
             Surface(
                 modifier = Modifier
@@ -331,7 +311,7 @@ fun AIoTCraftHighSpeedDataLog(
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AIoTCraftHighSpeedDataLog(
     modifier: Modifier,
@@ -355,12 +335,11 @@ fun AIoTCraftHighSpeedDataLog(
     onBeforeUcf: () -> Unit,
     onClearMessage: () -> Unit,
     onAfterUcf: () -> Unit,
-    onErrorUcf:(String) -> Unit,
+    onErrorUcf: (String) -> Unit,
     onSendCommand: (String, CommandRequest?) -> Unit,
     onTagChangeState: (String, Boolean) -> Unit = { _, _ -> /**NOOP**/ },
     onStartStopLog: (Boolean) -> Unit = { /**NOOP **/ },
     onRefresh: () -> Unit = { /**NOOP **/ },
-    navController: NavHostController = rememberNavController()
 ) {
     val sensorsTitle = stringResource(id = R.string.st_hsdl_sensors)
     val tagsTitle = stringResource(id = R.string.st_hsdl_tags)
@@ -370,11 +349,14 @@ fun AIoTCraftHighSpeedDataLog(
 
     val pullRefreshState = rememberPullToRefreshState()
 
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
-    val selectedIndex by remember(key1 = currentRoute) {
+
+    val backState =
+        rememberNavBackStack(if (isLogging) AIoTHsdlTagsNavKey else AIoTHsdlSensorsNavKey)
+
+    val lastState = backState.lastOrNull()
+    val selectedIndex by remember(key1 = lastState) {
         derivedStateOf {
-            if (currentRoute == "Tags") 1 else 0
+            if (lastState == AIoTHsdlTagsNavKey) 1 else 0
         }
     }
 
@@ -412,7 +394,7 @@ fun AIoTCraftHighSpeedDataLog(
                         } else {
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.st_hsdl_waitingMinDatalog),
+                                "Data collection or tagging should be at least 5 seconds long.",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -443,15 +425,8 @@ fun AIoTCraftHighSpeedDataLog(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             currentTitle = sensorsTitle
-                            navController.navigate("Sensors") {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = true
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            backState.removeLastOrNull()
+                            backState.add(AIoTHsdlSensorsNavKey)
                         },
                         icon = {
 
@@ -469,15 +444,8 @@ fun AIoTCraftHighSpeedDataLog(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             currentTitle = tagsTitle
-                            navController.navigate("Tags") {
-                                navController.graph.startDestinationRoute?.let { screenRoute ->
-                                    popUpTo(screenRoute) {
-                                        saveState = true
-                                    }
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            backState.removeLastOrNull()
+                            backState.add(AIoTHsdlTagsNavKey)
                         },
                         icon = {
 
@@ -492,24 +460,6 @@ fun AIoTCraftHighSpeedDataLog(
                 }
             }
         },
-
-//        topBar = {
-//            HsdlConfig.hsdlTabBar?.invoke(currentTitle, isLoading, vespucciTagsActivation.isEmpty()) {
-//                if (HsdlConfig.isVespucci) {
-//                    if (vespucciTagsActivation.isEmpty()) {
-//                        onStartStopLog(false)
-//                    } else {
-//                        Toast.makeText(
-//                            context,
-//                            context.getString(R.string.st_hsdl_waitingMinDatalog),
-//                            Toast.LENGTH_SHORT
-//                        ).show()
-//                    }
-//                } else {
-//                    onStartStopLog(false)
-//                }
-//            }
-//        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 modifier = Modifier.padding(
@@ -528,7 +478,7 @@ fun AIoTCraftHighSpeedDataLog(
                                 } else {
                                     Toast.makeText(
                                         context,
-                                        context.getString(R.string.st_hsdl_waitingMinDatalog),
+                                        "Data collection or tagging should be at least 5 seconds long",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -543,7 +493,7 @@ fun AIoTCraftHighSpeedDataLog(
                             } else {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.st_hsdl_missingSensors),
+                                    "Enable at least one sensor",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
@@ -551,7 +501,7 @@ fun AIoTCraftHighSpeedDataLog(
                     } else {
                         Toast.makeText(
                             context,
-                            context.getString(R.string.st_hsdl_missingSdCard),
+                            "Please insert a microSD card into the board to proceed.",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -566,203 +516,53 @@ fun AIoTCraftHighSpeedDataLog(
                 text = { Text(text = if (isLogging) "Stop" else "Start") },
             )
         }
-//        bottomBar = {
-//            NavigationBar(
-//                modifier = Modifier.fillMaxWidth(),
-//                containerColor = MaterialTheme.colorScheme.primary,
-//                contentColor = Grey0
-//            ) {
-//                NavigationBarItem(
-//                    colors = NavigationBarItemDefaults.colors(
-//                        selectedIconColor = Grey0,
-//                        selectedTextColor = Grey0,
-//                        unselectedIconColor = Grey6,
-//                        unselectedTextColor = Grey6,
-//                        indicatorColor = PrimaryBlue2
-//                    ),
-//                    selected = 0 == selectedIndex,
-//                    onClick = {
-//                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-//                        currentTitle = sensorsTitle
-//                        navController.navigate("Sensors") {
-//                            navController.graph.startDestinationRoute?.let { screenRoute ->
-//                                popUpTo(screenRoute) {
-//                                    saveState = true
-//                                }
-//                            }
-//                            launchSingleTop = true
-//                            restoreState = true
-//                        }
-//                    },
-//                    icon = {
-//                        Icon(
-//                            painter = painterResource(id = R.drawable.ic_sensors),
-//                            contentDescription = stringResource(id = R.string.st_hsdl_sensors)
-//                        )
-//                    },
-//                    label = { Text(text = stringResource(id = R.string.st_hsdl_sensors)) },
-//                    enabled = !isLoading
-//                )
-//
-//                FloatingActionButton(
-//                    containerColor = SecondaryBlue,
-//                    onClick = {
-//                        if (isSDCardInserted) {
-//                            if (isLogging) {
-//                                if (HsdlConfig.isVespucci) {
-//                                    if (vespucciTagsActivation.isEmpty()) {
-//                                        onStartStopLog(false)
-//                                        openStopDialog = HsdlConfig.showStopDialog
-////                                        openResetDialog = HsdlConfig.showResetDialog
-//                                    } else {
-//                                        Toast.makeText(
-//                                            context,
-//                                            context.getString(R.string.st_hsdl_waitingMinDatalog),
-//                                            Toast.LENGTH_SHORT
-//                                        ).show()
-//                                    }
-//                                } else {
-//                                    onStartStopLog(false)
-//                                    openStopDialog = HsdlConfig.showStopDialog
-////                                    openResetDialog = HsdlConfig.showResetDialog
-//                                }
-//                            } else {
-//                                if (enableLog) {
-//                                    onStartStopLog(true)
-//                                } else {
-//                                    Toast.makeText(
-//                                        context,
-//                                        context.getString(R.string.st_hsdl_missingSensors),
-//                                        Toast.LENGTH_SHORT
-//                                    ).show()
-//                                }
-//                            }
-//                        } else {
-//                            Toast.makeText(
-//                                context,
-//                                context.getString(R.string.st_hsdl_missingSdCard),
-//                                Toast.LENGTH_SHORT
-//                            ).show()
-//                        }
-//
-//                    }
-//                ) {
-//                    Icon(
-//                        tint = MaterialTheme.colorScheme.primary,
-//                        imageVector = if (isLogging) Icons.Default.Stop else Icons.Default.PlayArrow,
-//                        contentDescription = null
-//                    )
-//                }
-//
-//                NavigationBarItem(
-//                    colors = NavigationBarItemDefaults.colors(
-//                        selectedIconColor = Grey0,
-//                        selectedTextColor = Grey0,
-//                        unselectedIconColor = Grey6,
-//                        unselectedTextColor = Grey6,
-//                        indicatorColor = PrimaryBlue2
-//                    ),
-//                    selected = 1 == selectedIndex,
-//                    onClick = {
-//                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-//                        currentTitle = tagsTitle
-//                        navController.navigate("Tags") {
-//                            navController.graph.startDestinationRoute?.let { screenRoute ->
-//                                popUpTo(screenRoute) {
-//                                    saveState = true
-//                                }
-//                            }
-//                            launchSingleTop = true
-//                            restoreState = true
-//                        }
-//                    },
-//                    icon = {
-//                        Icon(
-//                            painter = painterResource(id = R.drawable.ic_tags),
-//                            contentDescription = stringResource(id = R.string.st_hsdl_tags)
-//                        )
-//                    },
-//                    label = { Text(text = stringResource(id = R.string.st_hsdl_tags)) },
-//                    enabled = !isLoading
-//                )
-//            }
-//        }
     ) { paddingValues ->
         BlueMSPullToRefreshBox(
-            modifier = modifier.consumeWindowInsets(paddingValues).padding(paddingValues),
+            modifier = modifier
+                .consumeWindowInsets(paddingValues)
+                .padding(paddingValues),
             state = pullRefreshState,
             isBetaRelease = isBeta,
             isRefreshing = isLoading,
             onRefresh = onRefresh
         ) {
-            NavHost(
-                //modifier = modifier.padding(paddingValues),
-                navController = navController,
-                startDestination = "Sensors"
-            ) {
-                composable(
-                    route = "Sensors"
-                ) {
-                    if (isLogging.not()) {
-                        AIoTCraftHsdlSensors(
-                            sensors = sensors,
-                            state = lazyState,
-                            status = status,
-                            isLoading = isLoading,
-                            onValueChange = onValueChange,
-                            onAfterUcf = onAfterUcf,
-                            onBeforeUcf = onBeforeUcf,
-                            onErrorUcf = onErrorUcf,
-                            onSendCommand = onSendCommand,
-                        )
-                    } else {
-                        if (HsdlConfig.isVespucci.not()) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(text = stringResource(id = R.string.st_hsdl_logging))
-                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                            }
-                        } else {
-                            VespucciCharts(
-                                sensors = streamSensors,
-                                status = status,
-                                streamData = streamData,
-                                currentSensorEnabled = currentSensorEnabled,
-                                vespucciTags = vespucciTags,
-                                onSensorSelected = onSensorSelected,
-                                showTagsEnabled = true
-                            )
-                        }
-                    }
-                }
+            NavDisplay(
+                backStack = backState,
+                onBack = { backState.removeLastOrNull() },
+                entryProvider = entryProvider {
+                    AIoTCraftHsdlSensorsOrChartScreen(
+                        isLogging,
+                        sensors,
+                        lazyState,
+                        status,
+                        isLoading,
+                        onValueChange,
+                        onAfterUcf,
+                        onBeforeUcf,
+                        onErrorUcf,
+                        onSendCommand,
+                        streamSensors,
+                        streamData,
+                        currentSensorEnabled,
+                        vespucciTags,
+                        onSensorSelected
+                    )
 
-                composable(
-                    route = "Tags"
-                ) {
-                    if (HsdlConfig.isVespucci.not()) {
-                        AIoTCraftHsdlTags(
-                            state = lazyState,
-                            tags = tags,
-                            status = status,
-                            isLoading = isLoading,
-                            onValueChange = onValueChange,
-                            onSendCommand = onSendCommand
-                        )
-                    } else {
-                        VespucciHsdlTags(
-                            acquisitionInfo = acquisitionName.formatDate(),
-                            vespucciTagsActivation = vespucciTagsActivation,
-                            vespucciTags = vespucciTags,
-                            isLoading = isLoading,
-                            isLogging = isLogging,
-                            onTagChangeState = onTagChangeState
-                        )
-                    }
+                    AIoTCraftHsdlTagsScreen(
+                        lazyState,
+                        tags,
+                        status,
+                        isLoading,
+                        onValueChange,
+                        onSendCommand,
+                        acquisitionName,
+                        vespucciTagsActivation,
+                        vespucciTags,
+                        isLogging,
+                        onTagChangeState
+                    )
                 }
-            }
+            )
         }
     }
 

@@ -24,7 +24,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.R
 import com.st.flow_demo.composable.custom_flow.entry.FlowDemoBooleanEntry
@@ -41,11 +42,11 @@ import com.st.ui.theme.LocalDimensions
 fun FlowDemoOutputConfigurationScreen(
     paddingValues: PaddingValues,
     viewModel: FlowDemoViewModel,
-    navController: NavHostController
+    backState: NavBackStack<NavKey>
 ) {
 
     BackHandler {
-        navController.popBackStack()
+        backState.removeLastOrNull()
     }
 
     val context = LocalContext.current
@@ -159,7 +160,7 @@ fun FlowDemoOutputConfigurationScreen(
                         }
 
                         //Come back to previous screen
-                        navController.popBackStack()
+                        backState.removeLastOrNull()
                     }
                 )
             }
@@ -187,7 +188,7 @@ fun FlowDemoOutputConfigurationScreen(
                     iconPainter = painterResource(id = R.drawable.ic_close),
                     onClick = {
                         //Don't save the new Output Configuration and come back to previous screen
-                        navController.popBackStack()
+                        backState.removeLastOrNull()
                     }
                 )
             }

@@ -1,6 +1,7 @@
 package com.st.cloud_azure_iot_central.composable
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,7 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat.startActivity
-import androidx.navigation.NavHostController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.st.cloud_azure_iot_central.CloudAzureIotCentralViewModel
 import com.st.cloud_azure_iot_central.R
 import com.st.ui.composables.BlueMsButton
@@ -68,7 +70,7 @@ fun CloudAzureApplicationDetails(
     modifier: Modifier = Modifier,
     viewModel: CloudAzureIotCentralViewModel,
     appId: Int,
-    navController: NavHostController
+    backState: NavBackStack<NavKey>
 ) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -90,6 +92,10 @@ fun CloudAzureApplicationDetails(
     }
 
     val context = LocalContext.current
+
+    BackHandler {
+        backState.removeLastOrNull()
+    }
 
     Column(
         modifier = modifier
@@ -216,7 +222,7 @@ fun CloudAzureApplicationDetails(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text).copy(
                     imeAction = ImeAction.Done
                 ),
-                textStyle =MaterialTheme.typography.bodySmall,
+                textStyle = MaterialTheme.typography.bodySmall,
                 value = urlAppName,
                 onValueChange = {
                     urlAppName = it
@@ -262,7 +268,7 @@ fun CloudAzureApplicationDetails(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text).copy(
                     imeAction = ImeAction.Done
                 ),
-                textStyle =MaterialTheme.typography.bodySmall,
+                textStyle = MaterialTheme.typography.bodySmall,
                 singleLine = true,
                 value = authorizationKey,
                 onValueChange = {
@@ -362,7 +368,7 @@ fun CloudAzureApplicationDetails(
             BlueMsButton(
                 text = stringResource(id = android.R.string.cancel),
                 onClick = {
-                    navController.popBackStack()
+                    backState.removeLastOrNull()
                 }
             )
 
@@ -398,7 +404,7 @@ fun CloudAzureApplicationDetails(
                         viewModel.cloudAppConfigurationDone()
                     }
 
-                    navController.popBackStack()
+                    backState.removeLastOrNull()
                 }
             )
         }

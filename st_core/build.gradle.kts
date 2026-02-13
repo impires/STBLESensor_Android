@@ -67,7 +67,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigationFragment)
+    
     ksp(libs.hilt.compiler)
 
     // Room
@@ -84,14 +84,11 @@ dependencies {
     // KTX
     api(libs.bundles.ktx)
 
-    // Navigation
-    api(libs.bundles.navigation)
-
     // Retrofit
     api(libs.bundles.network)
 
     // Test
-    testApi(libs.junit.core)
+    //testApi(libs.junit.core)
 
     // Dependency required for API desugaring.
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)

@@ -24,7 +24,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.R
 import com.st.ui.composables.BlueMsButton
@@ -32,8 +31,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.rotate
-import com.st.flow_demo.DestinationFlowDemoFlowExpertEditingScreen
-import com.st.flow_demo.DestinationFlowDemoFlowUploadScreen
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import com.st.flow_demo.FlowDemoFlowExpertEditingNavKey
+import com.st.flow_demo.FlowDemoFlowUploadNavKey
 import com.st.flow_demo.helpers.canBeUsedAsExp
 import com.st.flow_demo.helpers.getFunctionIconResourceByName
 import com.st.flow_demo.helpers.getOutputIconResourceByName
@@ -46,11 +47,11 @@ import com.st.ui.theme.Shapes
 @Composable
 fun FlowDemoFlowDetailScreen(
     viewModel: FlowDemoViewModel,
-    navController: NavHostController,
+    backState: NavBackStack<NavKey>,
     paddingValues: PaddingValues
 ) {
     BackHandler {
-        navController.popBackStack()
+        backState.removeLastOrNull()
     }
 
     val flow = viewModel.flowSelected
@@ -118,9 +119,7 @@ fun FlowDemoFlowDetailScreen(
                                 viewModel.flowSelected = flow
                                 viewModel.flowOnCreation = flow.copy()
                                 viewModel.resetSavedFlowState()
-                                navController.navigate(
-                                    DestinationFlowDemoFlowExpertEditingScreen.route
-                                )
+                                backState.add(FlowDemoFlowExpertEditingNavKey)
                             }
                         )
 
@@ -138,9 +137,7 @@ fun FlowDemoFlowDetailScreen(
                                     viewModel.flowSelected = flow
                                     viewModel.expressionSelected = null
                                 }
-                                navController.navigate(
-                                    DestinationFlowDemoFlowUploadScreen.route
-                                )
+                                backState.add(FlowDemoFlowUploadNavKey)
                             }
                         )
                     }

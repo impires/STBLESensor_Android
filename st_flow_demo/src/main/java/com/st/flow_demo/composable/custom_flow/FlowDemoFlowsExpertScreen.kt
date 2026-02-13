@@ -34,11 +34,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import com.st.flow_demo.DestinationFlowDemoFlowDetailScreen
-import com.st.flow_demo.DestinationFlowDemoFlowExpertEditingScreen
-import com.st.flow_demo.DestinationFlowDemoFlowIfApplicationCreationScreen
-import com.st.flow_demo.DestinationFlowDemoFlowUploadScreen
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import com.st.flow_demo.FlowDemoFlowDetailNavKey
+import com.st.flow_demo.FlowDemoFlowExpertEditingNavKey
+import com.st.flow_demo.FlowDemoFlowIfApplicationCreationNavKey
+import com.st.flow_demo.FlowDemoFlowUploadNavKey
 import com.st.flow_demo.FlowDemoViewModel
 import com.st.flow_demo.R
 import com.st.flow_demo.composable.common.FlowDemoAlertDialog
@@ -50,7 +51,7 @@ import com.st.ui.theme.LocalDimensions
 fun FlowDemoFlowsExpertScreen(
     viewModel: FlowDemoViewModel,
     paddingValues: PaddingValues,
-    navController: NavHostController
+    backState: NavBackStack<NavKey>
 ) {
 
     val context = LocalContext.current
@@ -109,9 +110,7 @@ fun FlowDemoFlowsExpertScreen(
                     viewModel.expressionSelected = null
                     viewModel.flowOnCreation = null
                     viewModel.resetSavedFlowState()
-                    navController.navigate(
-                        DestinationFlowDemoFlowExpertEditingScreen.route
-                    )
+                    backState.add(FlowDemoFlowExpertEditingNavKey)
                 }
             )
 
@@ -123,9 +122,7 @@ fun FlowDemoFlowsExpertScreen(
                     viewModel.expressionSelected = null
                     viewModel.flowSelected = null
                     viewModel.flowOnCreation = null
-                    navController.navigate(
-                        DestinationFlowDemoFlowIfApplicationCreationScreen.route
-                    )
+                    backState.add(FlowDemoFlowIfApplicationCreationNavKey)
                 }
             )
         }
@@ -173,9 +170,7 @@ fun FlowDemoFlowsExpertScreen(
                     flow = flow,
                     onFlowSelected = {
                         viewModel.flowSelected = flow
-                        navController.navigate(
-                            DestinationFlowDemoFlowDetailScreen.route
-                        )
+                        backState.add(FlowDemoFlowDetailNavKey)
                     },
                     onPlayFlow = {
                         viewModel.flowSelected = flow
@@ -184,10 +179,7 @@ fun FlowDemoFlowsExpertScreen(
                         viewModel.reportExpertAppInputAnalytics(flow)
                         viewModel.reportExpertAppFunctionAnalytics(flow)
                         viewModel.reportExpertAppOutputAnalytics(flow)
-
-                        navController.navigate(
-                            DestinationFlowDemoFlowUploadScreen.route
-                        )
+                        backState.add(FlowDemoFlowUploadNavKey)
                     },
                     onDeleteFlow = {
                         viewModel.flowSelected = flow

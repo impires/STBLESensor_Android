@@ -15,7 +15,8 @@ plugins {
     alias(libs.plugins.googleHilt)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.devtoolsKsp)
-    alias(libs.plugins.androidxSafeargs)
+    
+    alias(libs.plugins.kotlinSerialization)
 }
 
 apply {
@@ -80,7 +81,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigationFragment)
+    
     implementation(libs.androidx.compose.material3)
     ksp(libs.hilt.compiler)
 
