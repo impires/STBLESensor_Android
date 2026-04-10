@@ -11,7 +11,6 @@ import com.st.blue_sdk.features.FeatureUpdate
 import com.st.plot.utils.PLOTTABLE_FEATURE
 import com.st.plot.utils.PlotBoundary
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +23,6 @@ import javax.inject.Inject
 class PlotViewModel
 @Inject internal constructor(
     private val blueManager: BlueManager,
-    private val coroutineScope: CoroutineScope
 ) : ViewModel() {
 
     companion object {
@@ -32,7 +30,6 @@ class PlotViewModel
         private const val MIN_DEFAULT = -100.0f
         private const val MAX_DEFAULT = 100.0f
     }
-
     var snap: Bitmap? = null
 
     private val _plottableFeatures =

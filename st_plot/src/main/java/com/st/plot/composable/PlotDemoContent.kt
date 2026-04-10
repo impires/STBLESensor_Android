@@ -2,7 +2,7 @@ package com.st.plot.composable
 
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -22,6 +22,9 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,7 +53,9 @@ import com.st.ui.theme.Grey6
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PrimaryBlue
 import java.util.Date
+import java.util.Locale.getDefault
 
+private const val WAITING_FEATURE_VALUE = "Feature Value"
 
 @Composable
 fun PlotDemoContent(
@@ -60,30 +65,33 @@ fun PlotDemoContent(
 ) {
     val plottableFeatures by viewModel.plottableFeatures.collectAsStateWithLifecycle()
 
-    val context = LocalContext.current
+    var plotDesc by remember { mutableStateOf(WAITING_FEATURE_VALUE) }
 
-    val pickFileLauncher = rememberLauncherForActivityResult(
-        contract = CreateDocument("image/png")
-    ) { fileUri ->
-        fileUri?.let {
-            val result = viewModel.saveImage(context, fileUri)
-            if (result) {
-                Toast.makeText(context, "File Saved", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, "Error Saving File", Toast.LENGTH_SHORT).show()
+    if (plottableFeatures.isNotEmpty()) {
+        val context = LocalContext.current
+        val pickFileLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("image/png")
+        ) { fileUri ->
+            fileUri?.let {
+                val result = viewModel.saveImage(context, fileUri)
+                if (result) {
+                    Toast.makeText(context, "File Saved", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Error Saving File", Toast.LENGTH_SHORT).show()
+                }
             }
         }
-    }
-    if (plottableFeatures.isNotEmpty()) {
 
         val featureUpdate by viewModel.featureUpdate.collectAsStateWithLifecycle()
         val isPlotting by viewModel.isPlotting.collectAsStateWithLifecycle()
         val selectedFeature by viewModel.selectedFeature.collectAsStateWithLifecycle()
         var showTools by remember { mutableStateOf(false) }
+        var makeSnapShot by remember { mutableStateOf(false) }
 
         var showSettingsDialog by remember { mutableStateOf(false) }
-        var makeSnapShot by remember { mutableStateOf(false) }
         var showMaxMin by remember { mutableStateOf(false) }
+
+        var plotInterpolationType by remember { mutableStateOf(PlotInterpolationType.LINEAR) }
 
         Column(
             modifier = modifier
@@ -150,7 +158,7 @@ fun PlotDemoContent(
                     .weight(2f)
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingSmall),
+                    horizontalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingNormal),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -162,25 +170,27 @@ fun PlotDemoContent(
                         textAlign = TextAlign.End
                     )
 
-                    PlotView(modifier = Modifier
-                        .fillMaxSize()
-                        .weight(2f),
+                    BlueMSPlot(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(2f),
+                        interpolationType = plotInterpolationType,
                         feature = selectedFeature!!,
                         viewModel = viewModel,
                         featureUpdate = featureUpdate,
+                        showMaxMin = showMaxMin,
                         makeSnapShot = makeSnapShot,
                         onMakeSnapShotDone = {
                             makeSnapShot = false
                             showTools = false
                         },
-                        showMaxMin = showMaxMin,
                         onSaveSnapshot = { snap ->
                             viewModel.snap = snap
                             val fileName =
                                 "SnapShot_${selectedFeature!!.name}_${Date()}.png".replace(' ', '-')
                             pickFileLauncher.launch(fileName)
-                        })
-
+                        }
+                    )
                 }
 
                 Column(
@@ -246,23 +256,22 @@ fun PlotDemoContent(
             }
 
             if (featureUpdate == null) {
-                Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = "Feature Value",
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.End
-                )
+                plotDesc = WAITING_FEATURE_VALUE
             } else {
-                val plotDesc = featureUpdate!!.toPlotDesc(feature = selectedFeature!!)
-                plotDesc?.let { valueString ->
-                    Text(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = valueString,
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.End
-                    )
+                val plotDescValue = featureUpdate!!.toPlotDesc(feature = selectedFeature!!)
+
+                plotDescValue?.let {
+                    plotDesc = it
                 }
             }
+
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = plotDesc,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.End
+            )
+
         }
 
         if (showSettingsDialog) {
@@ -291,7 +300,7 @@ fun PlotDemoContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(all = LocalDimensions.current.paddingNormal),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                        horizontalAlignment = Alignment.Start,
                         verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingNormal)
                     ) {
 
@@ -318,7 +327,7 @@ fun PlotDemoContent(
 
                             Text(
                                 textAlign = TextAlign.Start,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = Grey6,
                                 text = "Plot Seconds"
                             )
@@ -327,7 +336,7 @@ fun PlotDemoContent(
                                 modifier = Modifier
                                     .weight(2f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                textStyle = MaterialTheme.typography.bodyMedium,
+                                textStyle = MaterialTheme.typography.bodySmall,
                                 value = textSecondsToPlot,
                                 //placeholder = { Text("5", color = Grey6) },
                                 onValueChange = {
@@ -350,7 +359,7 @@ fun PlotDemoContent(
 
                             Text(
                                 textAlign = TextAlign.Start,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = Grey6,
                                 text = "AutoScale"
                             )
@@ -382,7 +391,7 @@ fun PlotDemoContent(
 
                                     Text(
                                         textAlign = TextAlign.Start,
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = Grey6,
                                         text = "Max"
                                     )
@@ -391,7 +400,7 @@ fun PlotDemoContent(
                                         modifier = Modifier
                                             .weight(2f),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                        textStyle = MaterialTheme.typography.bodyMedium,
+                                        textStyle = MaterialTheme.typography.bodySmall,
                                         value = textMaxValue,
                                         //placeholder = { Text("5", color = Grey6) },
                                         onValueChange = {
@@ -414,7 +423,7 @@ fun PlotDemoContent(
 
                                     Text(
                                         textAlign = TextAlign.Start,
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = Grey6,
                                         text = "Min"
                                     )
@@ -423,7 +432,7 @@ fun PlotDemoContent(
                                         modifier = Modifier
                                             .weight(2f),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                        textStyle = MaterialTheme.typography.bodyMedium,
+                                        textStyle = MaterialTheme.typography.bodySmall,
                                         value = textMinValue,
                                         //placeholder = { Text("5", color = Grey6) },
                                         onValueChange = {
@@ -432,6 +441,40 @@ fun PlotDemoContent(
                                             value?.let { min ->
                                                 viewModel.minValue(min = min)
                                             }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(
+                                LocalDimensions.current.paddingNormal
+                            ),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            Text(
+                                textAlign = TextAlign.Start,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Grey6,
+                                text = "Interpolation"
+                            )
+
+                            SingleChoiceSegmentedButtonRow {
+                                PlotInterpolationType.entries.forEachIndexed { index, type ->
+                                    SegmentedButton(
+                                        shape = SegmentedButtonDefaults.itemShape(
+                                            index = index,
+                                            count = PlotInterpolationType.entries.size
+                                        ),
+                                        onClick = { plotInterpolationType = type },
+                                        selected = plotInterpolationType == type,
+                                        label = {
+                                            Text(
+                                                style = MaterialTheme.typography.bodySmall,
+                                                text = type.name.lowercase(getDefault())
+                                            )
                                         }
                                     )
                                 }

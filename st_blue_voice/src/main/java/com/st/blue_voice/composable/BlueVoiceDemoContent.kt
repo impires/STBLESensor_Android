@@ -49,7 +49,7 @@ import com.st.blue_sdk.services.audio.codec.DecodeParams
 import com.st.blue_sdk.services.audio.toByteArray
 import com.st.blue_voice.BlueVoiceViewModel
 import com.st.blue_voice.R
-import com.st.blue_voice.utils.AudioRecorder
+import com.st.blue_voice.utils.AudioFileRecorder
 import com.st.ui.composables.ComposableLifecycle
 import com.st.ui.theme.Grey0
 import com.st.ui.theme.Grey3
@@ -59,7 +59,6 @@ import com.st.ui.theme.PrimaryBlue
 import com.st.ui.theme.SecondaryBlue
 import com.st.ui.theme.Shapes
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import java.util.Locale
@@ -76,9 +75,9 @@ fun BlueVoiceDemoContent(
     nodeId: String
 ) {
 
-    var audioWavDump by remember {
-        mutableStateOf<AudioRecorder?>(null)
-    }
+    val context = LocalContext.current
+
+    val recorder = remember { AudioFileRecorder(context, "BlueVoice") }
 
     var isMute by remember {
         mutableStateOf(false)
@@ -111,8 +110,6 @@ fun BlueVoiceDemoContent(
     var frequency by remember { mutableStateOf("") }
     var codecType by remember { mutableStateOf("") }
 
-    val context = LocalContext.current
-
 
     LaunchedEffect(key1 = Unit) {
         viewModel.audioData(nodeId).onStart {
@@ -123,6 +120,11 @@ fun BlueVoiceDemoContent(
                     Locale.getDefault(), "%d kHz",
                     decodeParams.samplingFreq / 1000
                 )
+
+            recorder.sampleRate = decodeParams.samplingFreq
+            recorder.channels = decodeParams.channels.toShort()
+            recorder.fileSuffix = viewModel.getFeatureName(nodeId).replace("Feature", "")
+
 
             codecType =
                 viewModel.getAudioCodecType(nodeId).name
@@ -135,23 +137,18 @@ fun BlueVoiceDemoContent(
                     currentVolume = maxVolume / 2
                 }
 
-            audioWavDump = initializeAudioDump(
-                viewModel.getFeatureName(nodeId).replace("Feature", ""),
-                context
-            )
-
             initAudioTrack(decodeParams)
         }.filter {
             it.isNotEmpty()
         }.onEach {
             sample = it[0]
+        }.collect { pcmData ->
+            val bytes = pcmData.toByteArray()
+            playAudio(bytes)
             if (isRecording) {
-                audioWavDump?.writeSample(it)
+                recorder.writeSample(bytes)
             }
-        }.map { it.toByteArray() }
-            .collect {
-                playAudio(it)
-            }
+        }
     }
 
     ComposableLifecycle { _, event ->
@@ -160,9 +157,20 @@ fun BlueVoiceDemoContent(
                 mAudioTrack?.pause()
                 mAudioTrack?.flush()
                 if (isRecording) {
-                    stopRec(audioWavDump)
+                    val path = recorder.stop()
+                    path?.let { filePath ->
+                        Toast
+                            .makeText(
+                                context,
+                                "Audio saved on: ${filePath.removePrefix(filePath.substringBefore("Download"))}",
+                                Toast.LENGTH_SHORT
+                            )
+                            .show()
+                    }
+                    isRecording = false
                 }
             }
+
             else -> Unit
         }
     }
@@ -217,18 +225,19 @@ fun BlueVoiceDemoContent(
                             .size(size = LocalDimensions.current.iconNormal)
                             .clickable {
                                 isRecording = !isRecording
-
                                 if (isRecording) {
-                                    startRec(audioWavDump)
+                                    recorder.start()
                                 } else {
-                                    stopRec(audioWavDump)
-                                    audioWavDump?.let {
+                                    val path = recorder.stop()
+                                    path?.let { filePath ->
                                         Toast
                                             .makeText(
                                                 context,
                                                 "Audio saved on: ${
-                                                    audioWavDump!!.fileName.removePrefix(
-                                                        audioWavDump!!.fileName.substringBefore("Download")
+                                                    filePath.removePrefix(
+                                                        filePath.substringBefore(
+                                                            "Download"
+                                                        )
                                                     )
                                                 }",
                                                 Toast.LENGTH_SHORT
@@ -358,7 +367,7 @@ fun BlueVoiceDemoContent(
             shadowElevation = LocalDimensions.current.elevationNormal
         ) {
 
-            WaveFormPlotView(name = "Audio In", sample = sample)
+            WaveFormPlotView(sample = sample)
         }
     }
 }
@@ -415,13 +424,6 @@ private fun playAudio(sample: ByteArray) {
     )
 }
 
-private fun initializeAudioDump(name: String, context: Context): AudioRecorder {
-    return AudioRecorder(
-        context,
-        name
-    )
-}
-
 private fun muteAudio() {
     audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
 }
@@ -432,12 +434,4 @@ private fun unMuteAudio(volume: Int) {
         volume,
         0
     )
-}
-
-private fun startRec(audioWavDump: AudioRecorder?) {
-    audioWavDump?.startRec()
-}
-
-private fun stopRec(audioWavDump: AudioRecorder?) {
-    audioWavDump?.stopRec()
 }

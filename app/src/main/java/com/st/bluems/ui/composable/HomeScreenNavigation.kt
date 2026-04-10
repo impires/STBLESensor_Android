@@ -40,7 +40,9 @@ fun HomeScreenNavigation(
         rememberNavBackStack(HomeScreenNavKey)
 
     GlobalConfig.removeBackState = {
-        backState.removeLastOrNull()
+        if(backState.size>1) {
+            backState.removeLastOrNull()
+        }
     }
 
     BlueMSTheme {
@@ -51,7 +53,9 @@ fun HomeScreenNavigation(
                 ),
             backStack = backState,
             onBack = {
-                backState.removeLastOrNull()
+                if (backState.size > 1) {
+                    backState.removeLastOrNull()
+                }
             },
             entryDecorators = listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),

@@ -59,8 +59,8 @@ class SensorFusionViewModel
         get() = _proximityData.asStateFlow()
 
     private val _freeFallData =
-        MutableStateFlow<Pair<Boolean,Long?>>(Pair(false,null))
-    val freeFall: StateFlow<Pair<Boolean,Long?>>
+        MutableStateFlow<Pair<Boolean, Long?>>(Pair(false, null))
+    val freeFall: StateFlow<Pair<Boolean, Long?>>
         get() = _freeFallData.asStateFlow()
 
     private val _calibrationStatus =
@@ -150,7 +150,7 @@ class SensorFusionViewModel
                                 _fusionData.emit(current.value)
                                 prevTimeStamp = currentTimeStamp
                             }
-                           // _fusionData.emit(data.quaternions[0].value)
+                            // _fusionData.emit(data.quaternions[0].value)
                         }
                     }
                 }
@@ -170,11 +170,9 @@ class SensorFusionViewModel
             }
         }
 
-        featureSensorFusion?.let {
+        featureSensorFusion?.let { feature ->
             viewModelScope.launch {
-                featureSensorFusion?.let { feature ->
-                    getCalibration(feature, nodeId)
-                }
+                getCalibration(feature, nodeId)
             }
         }
 
@@ -212,7 +210,7 @@ class SensorFusionViewModel
                     if (data is AccelerationEventInfo) {
                         if (data.accEvent.map { event -> event.value }
                                 .firstOrNull { event -> event == AccelerationType.FreeFall } != null) {
-                            _freeFallData.emit(Pair(true,it.timeStamp))
+                            _freeFallData.emit(Pair(true, it.timeStamp))
                         }
                     }
                 }
@@ -244,7 +242,9 @@ class SensorFusionViewModel
         }
     }
 
-    fun nodeHaveProximityFeature():Boolean { return featureProximity!=null}
+    fun nodeHaveProximityFeature(): Boolean {
+        return featureProximity != null
+    }
 
     fun stopDemo(nodeId: String) {
         featureSensorFusion?.let {
@@ -265,7 +265,7 @@ class SensorFusionViewModel
     fun resetCubeCalibration(nodeId: String) {
         coroutineScope.launch {
             featureSensorFusion?.let { feature ->
-                startCalibration(feature,nodeId)
+                startCalibration(feature, nodeId)
             }
         }
     }

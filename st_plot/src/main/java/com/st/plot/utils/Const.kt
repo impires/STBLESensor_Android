@@ -109,201 +109,6 @@ internal fun Feature<*>.fieldsDesc(): Map<String, String> =
         else -> mapOf("Events" to "")
     }
 
-internal fun FeatureUpdate<*>.toPlotEntry(feature: Feature<*>, xOffset: Long): PlotEntry? =
-    when (val data = this.data) {
-        is AccelerationInfo ->
-            if (feature !is Acceleration) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.x.value, data.y.value, data.z.value).toFloatArray()
-                )
-
-        is CompassInfo ->
-            if (feature !is Compass) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.angle.value).toFloatArray()
-                )
-
-        is DirectionOfArrivalInfo ->
-            if (feature !is DirectionOfArrival) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.angle.value.toFloat()).toFloatArray()
-                )
-
-        is GyroscopeInfo ->
-            if (feature !is Gyroscope) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.x.value, data.y.value, data.z.value).toFloatArray()
-                )
-
-        is HumidityInfo ->
-            if (feature !is Humidity) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.humidity.value).toFloatArray()
-                )
-
-        is LuminosityInfo ->
-            if (feature !is Luminosity) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.luminosity.value.toFloat()).toFloatArray()
-                )
-
-        is MagnetometerInfo ->
-            if (feature !is Magnetometer) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.x.value, data.y.value, data.z.value).toFloatArray()
-                )
-
-        is MemsSensorFusionInfo ->
-            if (feature !is MemsSensorFusion && feature !is MemsSensorFusionCompat) null
-            else {
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(
-                        data.quaternions[0].value.qi,
-                        data.quaternions[0].value.qj,
-                        data.quaternions[0].value.qs,
-                        data.quaternions[0].value.qk
-                    ).toFloatArray()
-                )
-            }
-
-        is MicLevelInfo ->
-            if (feature !is MicLevel) null
-            else {
-                val sampleList = mutableListOf<Float>()
-                for (element in data.micsLevel) {
-                    sampleList.add(element.value.toFloat())
-                }
-
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    sampleList.toFloatArray()
-                )
-            }
-
-        is MotionIntensityInfo ->
-            if (feature !is MotionIntensity) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.intensity.value.toFloat()).toFloatArray()
-                )
-
-        is ProximityInfo ->
-            if (feature !is Proximity || data.proximity.value == ProximityInfo.OUT_OF_RANGE_VALUE) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.proximity.value.toFloat()).toFloatArray()
-                )
-
-        is PressureInfo ->
-            if (feature !is Pressure) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.pressure.value).toFloatArray()
-                )
-
-        is TemperatureInfo ->
-            if (feature !is Temperature) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.temperature.value).toFloatArray()
-                )
-
-        is COSensorInfo ->
-            if (feature !is COSensor) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.concentration.value).toFloatArray()
-                )
-
-        is EulerAngleInfo ->
-            if (feature !is EulerAngle) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.yaw.value, data.pitch.value, data.roll.value).toFloatArray()
-                )
-
-        is MemsNormInfo ->
-            if (feature !is MemsNorm) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.norm.value).toFloatArray()
-                )
-
-        is QVARInfo ->
-            if (feature !is QVAR) null
-            else {
-                val yData = mutableListOf<Float>()
-                yData.add((data.qvar.value).toFloat())
-                yData.add((data.dqvar.value ?: 0).toFloat())
-
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    yData.toFloatArray()
-                )
-            }
-
-        is ToFMultiObjectInfo ->
-            if (feature !is ToFMultiObject) null
-            else {
-                val yData = mutableListOf<Float>()
-                for (element in data.distanceObjs) {
-                    yData.add(element.value.toFloat())
-                }
-                //Filling remaining Distances ==0
-                for (element in data.nObjsFound.value until 4) {
-                    yData.add(0.0f)
-                }
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    yData.toFloatArray()
-                )
-            }
-
-        is EventCounterInfo ->
-            if (feature !is EventCounter) null
-            else
-                PlotEntry(
-                    notificationTime.time - xOffset,
-                    listOf(data.count.value.toFloat()).toFloatArray()
-                )
-
-        is NeaiExtrapolationInfo ->
-            if (feature !is NeaiExtrapolation) null
-            else {
-                if (data.extrapolation != null) {
-                    if (data.extrapolation!!.target != null) {
-                        PlotEntry(
-                            notificationTime.time - xOffset,
-                            listOf(data.extrapolation!!.target!!).toFloatArray()
-                        )
-                    } else null
-                } else null
-            }
-        else -> null
-    }
-
 internal fun FeatureUpdate<*>.toPlotDesc(feature: Feature<*>): String? =
     when (val data = this.data) {
         is AccelerationInfo ->
@@ -421,16 +226,216 @@ internal fun FeatureUpdate<*>.toPlotDesc(feature: Feature<*>): String? =
                 "TS: $timeStamp #:${data.count.value}"
 
         is NeaiExtrapolationInfo ->
-            if(feature !is NeaiExtrapolation) null
+            if (feature !is NeaiExtrapolation) null
             else {
-                    if (data.extrapolation != null) {
-                        if (data.extrapolation!!.target != null) {
-                            val out = StringBuilder()
-                            out.append("TS:$timeStamp")
-                            out.append(" Target:${data.extrapolation!!.target!!}")
-                            out.toString()
-                        } else null
+                if (data.extrapolation != null) {
+                    if (data.extrapolation!!.target != null) {
+                        val out = StringBuilder()
+                        out.append("TS:$timeStamp")
+                        out.append(" Target:${data.extrapolation!!.target!!}")
+                        out.toString()
                     } else null
+                } else null
+            }
+
+        else -> null
+    }
+
+internal fun FeatureUpdate<*>.toBlueMSPlotEntry(
+    feature: Feature<*>,
+    xOffset: Long
+): BlueMSPlotEntry? =
+    when (val data = this.data) {
+        is AccelerationInfo ->
+            if (feature !is Acceleration) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.x.value, data.y.value, data.z.value).toFloatArray()
+                )
+
+        is CompassInfo ->
+            if (feature !is Compass) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.angle.value).toFloatArray()
+                )
+
+        is DirectionOfArrivalInfo ->
+            if (feature !is DirectionOfArrival) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.angle.value.toFloat()).toFloatArray()
+                )
+
+        is GyroscopeInfo ->
+            if (feature !is Gyroscope) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.x.value, data.y.value, data.z.value).toFloatArray()
+                )
+
+        is HumidityInfo ->
+            if (feature !is Humidity) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.humidity.value).toFloatArray()
+                )
+
+        is LuminosityInfo ->
+            if (feature !is Luminosity) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.luminosity.value.toFloat()).toFloatArray()
+                )
+
+        is MagnetometerInfo ->
+            if (feature !is Magnetometer) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.x.value, data.y.value, data.z.value).toFloatArray()
+                )
+
+        is MemsSensorFusionInfo ->
+            if (feature !is MemsSensorFusion && feature !is MemsSensorFusionCompat) null
+            else {
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(
+                        data.quaternions[0].value.qi,
+                        data.quaternions[0].value.qj,
+                        data.quaternions[0].value.qs,
+                        data.quaternions[0].value.qk
+                    ).toFloatArray()
+                )
+            }
+
+        is MicLevelInfo ->
+            if (feature !is MicLevel) null
+            else {
+                val sampleList = mutableListOf<Float>()
+                for (element in data.micsLevel) {
+                    sampleList.add(element.value.toFloat())
                 }
+
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    sampleList.toFloatArray()
+                )
+            }
+
+        is MotionIntensityInfo ->
+            if (feature !is MotionIntensity) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.intensity.value.toFloat()).toFloatArray()
+                )
+
+        is ProximityInfo ->
+            if (feature !is Proximity || data.proximity.value == ProximityInfo.OUT_OF_RANGE_VALUE) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.proximity.value.toFloat()).toFloatArray()
+                )
+
+        is PressureInfo ->
+            if (feature !is Pressure) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.pressure.value).toFloatArray()
+                )
+
+        is TemperatureInfo ->
+            if (feature !is Temperature) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.temperature.value).toFloatArray()
+                )
+
+        is COSensorInfo ->
+            if (feature !is COSensor) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.concentration.value).toFloatArray()
+                )
+
+        is EulerAngleInfo ->
+            if (feature !is EulerAngle) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.yaw.value, data.pitch.value, data.roll.value).toFloatArray()
+                )
+
+        is MemsNormInfo ->
+            if (feature !is MemsNorm) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.norm.value).toFloatArray()
+                )
+
+        is QVARInfo ->
+            if (feature !is QVAR) null
+            else {
+                val yData = mutableListOf<Float>()
+                yData.add((data.qvar.value).toFloat())
+                yData.add((data.dqvar.value ?: 0).toFloat())
+
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    yData.toFloatArray()
+                )
+            }
+
+        is ToFMultiObjectInfo ->
+            if (feature !is ToFMultiObject) null
+            else {
+                val yData = mutableListOf<Float>()
+                for (element in data.distanceObjs) {
+                    yData.add(element.value.toFloat())
+                }
+                //Filling remaining Distances ==0
+                for (element in data.nObjsFound.value until 4) {
+                    yData.add(0.0f)
+                }
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    yData.toFloatArray()
+                )
+            }
+
+        is EventCounterInfo ->
+            if (feature !is EventCounter) null
+            else
+                BlueMSPlotEntry(
+                    notificationTime.time - xOffset,
+                    listOf(data.count.value.toFloat()).toFloatArray()
+                )
+
+        is NeaiExtrapolationInfo ->
+            if (feature !is NeaiExtrapolation) null
+            else {
+                if (data.extrapolation != null) {
+                    if (data.extrapolation!!.target != null) {
+                        BlueMSPlotEntry(
+                            notificationTime.time - xOffset,
+                            listOf(data.extrapolation!!.target!!).toFloatArray()
+                        )
+                    } else null
+                } else null
+            }
+
         else -> null
     }

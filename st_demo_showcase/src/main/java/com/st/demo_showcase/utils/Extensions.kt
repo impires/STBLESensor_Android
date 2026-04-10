@@ -115,7 +115,6 @@ fun Demo.getDescription(): String =
         Demo.TofObjectsDetection -> "Multi objects' distance and presence detection using Time-of-Flight (ToF) sensor"
         Demo.ColorAmbientLightDemo -> "Display illuminance, intensity UV radiation and correlated color temperature"
         Demo.Gnss -> "Display GNSS coordinates (Latitude, Longitude and Altitude) and satellites' signal information"
-        Demo.ElectricChargeVariation -> "Display Raw data coming from electric charge variation (QVAR) sensor"
         Demo.MotionIntensityDemo -> "Display the level of motion intensity measured by the board"
         Demo.ActivityRecognition -> "Display the activity recognized using different algorithms that could be enabled on the board"
         Demo.CarryPositionDemo -> "Display the board carry position recognized"

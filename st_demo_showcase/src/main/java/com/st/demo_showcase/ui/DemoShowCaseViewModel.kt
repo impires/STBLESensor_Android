@@ -314,8 +314,7 @@ class DemoShowCaseViewModel @Inject constructor(
     }
 
     private fun checkFwUpdate() {
-
-        Log.i("Pezz","checkFwUpdate")
+        Log.i("DemoShowCaseViewModel","checkFwUpdate")
         viewModelScope.launch {
             _device.value?.let { currentFirmwareInfo ->
                 val updateFirmware = currentFirmwareInfo.fwUpdate

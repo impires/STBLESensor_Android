@@ -57,6 +57,7 @@ import com.st.ext_config.CertRequestNavScreen
 import com.st.ext_config.ExtConfigurationNavScreen
 import com.st.ext_config.FwDownloadNavScreen
 import com.st.ext_config.FwUpgradeNavScreen
+
 @AndroidEntryPoint
 class ExtConfigFragment : Fragment() {
 
@@ -101,7 +102,6 @@ fun ExtConfigurationNavScreen(
             FwUpgradeNavScreen()
             CertRequestNavScreen()
             CertRegistrationNavScreen()
-            //DownloadTermsNavScreen(backState)
         })
 }
 

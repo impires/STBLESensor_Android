@@ -79,20 +79,16 @@ interface StPreferences {
 
     fun deleteConfiguredMqttCloudApp()
 
-    fun setBoardCatalogStatus(serializedString: String)
-
-    fun getBoardCatalogStatus(): String?
-
     //Custom Entries
     fun setCustomStringForKey(key: String, serializedString: String)
 
-    fun getCustomStringFromKey(key: String) : String?
+    fun getCustomStringFromKey(key: String): String?
 
     fun deleteCustomStringFromKey(key: String)
 
     fun setCustomBooleanForKey(key: String, value: Boolean)
 
-    fun getCustomBooleanFromKey(key: String) : Boolean
+    fun getCustomBooleanFromKey(key: String): Boolean
 
     fun deleteCustomBooleanFromKey(key: String)
 }

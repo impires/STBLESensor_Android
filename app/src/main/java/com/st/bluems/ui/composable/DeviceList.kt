@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -48,16 +47,13 @@ import com.st.ui.theme.Grey6
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.Lifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.st.blue_sdk.board_catalog.models.isDeprecated
-import com.st.blue_sdk.board_catalog.models.isDismissed
 import com.st.ui.composables.BlueMSPullToRefreshBox
 import com.st.ui.composables.ComposableLifecycle
-import com.st.ui.theme.PreviewBlueMSTheme
 import com.st.ui.theme.PrimaryBlue
 import com.st.ui.theme.SecondaryBlue
 import java.text.SimpleDateFormat
@@ -96,20 +92,8 @@ fun DeviceListScreenNavigation(
         mutableStateOf(false)
     }
 
-    var isBoardCatalogDeprecated by remember { mutableStateOf(false) }
-    var isBoardCatalogDismissed by remember { mutableStateOf(false) }
-
-    LaunchedEffect(key1 = Unit) {
-        val boardCatalogStatus = viewModel.boardCatalogStatus
-        if (boardCatalogStatus != null) {
-
-            isBoardCatalogDismissed = boardCatalogStatus.isDismissed()
-
-            if (isBoardCatalogDismissed.not()) {
-                isBoardCatalogDeprecated = boardCatalogStatus.isDeprecated()
-            }
-        }
-    }
+    var isApplicationDeprecated by remember { mutableStateOf(false) }
+    var isApplicationDismissed by remember { mutableStateOf(false) }
 
     ComposableLifecycle { _, event ->
         when (event) {
@@ -194,7 +178,7 @@ fun DeviceListScreenNavigation(
             val enableServer = if (isServerForced) {
                 true
             } else {
-                !( (node.boardType == Boards.Model.SENSOR_TILE_BOX ) || (node.boardType == Boards.Model.SENSOR_TILE_BOX_PRO) || (node.boardType == Boards.Model.SENSOR_TILE_BOX_PROB) || (node.boardType == Boards.Model.SENSOR_TILE_BOX_PROC))
+                !((node.boardType == Boards.Model.SENSOR_TILE_BOX) || (node.boardType == Boards.Model.SENSOR_TILE_BOX_PRO) || (node.boardType == Boards.Model.SENSOR_TILE_BOX_PROB) || (node.boardType == Boards.Model.SENSOR_TILE_BOX_PROC))
             }
 
             nfcViewModel.setNFCNodeId(null)
@@ -221,22 +205,6 @@ fun DeviceListScreenNavigation(
             }
         }
     )
-
-    if (isBoardCatalogDeprecated) {
-        CatalogStatusDeprecatedDismissedDialog(
-            title = "Deprecated Application Version",
-            body = "Please update your application.\nThis application version will be dismissed on ",
-            date = viewModel.boardCatalogStatus?.dismissionDate ?: Date(),
-            onDismissRequest = { isBoardCatalogDeprecated = false })
-    }
-
-    if (isBoardCatalogDismissed) {
-        CatalogStatusDeprecatedDismissedDialog(title = "Dismissed Application Version",
-            body = "Please update your application!.\n" +
-                    "This application version is dismissed from ",
-            date = viewModel.boardCatalogStatus?.dismissionDate ?: Date(),
-            onDismissRequest = { isBoardCatalogDismissed = false })
-    }
 }
 
 @OptIn(
@@ -698,58 +666,9 @@ fun DeviceList(
     }
 }
 
-@Composable
-fun CatalogStatusDeprecatedDismissedDialog(
-    modifier: Modifier = Modifier,
-    title: String,
-    body: String,
-    date: Date,
-    onDismissRequest: () -> Unit = { /** NOOP **/ }
-) {
-    AlertDialog(
-        modifier = modifier,
-        onDismissRequest = onDismissRequest,
-        title = {
-            Text(text = title)
-        },
-        text = {
-            val string = body + SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date)
-            Text(
-                text = string
-            )
-        },
-        confirmButton = {
-            BlueMsButton(
-                text = stringResource(id = android.R.string.ok),
-                onClick = onDismissRequest
-            )
-        }
-    )
-}
 
-@Preview
-@Composable
-private fun CatalogStatusDeprecatedDismissedDialogDeprecatedPreview() {
-    PreviewBlueMSTheme {
-        CatalogStatusDeprecatedDismissedDialog(
-            title = "Deprecated Application Version",
-            body = "Please update your application.\nThis application version will be dismissed on ",
-            date = Date(),
-            onDismissRequest = { })
-    }
-}
-
-@Preview
-@Composable
-private fun CatalogStatusDeprecatedDismissedDialogDismissedPreview() {
-    PreviewBlueMSTheme {
-        CatalogStatusDeprecatedDismissedDialog(
-            title = "Dismissed Application Version",
-            body = "Please update your application!.\n" +
-                    "This application version is dismissed from ",
-            date = Date(),
-            onDismissRequest = { })
-    }
+fun Date.toDayMonthYearString(): String {
+    return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(this)
 }
 
 private const val DEGREES = 360f

@@ -16,22 +16,20 @@ plugins {
     alias(libs.plugins.devtoolsKsp)
 }
 
-apply {
-    from("publish.gradle")
-}
+apply(from = "publish.gradle")
 
 android {
     namespace = "com.st.preferences"
-    compileSdk = stCompileSdk
+    compileSdk {
+        version = release(stCompileSdk) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         minSdk = stMinSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    hilt {
-        enableAggregatingTask = true
     }
 
     buildTypes {
@@ -54,6 +52,10 @@ android {
     buildFeatures {
         buildConfig = true
     }
+}
+
+hilt {
+    enableAggregatingTask = true
 }
 
 dependencies {

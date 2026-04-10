@@ -37,8 +37,6 @@ import com.st.color_ambient_light.ColorAmbientLightViewModel
 import com.st.compass.CompassDemoScreen
 import com.st.compass.CompassViewModel
 import com.st.demo_showcase.ui.demo_show_case.DemoShowCaseFwUpdateNavKey
-import com.st.electric_charge_variation.ElectricChargeVariationDemoScreen
-import com.st.electric_charge_variation.ElectricChargeVariationViewModel
 import com.st.environmental.EnvironmentalDemoScreen
 import com.st.environmental.EnvironmentalViewModel
 import com.st.event_counter.EventCounterDemoScreen
@@ -678,19 +676,6 @@ fun EntryProviderScope<NavKey>.MotionIntensity() {
 }
 
 @Composable
-fun EntryProviderScope<NavKey>.EletricChargeVariation() {
-    entry<ElectricChargeVariationNavKey> { key ->
-        val demoViewModel: ElectricChargeVariationViewModel = hiltViewModel()
-        ElectricChargeVariationDemoScreen(
-            modifier = Modifier
-                .fillMaxSize(),
-            viewModel = demoViewModel,
-            nodeId = key.nodeId
-        )
-    }
-}
-
-@Composable
 fun EntryProviderScope<NavKey>.GNSS() {
     entry<GnssNavKey> { key ->
         val demoViewModel: GnssViewModel = hiltViewModel()
@@ -1041,4 +1026,3 @@ fun EntryProviderScope<NavKey>.FlowDemo() {
         )
     }
 }
-

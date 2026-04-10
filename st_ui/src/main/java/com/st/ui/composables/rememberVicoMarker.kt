@@ -15,25 +15,25 @@
  */
 
 package com.st.ui.composables
-import android.text.Layout
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
+import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
+import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
-import com.patrykandpatrick.vico.compose.common.component.fixed
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.Insets
+import com.patrykandpatrick.vico.compose.common.LayeredComponent
+import com.patrykandpatrick.vico.compose.common.MarkerCornerBasedShape
+import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
+import com.patrykandpatrick.vico.compose.common.component.TextComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
-import com.patrykandpatrick.vico.compose.common.component.shadow
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.compose.common.insets
-import com.patrykandpatrick.vico.compose.common.shape.markerCorneredShape
-import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarker
-import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
-import com.patrykandpatrick.vico.core.common.LayeredComponent
-import com.patrykandpatrick.vico.core.common.component.ShapeComponent
-import com.patrykandpatrick.vico.core.common.component.TextComponent
-import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 
 @Composable
 fun rememberVicoMarker(
@@ -41,24 +41,28 @@ fun rememberVicoMarker(
     DefaultCartesianMarker.ValueFormatter.default(),
   showIndicator: Boolean = true,
 ): CartesianMarker {
-  val labelBackgroundShape = markerCorneredShape(CorneredShape.Corner.Rounded)
+  val labelBackgroundShape = MarkerCornerBasedShape(CircleShape)
   val labelBackground =
     rememberShapeComponent(
-      fill = fill(MaterialTheme.colorScheme.background),
+      fill = Fill(MaterialTheme.colorScheme.background),
       shape = labelBackgroundShape,
+      strokeFill = Fill(MaterialTheme.colorScheme.outline),
       strokeThickness = 1.dp,
-      strokeFill = fill(MaterialTheme.colorScheme.outline),
     )
   val label =
     rememberTextComponent(
-      color = MaterialTheme.colorScheme.onSurface,
-      textAlignment = Layout.Alignment.ALIGN_CENTER,
-      padding = insets(8.dp, 4.dp),
+      style =
+        TextStyle(
+          color = MaterialTheme.colorScheme.onSurface,
+          textAlign = TextAlign.Center,
+          fontSize = 12.sp,
+        ),
+      padding = Insets(8.dp, 4.dp),
       background = labelBackground,
       minWidth = TextComponent.MinWidth.fixed(40.dp),
     )
   val indicatorFrontComponent =
-    rememberShapeComponent(fill(MaterialTheme.colorScheme.surface), CorneredShape.Pill)
+    rememberShapeComponent(Fill(MaterialTheme.colorScheme.surface), CircleShape)
   val guideline = rememberAxisGuidelineComponent()
   return rememberDefaultCartesianMarker(
     label = label,
@@ -67,19 +71,14 @@ fun rememberVicoMarker(
       if (showIndicator) {
         { color ->
           LayeredComponent(
-            back = ShapeComponent(fill(color.copy(alpha = 0.15f)), CorneredShape.Pill),
+            back = ShapeComponent(Fill(color.copy(alpha = 0.15f)), CircleShape),
             front =
               LayeredComponent(
-                back =
-                  ShapeComponent(
-                    fill = fill(color),
-                    shape = CorneredShape.Pill,
-                    shadow = shadow(radius = 12.dp, color = color),
-                  ),
+                back = ShapeComponent(fill = Fill(color), shape = CircleShape),
                 front = indicatorFrontComponent,
-                padding = insets(5.dp),
+                padding = Insets(5.dp),
               ),
-            padding = insets(10.dp),
+            padding = Insets(10.dp),
           )
         }
       } else {

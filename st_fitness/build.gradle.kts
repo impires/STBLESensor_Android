@@ -17,23 +17,21 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
-apply {
-    from("publish.gradle")
-}
+apply(from = "publish.gradle")
 
 android {
     namespace = "com.st.fitness"
-    compileSdk = stCompileSdk
+    compileSdk {
+        version = release(stCompileSdk) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         minSdk = stMinSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
-    }
-
-    hilt {
-        enableAggregatingTask = true
     }
 
     buildTypes {
@@ -59,6 +57,10 @@ android {
         viewBinding = true
     }
 
+}
+
+hilt {
+    enableAggregatingTask = true
 }
 
 dependencies {

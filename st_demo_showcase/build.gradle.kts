@@ -19,24 +19,21 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
 }
 
-apply {
-    from("publish.gradle")
-}
-
+apply(from = "publish.gradle")
 android {
     namespace = "com.st.demo_showcase"
 
-    compileSdk = stCompileSdk
+    compileSdk {
+        version = release(stCompileSdk) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         minSdk = stMinSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
-    }
-
-    hilt {
-        enableAggregatingTask = true
     }
 
     buildTypes {
@@ -61,6 +58,10 @@ android {
         buildConfig = true
         viewBinding = true
     }
+}
+
+hilt {
+    enableAggregatingTask = true
 }
 
 dependencies {
@@ -96,7 +97,6 @@ dependencies {
     implementation(project(":st_tof_objects_detection"))
     implementation(project(":st_color_ambient_light"))
     implementation(project(":st_gnss"))
-    implementation(project(":st_electric_charge_variation"))
     implementation(project(":st_motion_intensity"))
     implementation(project(":st_activity_recognition"))
     implementation(project(":st_carry_position"))

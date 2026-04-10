@@ -55,6 +55,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import com.st.core.GlobalConfig
 import com.st.demo_showcase.ui.debug_console.DebugConsoleViewModel
+import com.st.demo_showcase.ui.demo_show_case.DemoShowCaseDownloadTermsNavKey
 import com.st.demo_showcase.ui.log_settings.LogSettingsViewModel
 import com.st.pnpl.PnplViewModel
 import com.st.pnpl.composable.StPnplScreen
@@ -124,13 +125,6 @@ fun DemoShowCaseNavKeyScreen(
                     viewModel = viewModel
                 )
             }
-
-//            entry<DemoShowCaseDownloadTermsNavKey> {
-//                DownloadLicenseAgreementScreen(onLicenseAgree = { decision ->
-//                    backState.removeLastOrNull()
-//                    StDownloadTermsConfig.onDone(decision)
-//                })
-//            }
 
             entry<DemoShowCaseUserProfilingNavKey> {
                 val viewModelProfile: ProfileViewModel = viewModel()

@@ -16,7 +16,6 @@ import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.st.blue_sdk.BlueManager
-import com.st.blue_sdk.board_catalog.models.BoardCatalogStatus
 import com.st.blue_sdk.board_catalog.models.BoardDescription
 import com.st.blue_sdk.common.Status
 import com.st.blue_sdk.models.ConnectionStatus
@@ -35,9 +34,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import androidx.core.net.toUri
+import kotlinx.coroutines.flow.StateFlow
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -73,7 +72,6 @@ class HomeViewModel @Inject constructor(
     private val _boardName = MutableStateFlow("")
     val boardName = _boardName.asStateFlow()
     val pinnedDevices = stPreferences.getFavouriteDevices()
-    var boardCatalogStatus: BoardCatalogStatus? = null
 
     private val _isPairingRequest = MutableStateFlow(false)
     val isPairingRequest = _isPairingRequest.asStateFlow()
@@ -89,24 +87,6 @@ class HomeViewModel @Inject constructor(
 
     var currentNodeId: String? = null
 
-    init {
-        val boardCatalogStatusSerialized = stPreferences.getBoardCatalogStatus()
-        val jsonDec = Json {
-            encodeDefaults = true
-            ignoreUnknownKeys = true
-        }
-
-        boardCatalogStatusSerialized?.let {
-            boardCatalogStatus=
-                try {
-                    jsonDec.decodeFromString<BoardCatalogStatus>(boardCatalogStatusSerialized)
-                } catch (e: Exception) {
-                    Log.d("HomeViewModel", e.stackTraceToString())
-                    null
-                }
-        }
-    }
-
     fun startScan() {
         viewModelScope.launch {
             _scanBleDevices.emit(emptyList())
@@ -116,6 +96,16 @@ class HomeViewModel @Inject constructor(
                 resource.data ?: emptyList()
             }.collect { nodes ->
                 _scanBleDevices.tryEmit(value = nodes)
+            }
+        }
+    }
+
+    fun linkToGoogleStoreApp(context: Context, appLink: String) {
+        Intent(Intent.ACTION_VIEW).also { intent ->
+            intent.data = appLink.toUri()
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
             }
         }
     }
@@ -141,7 +131,7 @@ class HomeViewModel @Inject constructor(
                 .collect { node ->
                     _connectionStatus.value = node.connectionStatus
 
-                    if( node.connectionStatus.current!=NodeState.Connecting) {
+                    if (node.connectionStatus.current != NodeState.Connecting) {
                         setIsPairingRequest(false)
                     }
                     _boardName.value = node.boardType.name
@@ -383,5 +373,7 @@ class HomeViewModel @Inject constructor(
     companion object {
         private const val TAG = "HomeViewModel"
         private const val MAX_RETRY_CONNECTION = 3
+        const val LINK_TO_APP_STORE =
+            "https://play.google.com/store/apps/details?id=com.st.bluems"
     }
 }

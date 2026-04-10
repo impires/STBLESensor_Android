@@ -1,10 +1,12 @@
 package com.st.medical_signal.composable
 
-import android.content.Context
-import android.view.ViewGroup
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -14,47 +16,71 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.st.blue_sdk.features.extended.medical_signal.MedicalInfo
 import com.st.ui.theme.ErrorText
 import com.st.ui.theme.Grey10
+import com.st.ui.theme.Grey2
 import com.st.ui.theme.InfoText
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PrimaryPink
 import com.st.ui.theme.SecondaryBlue
 import com.st.ui.theme.Shapes
 import com.st.ui.theme.SuccessText
-import java.util.LinkedList
+import kotlin.collections.toFloatArray
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 
-
-private val mLineColors: IntArray = intArrayOf(
-    InfoText.toArgb(),
-    ErrorText.toArgb(),
-    SuccessText.toArgb(),
-    Grey10.toArgb(),
-    SecondaryBlue.toArgb(),
-    PrimaryPink.toArgb()
+private val mColors: Array<Color> = arrayOf(
+    InfoText,
+    ErrorText,
+    SuccessText,
+    Grey10,
+    SecondaryBlue,
+    PrimaryPink
 )
+
+private data class BlueMSPlotEntry(
+    val x: Long, val y: FloatArray
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BlueMSPlotEntry
+
+        if (x != other.x) return false
+        if (!y.contentEquals(other.y)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = x.hashCode()
+        result = 31 * result + y.contentHashCode()
+        return result
+    }
+}
 
 @OptIn(ExperimentalTime::class)
 @Composable
@@ -65,17 +91,12 @@ fun MedicalSignalPlotView(
     resetZoomTime: Long,
     type: String
 ) {
-
-    val localFeatureUpdate by remember(key1 = featureTime) {
-        derivedStateOf { featureUpdate }
-    }
-
     val featureDescription by remember(key1 = featureTime) {
         derivedStateOf {
-            if (localFeatureUpdate.isNotEmpty()) {
-                var string = localFeatureUpdate.first().sigType.value.description
-                if (localFeatureUpdate.first().sigType.value.yMeasurementUnit != null) {
-                    string += " [" + localFeatureUpdate.first().sigType.value.yMeasurementUnit + "]"
+            if (featureUpdate.isNotEmpty()) {
+                var string = featureUpdate.first().sigType.value.description
+                if (featureUpdate.first().sigType.value.yMeasurementUnit != null) {
+                    string += " [" + featureUpdate.first().sigType.value.yMeasurementUnit + "]"
                 }
                 string
             } else {
@@ -84,17 +105,147 @@ fun MedicalSignalPlotView(
         }
     }
 
-    var mPlot by remember { mutableStateOf<LineChart?>(value = null) }
-    val context = LocalContext.current
-
     var prevMedInfo by remember { mutableStateOf<MedicalInfo?>(null) }
 
     var firstInternalTimeStamp by remember {
         mutableStateOf<Int?>(null)
     }
 
-    var mMedLineData by remember {
-        mutableStateOf<LineData?>(null)
+    var legend by remember {
+        mutableStateOf<Array<String>>(arrayOf())
+    }
+
+    var cubicInterpolation by remember { mutableStateOf(false) }
+
+    var dataPoints: List<BlueMSPlotEntry> by remember {
+        mutableStateOf(
+            listOf()
+        )
+    }
+
+    var labelYAxis by remember { mutableIntStateOf(7) }
+
+    var maxY by remember { mutableFloatStateOf(-Float.MAX_VALUE) }
+    var minY by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+
+    var isAutoScaleMinMaxEnabled by remember { mutableStateOf(true) }
+    var showLegend by remember { mutableStateOf(false) }
+
+    var displayWindowTimeSecond by remember { mutableIntStateOf(10) }
+
+    val textMeasurer = rememberTextMeasurer()
+
+    LaunchedEffect(key1 = featureTime) {
+        val iterator = featureUpdate.iterator()
+
+        featureUpdate.firstOrNull()?.let {
+            if (it.sigType.value.nLabels != 0) {
+                labelYAxis = it.sigType.value.nLabels
+            }
+
+            isAutoScaleMinMaxEnabled = it.sigType.value.isAutoscale
+            if (!isAutoScaleMinMaxEnabled) {
+                maxY = it.sigType.value.maxGraphValue.toFloat()
+                minY = it.sigType.value.minGraphValue.toFloat()
+            }
+
+            displayWindowTimeSecond = it.sigType.value.displayWindowTimeSecond
+
+            cubicInterpolation = it.sigType.value.cubicInterpolation
+        }
+
+        while (iterator.hasNext()) {
+            val update = iterator.next()
+
+            if (prevMedInfo == null) {
+                //We draw anything... only save data
+                prevMedInfo = update.copy()
+                firstInternalTimeStamp = update.internalTimeStamp.value
+                if (update.sigType.value.numberOfSignals > 1) {
+                    showLegend = true
+                    legend = update.sigType.value.signalLabels.toTypedArray()
+                } else {
+                    showLegend = false
+                    legend = arrayOf(
+                        update.sigType.value.signalLabels.firstOrNull()
+                            ?: update.sigType.value.description
+                    )
+                }
+                showLegend = update.sigType.value.showLegend
+            } else {
+                val timeDiff =
+                    (update.internalTimeStamp.value - prevMedInfo!!.internalTimeStamp.value).toFloat()
+
+                if (timeDiff != 0.0f) { ///????/////
+                    //This is the delta time between Samples
+                    val deltaBetweenSample =
+                        timeDiff * prevMedInfo!!.sigType.value.numberOfSignals / prevMedInfo!!.values.value.size
+
+
+                    //Fill the data
+                    if (prevMedInfo!!.sigType.value.numberOfSignals > 1) {
+                        val dataSets =
+                            prevMedInfo!!.values.value.chunked(prevMedInfo!!.sigType.value.numberOfSignals)
+
+                        dataSets.forEachIndexed { indexSet, dataSet ->
+                            val localDataPoints = dataPoints.toMutableList()
+                            localDataPoints.add(
+                                BlueMSPlotEntry(
+                                    prevMedInfo!!.internalTimeStamp.value + (deltaBetweenSample * indexSet).toLong() - firstInternalTimeStamp!!,
+                                    dataSet.map { it.toFloat() }.toFloatArray()
+                                )
+                            )
+                            dataPoints = removeEntryOlderThan(
+                                localDataPoints.toList(),
+                                displayWindowTimeSecond.seconds
+                            )
+                        }
+                    } else {
+                        prevMedInfo!!.values.value.forEachIndexed { index, data ->
+                            val localDataPoints = dataPoints.toMutableList()
+                            localDataPoints.add(
+                                BlueMSPlotEntry(
+                                    prevMedInfo!!.internalTimeStamp.value + (deltaBetweenSample * index).toLong() - firstInternalTimeStamp!!,
+                                    floatArrayOf(data.toFloat())
+                                )
+                            )
+                            dataPoints = removeEntryOlderThan(
+                                localDataPoints.toList(),
+                                displayWindowTimeSecond.seconds
+                            )
+                        }
+                    }
+                    prevMedInfo = update.copy()
+                }
+            }
+            iterator.remove()
+        }
+
+        //Compute the Max and the Min
+        if (isAutoScaleMinMaxEnabled) {
+            maxY = -Float.MAX_VALUE
+            minY = Float.MAX_VALUE
+            dataPoints.forEach { data ->
+                data.y.forEach { y ->
+                    if (y < minY)
+                        minY = y
+                    if (y > maxY)
+                        maxY = y
+                }
+            }
+            if (maxY == minY) {
+                maxY += 1
+                minY -= 1
+            }
+        }
+    }
+
+    LaunchedEffect(key1 = resetZoomTime) {
+        dataPoints = listOf()
+        maxY = -Float.MAX_VALUE
+        minY = Float.MAX_VALUE
+        firstInternalTimeStamp = null
+        prevMedInfo = null
     }
 
     Surface(
@@ -116,201 +267,179 @@ fun MedicalSignalPlotView(
                     .fillMaxWidth()
                     .weight(2f)
             ) {
-                AndroidView(factory = { ctx ->
-                    LineChart(ctx).also { chart ->
-                        chart.layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        mPlot = chart
-                        initializePlot(chart, context)
-                        chart.clear()
-                    }
-                }, update = {
-                    //localFeatureUpdate.forEach { update ->
-                    val iterator = localFeatureUpdate.iterator()
-                    while (iterator.hasNext()) {
-                        val update = iterator.next()
 
-                        mPlot?.let { plot ->
-                            val yAxis = plot.axisLeft
-                            if (update.sigType.value.nLabels != 0) {
-                                yAxis.labelCount = update.sigType.value.nLabels
-                            }
+                if (dataPoints.isNotEmpty()) {
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = 40.dp, top = 10.dp, bottom = 25.dp, end = 10.dp)
+                    ) {
+                        val width = size.width
+                        val height = size.height
+                        val minValue = if (dataPoints.size < 2) {
+                            2
+                        } else {
+                            dataPoints.size
+                        }
+                        val spacing = width / (minValue - 1)
+                        val labelLineSpacing = height / (labelYAxis)
 
-                            plot.setScaleEnabled(update.sigType.value.isAutoscale)
-                            if (!update.sigType.value.isAutoscale) {
-                                yAxis.apply {
-                                    axisMaximum = update.sigType.value.maxGraphValue.toFloat()
-                                    axisMinimum = update.sigType.value.minGraphValue.toFloat()
-                                }
-                            }
+                        // Draw Horizontal Grid Lines
+                        for (i in 0..labelYAxis) {
 
-                            if (prevMedInfo == null) {
-                                //We don't draw nothing... only save data
-                                prevMedInfo = update.copy()
-                                firstInternalTimeStamp = update.internalTimeStamp.value
+                            val y = height - labelLineSpacing * i
 
-                                if (update.sigType.value.numberOfSignals > 1) {
-                                    plot.legend.isEnabled = true
-                                    val dataSets = ArrayList<ILineDataSet>()
-                                    for (i in 0 until update.sigType.value.numberOfSignals) {
-                                        val mMedDataSet = LineDataSet(
-                                            LinkedList(),
-                                            update.sigType.value.signalLabels.getOrNull(i)
-                                                ?: "${type}_${i}"
-                                        )
-                                        //Remove the Circles
-                                        mMedDataSet.setDrawCircles(false)
+                            val labelValue = (minY + ((maxY - minY) / labelYAxis) * i).toInt()
 
-                                        if (update.sigType.value.cubicInterpolation) {
-                                            mMedDataSet.mode = LineDataSet.Mode.CUBIC_BEZIER
-                                            mMedDataSet.setCubicIntensity(0.2f)
-                                        }
+                            // Draw Grid Lines
+                            drawLine(
+                                color = Color.LightGray.copy(alpha = 0.5f),
+                                start = Offset(0f, y),
+                                end = Offset(width, y),
+                                strokeWidth = 1.dp.toPx()
+                            )
 
-                                        mMedDataSet.color = mLineColors[i % mLineColors.size]
-                                        dataSets.add(mMedDataSet)
 
-                                    }
-                                    mMedLineData = LineData(dataSets)
-                                } else {
-                                    val mMedDataSet = LineDataSet(LinkedList(), type)
-                                    //Remove the Circles
-                                    mMedDataSet.setDrawCircles(false)
+                            // Draw Y-Axis Label (Text)
+                            drawText(
+                                textMeasurer = textMeasurer,
+                                text = "$labelValue",
+                                topLeft = Offset(-35.dp.toPx(), y - 10.dp.toPx()),
+                                style = TextStyle(
+                                    fontSize = 10.sp,
+                                    color = Color.Gray
+                                )
+                            )
+                        }
 
-                                    if (update.sigType.value.cubicInterpolation) {
-                                        mMedDataSet.mode = LineDataSet.Mode.CUBIC_BEZIER
-                                        mMedDataSet.setCubicIntensity(0.2f)
-                                    }
+                        if (dataPoints.isNotEmpty()) {
+                            dataPoints.first().y.indices.forEach { comp ->
+                                val path: Path =
+                                    if (cubicInterpolation) {
+                                        Path().apply {
+                                            val firstX = 0 * spacing
+                                            val firstY =
+                                                height - (((dataPoints[0].y[comp] - minY) / (maxY - minY)) * height)
+                                            moveTo(firstX, firstY)
 
-                                    mMedDataSet.color = mLineColors[0]
-                                    mMedLineData = LineData(mMedDataSet)
-                                }
-                                //Show/hide legend
-                                plot.legend.isEnabled = update.sigType.value.showLegend
-                                plot.legend.horizontalAlignment =
-                                    Legend.LegendHorizontalAlignment.RIGHT
+                                            for (index in 1 until dataPoints.size) {
+                                                val prevX = (index - 1) * spacing
+                                                val prevY =
+                                                    height - (((dataPoints[index - 1].y[comp] - minY) / (maxY - minY)) * height)
 
-                                //Disable the Text Values
-                                mMedLineData!!.setDrawValues(false)
-                                // add empty data
-                                plot.data = mMedLineData
-                            } else {
-                                //Compute the delta Time respect the previous Sample
-                                val timeDiff =
-                                    (update.internalTimeStamp.value - prevMedInfo!!.internalTimeStamp.value).toFloat()
-                                if (timeDiff != 0.0f) { ///????/////
-                                    //This is the delta time between Samples
-                                    val deltaBetweenSample =
-                                        timeDiff * prevMedInfo!!.sigType.value.numberOfSignals / prevMedInfo!!.values.value.size
+                                                val currX = index * spacing
+                                                val currY =
+                                                    height - (((dataPoints[index].y[comp] - minY) / (maxY - minY)) * height)
 
-                                    //Fill the data..
-                                    if (prevMedInfo!!.sigType.value.numberOfSignals > 1) {
-                                        val dataSets =
-                                            prevMedInfo!!.values.value.chunked(prevMedInfo!!.sigType.value.numberOfSignals)
-                                        dataSets.forEachIndexed { indexSet, dataSet ->
-                                            dataSet.forEachIndexed { index, data ->
-                                                mMedLineData!!.addEntry(
-                                                    Entry(
-                                                        (prevMedInfo!!.internalTimeStamp.value + deltaBetweenSample * indexSet - firstInternalTimeStamp!!),
-                                                        data.toFloat()
-                                                    ), index
+                                                // Calculate control points for a smooth curve (Cubic Bezier)
+                                                // 0.2f to 0.5f is a good intensity range
+                                                val intensity = 0.3f
+                                                val controlPoint1X =
+                                                    prevX + (currX - prevX) * intensity
+                                                val controlPoint1Y = prevY
+
+                                                val controlPoint2X =
+                                                    currX - (currX - prevX) * intensity
+                                                val controlPoint2Y = currY
+
+                                                cubicTo(
+                                                    controlPoint1X,
+                                                    controlPoint1Y, // Control point 1
+                                                    controlPoint2X,
+                                                    controlPoint2Y, // Control point 2
+                                                    currX,
+                                                    currY                   // Destination point
                                                 )
                                             }
                                         }
                                     } else {
-                                        prevMedInfo!!.values.value.forEachIndexed { index, data ->
-                                            mMedLineData!!.addEntry(
-                                                Entry(
-                                                    (prevMedInfo!!.internalTimeStamp.value + deltaBetweenSample * index - firstInternalTimeStamp!!),
-                                                    data.toFloat()
-                                                ), 0
-                                            )
+                                        Path().apply {
+                                            dataPoints.forEachIndexed { index, value ->
+                                                // Calculate X and Y coordinates
+                                                // We flip Y because (0,0) is the top-left in Canvas
+                                                val x = index * spacing
+                                                val y =
+                                                    height - (((value.y[comp] - minY) / (maxY - minY)) * height)
+
+                                                if (index == 0) moveTo(x, y) else lineTo(x, y)
+                                            }
                                         }
+
                                     }
-
-                                    mMedLineData!!.removeEntryOlderThan(prevMedInfo!!.sigType.value.displayWindowTimeSecond.seconds)
-
-                                    mMedLineData!!.notifyDataChanged()
-                                    plot.notifyDataSetChanged()
-                                    plot.invalidate()
-
-                                    prevMedInfo = update.copy()
-                                }
+                                drawPath(
+                                    path = path,
+                                    color = mColors[comp % mColors.size],
+                                    style = Stroke(width = 1.dp.toPx())
+                                )
                             }
                         }
-                        iterator.remove()
                     }
-                    //featureUpdate.clear()
-                })
+                } else {
+                    Text(text = "Waiting values")
+                }
 
-                LaunchedEffect(key1 = resetZoomTime) {
-                    if (resetZoomTime != 0L) {
-                        mPlot?.let { plot ->
-                            plot.fitScreen()
-                            plot.invalidate()
-                            plot.clear()
+                if (showLegend) {
+                    Box(
+                        modifier = Modifier
+                            .alpha(0.8f)
+                            .clip(Shapes.small)
+                            .background(Grey2)
+                            .align(Alignment.BottomEnd)
+                            .padding(LocalDimensions.current.paddingSmall)
+                    ) {
+                        Row {
+                            for (i in legend.indices) {
+                                Text(
+                                    modifier = Modifier
+                                        .padding(start = 4.dp)
+                                        .background(mColors[i % mColors.size]),
+                                    text = "  ",
+                                    fontSize = 10.sp,
+                                    lineHeight = 12.sp
+                                )
+                                Text(
+                                    modifier = Modifier.padding(start = 4.dp),
+                                    text = legend[i],
+                                    fontSize = 10.sp,
+                                    lineHeight = 12.sp
+                                )
+                            }
                         }
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                        )
                     }
-                    prevMedInfo = null
-                    firstInternalTimeStamp = null
-                    mMedLineData = null
                 }
             }
         }
     }
 }
 
-private fun initializePlot(chart: LineChart, context: Context) {
-    //hide chart description
-    chart.description.isEnabled = false
-    chart.description.text = ""
-
-    // isEnable touch gestures
-    chart.setTouchEnabled(true)
-
-    // isEnable scaling and dragging
-    chart.isDragEnabled = true
-    chart.setScaleEnabled(true)
-    // if disabled, scaling can be done on x- and y-axis separately
-    chart.setPinchZoom(true)
-
-    val xl = chart.xAxis
-    xl.position = XAxis.XAxisPosition.BOTTOM
-    xl.setDrawLabels(false)
-    xl.setDrawGridLines(false)
-    xl.setAvoidFirstLastClipping(true)
-
-    chart.axisRight.isEnabled = false
-    val leftAxis = chart.axisLeft
-    leftAxis.setDrawGridLines(true)
-    leftAxis.textColor = ContextCompat.getColor(context, com.st.ui.R.color.labelPlotContrast)
-
-    chart.setNoDataText("waiting sample")
-    chart.setNoDataTextColor(ContextCompat.getColor(context, com.st.ui.R.color.colorAccent))
-    chart.legend.horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
-    chart.legend.textColor = ContextCompat.getColor(context, com.st.ui.R.color.labelPlotContrast)
-
-    chart.description.textColor =
-        ContextCompat.getColor(context, com.st.ui.R.color.labelPlotContrast)
-    chart.description.textSize = 14f
-}
-
-@ExperimentalTime
-private fun LineData.removeEntryOlderThan(timeRange: Duration?) {
+private fun removeEntryOlderThan(
+    list: List<BlueMSPlotEntry>,
+    timeRange: Duration?
+): List<BlueMSPlotEntry> {
     if (timeRange == null)
-        return
+        return list
+    var xMax = Long.MIN_VALUE
+    var xMin = Long.MAX_VALUE
+
+    list.forEach { data ->
+        if (data.x > xMax) {
+            xMax = data.x
+        }
+        if (data.x < xMin) {
+            xMin = data.x
+        }
+    }
+
     val plotRangeMs = (xMax - xMin).toDouble().milliseconds
     if (plotRangeMs > timeRange) {
         val minValidX = (xMax - timeRange.toDouble(DurationUnit.MILLISECONDS)).toFloat()
-        dataSets.forEach {
-            it.removeXLessThan(minValidX)
-        }
-    }
-}
-
-private fun ILineDataSet.removeXLessThan(value: Float) {
-    while (getEntryForIndex(0).x < value) {
-        removeFirst()
+        val newList = list.filter { it.x >= minValidX }
+        return newList
+    } else {
+        return list
     }
 }

@@ -17,23 +17,21 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
-apply {
-    from("publish.gradle")
-}
+apply(from = "publish.gradle")
 
 android {
     namespace = "com.st.heart_rate_demo"
-    compileSdk = stCompileSdk
+    compileSdk {
+        version = release(stCompileSdk) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         minSdk = stMinSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
-    }
-
-    hilt {
-        enableAggregatingTask = true
     }
 
     buildTypes {
@@ -60,6 +58,10 @@ android {
     }
 }
 
+hilt {
+    enableAggregatingTask = true
+}
+
 dependencies {
     // Blue ST module:
     // - Core
@@ -69,9 +71,6 @@ dependencies {
 
     // Blue ST SDK
     implementation(libs.st.sdk)
-
-    // MPAndroid Chart
-    implementation(libs.philjay.mpandroidchart)
 
     // Hilt
     implementation(libs.hilt.android)

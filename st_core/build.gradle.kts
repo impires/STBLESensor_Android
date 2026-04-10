@@ -16,22 +16,20 @@ plugins {
     alias(libs.plugins.devtoolsKsp)
 }
 
-apply {
-    from("publish.gradle")
-}
+apply(from = "publish.gradle")
 
 android {
     namespace = "com.st.core"
-    compileSdk = stCompileSdk
+    compileSdk {
+        version = release(stCompileSdk) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         minSdk = stMinSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    hilt {
-        enableAggregatingTask = true
     }
 
     buildTypes {
@@ -59,6 +57,10 @@ android {
         arg("room.schemaLocation", "$projectDir/schemas")
         arg("room.generateKotlin", "true")
     }
+}
+
+hilt {
+    enableAggregatingTask = true
 }
 
 dependencies {

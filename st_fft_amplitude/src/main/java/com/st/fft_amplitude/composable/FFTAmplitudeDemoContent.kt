@@ -1,64 +1,75 @@
 package com.st.fft_amplitude.composable
 
-import android.view.ViewGroup
-import android.content.Context
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.st.fft_amplitude.FFTAmplitudeViewModel
 import com.st.fft_amplitude.utilites.LineConf
 import com.st.ui.composables.BlueMsButton
 import com.st.ui.composables.BlueMsButtonOutlined
 import com.st.ui.theme.Grey2
+import com.st.ui.theme.Grey6
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.Shapes
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
+
+private const val Y_NUMBER_LINES = 6
 
 @Composable
 fun FFTAmplitudeDemoContent(
@@ -70,10 +81,6 @@ fun FFTAmplitudeDemoContent(
 
     val loadingStatus by viewModel.loadingStatus.collectAsStateWithLifecycle()
 
-    var mFFTChart by remember { mutableStateOf<LineChart?>(value = null) }
-
-    val context = LocalContext.current
-
     val mFftData by viewModel.mFftData.collectAsStateWithLifecycle()
 
     val mFftMax by viewModel.mFftMax.collectAsStateWithLifecycle()
@@ -82,10 +89,23 @@ fun FFTAmplitudeDemoContent(
     val mYStats by viewModel.mYStats.collectAsStateWithLifecycle()
     val mZStats by viewModel.mZStats.collectAsStateWithLifecycle()
 
+    var maxY by remember { mutableFloatStateOf(-Float.MAX_VALUE) }
+    var maxX by remember { mutableFloatStateOf(-Float.MAX_VALUE) }
+    //minX and minY == 0
+
+    var nComponents by remember { mutableIntStateOf(3) }
+
+    val textMeasurerY = rememberTextMeasurer()
+    val textMeasurerX = rememberTextMeasurer()
+
+    val coroutineScope = rememberCoroutineScope()
+    val graphicsLayer = rememberGraphicsLayer()
+
+    val context = LocalContext.current
     var snap by remember { mutableStateOf<Bitmap?>(null) }
 
     val pickFileLauncher = rememberLauncherForActivityResult(
-        contract = CreateDocument("image/png")
+        contract = ActivityResultContracts.CreateDocument("image/png")
     ) { fileUri ->
         fileUri?.let {
             val result = viewModel.saveImage(context, fileUri)
@@ -100,10 +120,12 @@ fun FFTAmplitudeDemoContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(start = LocalDimensions.current.paddingNormal,
+            .padding(
+                start = LocalDimensions.current.paddingNormal,
                 end = LocalDimensions.current.paddingNormal,
                 top = LocalDimensions.current.paddingNormal,
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingNormal)
     ) {
@@ -118,39 +140,151 @@ fun FFTAmplitudeDemoContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .drawWithContent {
+                        graphicsLayer.record {
+                            this@drawWithContent.drawContent()
+                        }
+                        drawLayer(graphicsLayer)
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                AndroidView(factory = { ctx ->
-                    LineChart(ctx).also { chart ->
-                        chart.layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        mFFTChart = chart
-                        setUpChart(chart, context)
-                    }
-                }, update = {
-                    mFFTChart?.let { plot ->
-                        if (mFftData.isNotEmpty()) {
-                            val nComponents = mFftData.size.coerceAtMost(LineConf.LINES.size)
-                            val dataSets: MutableList<ILineDataSet> = ArrayList(nComponents)
-                            for (i in 0 until nComponents) {
-                                val line: LineDataSet = buildDataSet(
-                                    LineConf.LINES[i],
-                                    mFftData[i], viewModel.mFreqStep
-                                )
-                                dataSets.add(line)
-                            }
-                            val lineData = LineData(dataSets)
+                if (mFftData.isNotEmpty()) {
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White)
+                            .padding(
+                                start = 40.dp,
+                                end = 20.dp,
+                                top = 20.dp,
+                                bottom = 20.dp
+                            )
+                    ) {
+                        val width = size.width - 20.dp.toPx()
+                        val labelHeight = 20.dp.toPx()
+                        val height = size.height - labelHeight
+                        nComponents = mFftData.size.coerceAtMost(LineConf.LINES.size)
+                        var labelLineSpacing = height / (Y_NUMBER_LINES)
 
-                            plot.data = lineData
-                            plot.invalidate()
+                        maxY = -Float.MAX_VALUE
+                        maxX = -Float.MAX_VALUE
+
+                        //Compute the Max and
+                        for (comp in 0 until nComponents) {
+                            for (index in 0..<mFftData[comp].size) {
+                                val y = mFftData[comp][index]
+                                if (y > maxY)
+                                    maxY = y
+                            }
+                            if (comp == 0) {
+                                maxX = (mFftData[comp].size - 1) * viewModel.mFreqStep
+                            }
+                        }
+
+                        val spacing = width / maxX
+
+                        // Draw Horizontal Grid Lines
+                        for (i in 0..6) {
+
+                            val y = height - labelLineSpacing * i
+
+                            val labelValue = maxY / Y_NUMBER_LINES * i
+
+                            // Draw Grid Lines
+                            drawLine(
+                                color = if (i == 0) Color.Black else Color.LightGray.copy(alpha = 0.5f),
+                                start = Offset(0f, y),
+                                end = Offset(width, y),
+                                strokeWidth = if (i == 0) 2.dp.toPx() else 1.dp.toPx()
+                            )
+
+
+                            // Draw Y-Axis Label
+                            drawText(
+                                textMeasurer = textMeasurerY,
+                                text = "%.2f".format(
+                                    Locale.getDefault(),
+                                    labelValue
+                                ),
+                                topLeft = Offset(-35.dp.toPx(), y - 10.dp.toPx()),
+                                style = TextStyle(
+                                    fontSize = 10.sp,
+                                    color = if (i == 0) Color.Black else Color.Gray
+                                )
+                            )
+                        }
+
+                        // Draw Vertical Grid Lines
+                        val lineDistance =
+                            if (maxX < 100f) {
+                                10
+                            } else if (maxX < 1000f) {
+                                100
+                            } else {
+                                1000
+                            }
+
+                        val numLines = (maxX / lineDistance).toInt()
+                        labelLineSpacing = width / (maxX / lineDistance)
+
+                        for (i in 0..numLines) {
+                            val x = i * labelLineSpacing
+
+                            val labelValue = i * lineDistance
+
+                            // Draw Grid Lines
+                            drawLine(
+                                color = if (i == 0) Color.Black else Color.LightGray.copy(alpha = 0.5f),
+                                start = Offset(x, 0f),
+                                end = Offset(x, height),
+                                strokeWidth = if (i == 0) 2.dp.toPx() else 1.dp.toPx()
+                            )
+
+
+                            // Draw X-Axis Label
+                            val labelValueString = "$labelValue"
+
+                            val labelStyle = TextStyle(
+                                fontSize = 10.sp,
+                                color = if (i == 0) Color.Black else Color.Gray
+                            )
+
+                            val textLayoutResult =
+                                textMeasurerX.measure(text = labelValueString, style = labelStyle)
+                            val textWidth = textLayoutResult.size.width
+
+                            drawText(
+                                textMeasurer = textMeasurerX,
+                                text = labelValueString,
+                                topLeft = Offset(x - (textWidth / 2), height + 10.dp.toPx()),
+                                style = labelStyle
+                            )
+                        }
+
+                        for (comp in 0 until nComponents) {
+                            val path = Path().apply {
+                                for (index in 0..<mFftData[comp].size) {
+                                    val x = index * spacing * viewModel.mFreqStep
+                                    val y = height - (mFftData[comp][index] / maxY) * height
+                                    if (index == 0) moveTo(x, y) else lineTo(x, y)
+                                }
+                            }
+
+                            drawPath(
+                                path = path,
+                                color = LineConf.LINES[comp].color,
+                                style = Stroke(width = 1.dp.toPx())
+                            )
                         }
                     }
-                })
+                } else {
+                    Text(text = "Data acquisition ongoing…")
+                }
 
                 if (showDetails) {
                     Box(
                         modifier = Modifier
+                            .width(intrinsicSize = IntrinsicSize.Max)
                             .alpha(0.8f)
                             .clip(Shapes.small)
                             .background(Grey2)
@@ -268,6 +402,66 @@ fun FFTAmplitudeDemoContent(
                                     )
                                 }
                             }
+
+                            HorizontalDivider(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(LocalDimensions.current.paddingSmall), color = Grey6
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                for (i in 0..<nComponents) {
+                                    Text(
+                                        modifier = Modifier
+                                            .padding(start = 4.dp)
+                                            .background(LineConf.LINES[i].color),
+                                        text = "  ",
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp
+                                    )
+                                    Text(
+                                        modifier = Modifier.padding(start = 4.dp),
+                                        text = LineConf.LINES[i].name,
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp
+                                    )
+                                }
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .alpha(0.8f)
+                            .clip(Shapes.small)
+                            .background(Grey2)
+                            .align(Alignment.TopEnd)
+                            .padding(LocalDimensions.current.paddingSmall)
+                    ) {
+                        Row {
+                            for (i in 0..<nComponents) {
+                                Text(
+                                    modifier = Modifier
+                                        .padding(start = 4.dp)
+                                        .background(LineConf.LINES[i].color),
+                                    text = "  ",
+                                    fontSize = 10.sp,
+                                    lineHeight = 12.sp
+                                )
+                                Text(
+                                    modifier = Modifier.padding(start = 4.dp),
+                                    text = LineConf.LINES[i].name,
+                                    fontSize = 10.sp,
+                                    lineHeight = 12.sp
+                                )
+                            }
                         }
                         Box(
                             modifier = Modifier
@@ -277,36 +471,52 @@ fun FFTAmplitudeDemoContent(
                 }
             }
         }
-
-        Text(
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start,
-            text = "Loading Progress:", style = MaterialTheme.typography.titleSmall
-        )
-
-        LinearProgressIndicator(modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = LocalDimensions.current.paddingNormal,
-                end = LocalDimensions.current.paddingNormal
-            )
-            .height(6.dp),
-            progress = { loadingStatus / 100f })
-
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingLarge)
         ) {
+            Column(
+                modifier = Modifier
+                    .weight(2f)
+                    .fillMaxHeight(),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Center
+            ) {
 
-            BlueMsButtonOutlined(text = "Snapshot", onClick = {
-                mFFTChart?.let { plot ->
-                    snap = plot.getChartBitmap()
-                }
-            })
+                Text(
+                    modifier = Modifier.padding(bottom = LocalDimensions.current.paddingNormal),
+//                    textAlign = TextAlign.Start,
+                    text = "Loading Progress:", style = MaterialTheme.typography.titleSmall
+                )
 
-            BlueMsButtonOutlined(text = "Details", onClick = { showDetails = !showDetails
-            mFFTChart?.let { plot -> changeLegendPosition(plot,showDetails)}})
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp),
+                    progress = { loadingStatus / 100f })
+
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.paddingNormal)
+            ) {
+
+                BlueMsButtonOutlined(text = "Details", onClick = {
+                    showDetails = !showDetails
+                })
+
+                BlueMsButton(text = "Snapshot", onClick = {
+                    coroutineScope.launch {
+                        snap = graphicsLayer.toImageBitmap().asAndroidBitmap()
+                    }
+                })
+            }
         }
     }
 
@@ -315,7 +525,7 @@ fun FFTAmplitudeDemoContent(
             modifier = Modifier.alpha(0.9f),
             onDismissRequest = { snap = null },
             dismissButton = {
-                BlueMsButton(
+                BlueMsButtonOutlined(
                     onClick = {
                         snap = null
                     },
@@ -346,63 +556,5 @@ fun FFTAmplitudeDemoContent(
             }
         )
     }
-}
-
-private fun setUpChart(chart: LineChart, context: Context) {
-//hide right axis
-    chart.axisRight.isEnabled = false
-    //move x axis on the bottom
-    chart.xAxis.position = XAxis.XAxisPosition.BOTTOM
-
-    //hide plot description
-    chart.description.isEnabled = false
-    chart.setNoDataText("Data acquisition ongoing…")
-    chart.setNoDataTextColor(ContextCompat.getColor(context, com.st.ui.R.color.labelPlotContrast))
-    chart.setTouchEnabled(false)
-    val legend = chart.legend
-    legend.setDrawInside(true)
-    legend.horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
-    legend.verticalAlignment = Legend.LegendVerticalAlignment.TOP
-    legend.orientation = Legend.LegendOrientation.VERTICAL
-    chart.axisLeft.textColor = ContextCompat.getColor(context, com.st.ui.R.color.labelPlotContrast)
-    chart.xAxis.textColor = ContextCompat.getColor(context, com.st.ui.R.color.labelPlotContrast)
-    chart.legend.textColor = ContextCompat.getColor(context, com.st.ui.R.color.labelPlotContrast)
-}
-
-private fun changeLegendPosition(chart: LineChart, showDetails: Boolean) {
-    val legend = chart.legend
-    if(showDetails) {
-        //legend.setDrawInside(true)
-        legend.horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
-        legend.verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
-        legend.orientation = Legend.LegendOrientation.HORIZONTAL
-        legend.yOffset = 10f
-    } else {
-        //legend.setDrawInside(true)
-        legend.horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
-        legend.verticalAlignment = Legend.LegendVerticalAlignment.TOP
-        legend.orientation = Legend.LegendOrientation.VERTICAL
-        legend.yOffset = 5f
-    }
-    chart.notifyDataSetChanged()
-    chart.invalidate()
-}
-
-private fun buildDataSet(
-    conf: LineConf,
-    yData: FloatArray,
-    deltaX: Float
-): LineDataSet {
-    val data: MutableList<Entry> = java.util.ArrayList(yData.size)
-    var x = 0f
-    for (y in yData) {
-        data.add(Entry(x, y))
-        x += deltaX
-    }
-    val dataSet = LineDataSet(data, conf.name)
-    dataSet.setDrawCircles(false)
-    dataSet.color = conf.color
-    dataSet.setDrawValues(false)
-    return dataSet
 }
 

@@ -236,7 +236,7 @@ fun BeamFormingDemoContent(
             shape = Shapes.small,
             shadowElevation = LocalDimensions.current.elevationNormal
         ) {
-            WaveFormPlotView(name= "Audio In", sample = sample)
+            WaveFormPlotView(sample = sample)
         }
     }
 }

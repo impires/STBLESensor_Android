@@ -41,7 +41,6 @@ import com.st.blue_sdk.features.extended.pnpl.PnPL
 import com.st.blue_sdk.features.extended.predictive.PredictiveAccelerationStatus
 import com.st.blue_sdk.features.extended.predictive.PredictiveFrequencyStatus
 import com.st.blue_sdk.features.extended.predictive.PredictiveSpeedStatus
-import com.st.blue_sdk.features.extended.qvar.QVAR
 import com.st.blue_sdk.features.extended.raw_controlled.RawControlled
 import com.st.blue_sdk.features.extended.registers_feature.RegistersFeature
 import com.st.blue_sdk.features.extended.robotics_movement.RoboticsMovement
@@ -466,12 +465,6 @@ enum class Demo(
         icon = com.st.proximity_gesture_recognition.R.drawable.proximity_gesture_recognition_icon,
         features = listOf(ProximityGesture.NAME)
     ),
-    ElectricChargeVariation(
-        displayName = "Electric Charge Variation",
-        group = listOf(DemoGroup.EnvironmentalSensors),
-        icon = com.st.electric_charge_variation.R.drawable.electric_charge_variation_icon,
-        features = listOf(QVAR.NAME)
-    ),
     TextualMonitor(
         displayName = "Textual Monitor",
         group = listOf(DemoGroup.Debug),
@@ -539,9 +532,7 @@ enum class Demo(
         couldBeEnabledOutside = false,
         group = listOf(DemoGroup.AI, DemoGroup.DataLog, DemoGroup.EnvironmentalSensors,DemoGroup.Control),
         features = listOf(RoboticsMovement.NAME,SceneDescription.NAME)
-    )
-        // *** NEW_DEMO_TEMPLATE ANCHOR1 ***\
-    ,
+    ),
     SdLoggingDemo(
         displayName = "SD Logging",
         group = listOf(DemoGroup.DataLog),
@@ -606,7 +597,6 @@ enum class Demo(
             TofObjectsDetection -> TofObjectsDetectionNavKey(nodeId)
             ColorAmbientLightDemo -> ColorAmbientLightNavKey(nodeId)
             Gnss -> GnssNavKey(nodeId)
-            ElectricChargeVariation -> ElectricChargeVariationNavKey(nodeId)
             MotionIntensityDemo -> MotionIntensityNavKey(nodeId)
             ActivityRecognition -> ActivityRecognitionNavKey(nodeId)
             CarryPositionDemo -> CarryPositionNavKey(nodeId)

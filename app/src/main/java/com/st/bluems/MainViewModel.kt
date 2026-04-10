@@ -32,9 +32,13 @@ class MainViewModel @Inject constructor(
     val shouldShowProfile = preferences.hasSelectedProfile().not()
     val shouldShowTerms = preferences.hasAcceptedTerms().not()
 
-    fun initApplicationAnalytics(etnaApplication: ApplicationAnalyticsService.ApplicationNameEtna, application: Application, activity: Activity) {
+    fun initApplicationAnalytics(
+        etnaApplication: ApplicationAnalyticsService.ApplicationNameEtna,
+        application: Application,
+        activity: Activity
+    ) {
         appAnalyticsService.forEach {
-            it.createAnalytics(etnaApplication,application,activity)
+            it.createAnalytics(etnaApplication, application, activity)
         }
     }
 
@@ -46,10 +50,6 @@ class MainViewModel @Inject constructor(
 
     fun termsAccepted(accepted: Boolean) {
         preferences.setTermsFlag(accepted = accepted)
-    }
-
-    fun updateBoardCatalogStatus(boardCatalogStatus: String) {
-        preferences.setBoardCatalogStatus(boardCatalogStatus)
     }
 
     fun welcomeShow() {

@@ -110,55 +110,6 @@ class MainActivity : AppCompatActivity() {
         val packageName = pInfo.packageName.split('.').last()
 
         val keySearched = "${packageName}_${versionName}"
-        Log.i("Firebase Remote Config", "keySearched : $keySearched")
-
-//        //Singleton
-//        val remoteConfig: FirebaseRemoteConfig = Firebase.remoteConfig
-//        val configSettings = remoteConfigSettings {
-//            minimumFetchIntervalInSeconds = 3600
-//        }
-//        remoteConfig.setConfigSettingsAsync(configSettings)
-//
-//        //Set the Default Values
-//        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
-//
-//        //Read the Default Value
-//        var boardCatalogStatus = remoteConfig.getString(keySearched)
-//        Log.d("boardCatalogStatus", "Default number=${boardCatalogStatus}")
-//
-//        remoteConfig.fetchAndActivate()
-//            .addOnCompleteListener(this) { task ->
-//                if (task.isSuccessful) {
-//                    val updated = task.result
-//                    Log.d("boardCatalogStatus", "Config params updated: $updated")
-//                    boardCatalogStatus = remoteConfig.getString(keySearched)
-//                    if (boardCatalogStatus.isNotEmpty()) {
-//                        viewModel.updateBoardCatalogStatus(boardCatalogStatus)
-//                    }
-//                } else {
-//                    Log.d("boardCatalogStatus", "Fetch failed")
-//                }
-//            }
-//
-//        remoteConfig.addOnConfigUpdateListener(object : ConfigUpdateListener {
-//            override fun onUpdate(configUpdate: ConfigUpdate) {
-//                Log.d(boardCatalogStatus, "Updated keys: " + configUpdate.updatedKeys)
-//
-//                if (configUpdate.updatedKeys.contains(keySearched)) {
-//                    remoteConfig.activate().addOnCompleteListener {
-//                        boardCatalogStatus = remoteConfig.getString(keySearched)
-//                        Log.d(boardCatalogStatus, "New number=$boardCatalogStatus")
-//                        if (boardCatalogStatus.isNotEmpty()) {
-//                            viewModel.updateBoardCatalogStatus(boardCatalogStatus)
-//                        }
-//                    }
-//                }
-//            }
-//
-//            override fun onError(error: FirebaseRemoteConfigException) {
-//                Log.w("boardCatalogStatus", "Config update error with code: " + error.code, error)
-//            }
-//        })
 
         //for using NFC deep Link node auto-connect
         val nfcIntent = intent
@@ -232,7 +183,6 @@ class MainActivity : AppCompatActivity() {
                         }
 
                         entry<BlueMSApplicationNavKey> {
-//                            AndroidFragment<HomeFragment>()
                             val homeViewModel: HomeViewModel = hiltViewModel()
                             HomeScreen(homeViewModel = homeViewModel, nfcViewModel = nfcViewModel)
                         }

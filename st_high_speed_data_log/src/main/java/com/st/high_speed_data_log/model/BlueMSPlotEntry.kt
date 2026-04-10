@@ -1,13 +1,13 @@
-package com.st.plot.utils
+package com.st.high_speed_data_log.model
 
-data class PlotEntry(
+internal data class BlueMSPlotEntry(
     val x: Long, val y: FloatArray
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as PlotEntry
+        other as BlueMSPlotEntry
 
         if (x != other.x) return false
         if (!y.contentEquals(other.y)) return false

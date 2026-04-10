@@ -45,7 +45,7 @@ fun BlueMsButtonOutlined(
     ) {
         if (iconPainter != null) {
             Icon(
-                modifier = Modifier.padding(end = LocalDimensions.current.paddingMedium),
+                modifier = Modifier.padding(end = LocalDimensions.current.paddingNormal),
                 painter = iconPainter,
                 contentDescription = text
             )

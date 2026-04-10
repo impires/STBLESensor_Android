@@ -18,14 +18,16 @@ plugins {
     alias(libs.plugins.devtoolsKsp)
 }
 
-apply {
-    from("publish.gradle")
-}
+apply(from = "publish.gradle")
 
 android {
     namespace = "com.st.cloud_azure_iot_central"
 
-    compileSdk = stCompileSdk
+    compileSdk {
+        version = release(stCompileSdk) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         minSdk = stMinSdk
@@ -34,9 +36,6 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
-    hilt {
-        enableAggregatingTask = true
-    }
 
     buildTypes {
         release {
@@ -60,6 +59,10 @@ android {
         buildConfig = true
         viewBinding = true
     }
+}
+
+hilt {
+    enableAggregatingTask = true
 }
 
 dependencies {
@@ -87,4 +90,6 @@ dependencies {
 
     // Dependency required for API desugaring.
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
+
+    implementation(libs.guava)
 }

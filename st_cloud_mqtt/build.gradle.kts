@@ -19,24 +19,22 @@ plugins {
     alias(libs.plugins.devtoolsKsp)
 }
 
-apply {
-    from("publish.gradle")
-}
+apply(from = "publish.gradle")
 
 android {
     namespace = "com.st.cloud_mqtt"
 
-    compileSdk = stCompileSdk
+    compileSdk {
+        version = release(stCompileSdk) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         minSdk = stMinSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
-    }
-
-    hilt {
-        enableAggregatingTask = true
     }
 
     buildTypes {
@@ -61,6 +59,10 @@ android {
         buildConfig = true
         viewBinding = true
     }
+}
+
+hilt {
+    enableAggregatingTask = true
 }
 
 dependencies {

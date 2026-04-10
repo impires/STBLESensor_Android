@@ -100,8 +100,6 @@ data class PlotBoundary(
     }
 }
 
-// FIXME: move to sdk this missing min and max
-
 val Luminosity.Companion.DATA_MAX
     get() = 1000f
 

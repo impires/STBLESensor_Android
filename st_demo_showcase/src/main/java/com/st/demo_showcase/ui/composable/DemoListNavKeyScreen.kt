@@ -158,7 +158,6 @@ fun DemoListNavKeyScreen(
             ToFObjectsDetection()
             ColorAmbientLight()
             GNSS()
-            EletricChargeVariation()
             MotionIntensity()
             ActivityRecognition()
             CarryPosition()

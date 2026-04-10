@@ -8,13 +8,13 @@
 [versions]
 accompanist = "0.36.0"
 accompanistPermission = "0.37.3"
-androidGradlePlugin = "9.0.0"
-androidxActivity = "1.12.4"
+androidGradlePlugin = "9.1.0"
+androidxActivity = "1.13.0"
 androidxCompat = "1.7.1"
-androidxComposeBom = "2026.02.00"
+androidxComposeBom = "2026.03.01"
 androidxConstraintlayout = "2.2.1"
-androidxCore = "1.17.0"
-androidxDatastore = "1.2.0"
+androidxCore = "1.18.0"
+androidxDatastore = "1.2.1"
 androidxFragment = "1.8.9"
 androidxGridLayout = "1.1.0"
 androidxLegacy = "1.0.0"
@@ -24,49 +24,48 @@ androidxMaterial = "1.13.0"
 androidxPreference = "1.2.1"
 androidxRoom = "2.8.4"
 androidxSplash = "1.2.0"
-apacheCommons = "3.12.0"
+apacheCommons = "3.13.0"
 appCenterSdkVersion = "5.0.6"
 appauth = "0.11.1"
 benManes = "0.53.0"
-androidxCamera = "1.5.3"
+androidxCamera = "1.6.0"
 coil = "2.7.0"
 desugar_jdk_libs_nio = "2.1.5"
 firebaseCrashlytics = "3.0.6"
 googleCodeScanner = "16.1.0"
-googleFirebaseBom = "34.9.0"
 arturboschDetekt = "1.23.8"
 googleGms = "4.4.4"
-googleHilt = "2.59.1"
+googleHilt = "2.59.2"
 iotDeviceClient = "2.5.0"
 jacksonAnnotations = "2.21"
-javaJwt = "4.5.0"
+javaJwt = "4.5.1"
 jwt = "2.0.2"
-kotlin = "2.3.10"
+kotlin = "2.3.20"
 kotlinxCoroutines = "1.10.2"
 kotlinxSerializationJson = "1.10.0"
 devtoolsKsp = "2.3.2"
-media3Version = "1.9.2"
+media3Version = "1.10.0"
 mlkitBarcode = "17.3.0"
-mpChart = "3.1.0"
 okhttp = "5.3.2"
 orgEclipsePahoClientMqttv3 = "1.2.5"
 provisioningDeviceClient = "2.1.3"
 reorderable = "3.0.0"
 retrofit = "3.0.0"
 retrofitKotlinxSerializationJson = "1.0.0"
-stSdk = "1.2.17"
-stOpus= "1.2.3"
+stSdk = "1.2.18"
+stOpus= "1.2.4"
 ytPlayer = "13.0.0"
-runtimeLivedata = "1.10.3"
+runtimeLivedata = "1.10.6"
 jaredsburrowsLicense = "0.9.8"
 firebaseConfigKtx = "22.1.2"
-vico =  "2.4.3"
-dynatrace = "8.331.1.1004"
+vico =  "3.1.0"
+dynatrace = "8.335.1.1001"
 material3Version = "1.4.0"
-nav3Core = "1.0.1"
+nav3Core = "1.1.0"
 lifecycleViewmodelNav3 = "2.10.0"
 
 androidxHiltNavigationCompose = "1.3.0"
+guava = "33.5.0-android"
 
 [libraries]
 accompanist-flowlayout = { module = "com.google.accompanist:accompanist-flowlayout", version.ref = "accompanist" }
@@ -115,9 +114,6 @@ coil-kt-core = { module = "io.coil-kt:coil", version.ref = "coil" }
 coil-kt-gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
 coil-kt-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
 desugar_jdk_libs_nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugar_jdk_libs_nio" }
-google-firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
-google-firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "googleFirebaseBom" }
-google-firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 google-playServices-codeScanner = { module = "com.google.android.gms:play-services-code-scanner", version.ref = "googleCodeScanner" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "googleHilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "googleHilt" }
@@ -130,7 +126,6 @@ mlkit-barcode = { module = "com.google.mlkit:barcode-scanning", version.ref = "m
 okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
 openid-appauth = { module = "net.openid:appauth", version.ref = "appauth" }
 org-eclipse-paho-client-mqttv3 = { module = "org.eclipse.paho:org.eclipse.paho.client.mqttv3", version.ref = "orgEclipsePahoClientMqttv3" }
-philjay-mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpChart" }
 pierfrancescosoffritti-androidyoutubeplayer = { module = "com.pierfrancescosoffritti.androidyoutubeplayer:core", version.ref = "ytPlayer" }
 provisioning-device-client = { module = "com.microsoft.azure.sdk.iot.provisioning:provisioning-device-client", version.ref = "provisioningDeviceClient" }
 retrofit-core = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
@@ -145,8 +140,8 @@ vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", ve
 dynatrace-lib = { module = "com.dynatrace.agent:agent-android", version.ref = "dynatrace" }
 microsoft-appcenter-analytics = { module = "com.microsoft.appcenter:appcenter-analytics", version.ref = "appCenterSdkVersion" }
 
-
 androidx-hilt-navigationcompose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidxHiltNavigationCompose" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
 #Navigation 3
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
@@ -196,10 +191,6 @@ compose = [
 composeUiTooling = [
     "androidx-compose-uitooling",
     "androidx-compose-uitoolingpreview"
-]
-firebase = [
-    "google-firebase-analytics",
-    "google-firebase-crashlytics"
 ]
 iotCentral = [
     "iot-device-client",

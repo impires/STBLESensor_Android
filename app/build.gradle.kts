@@ -21,20 +21,23 @@ plugins {
     alias(libs.plugins.jaredsburrowsLicense)
 }
 
-apply {
-    from("st_dependencies.gradle")
-}
+apply(from = "st_dependencies.gradle")
 
 android {
     namespace = "com.st.bluems"
+    compileSdk {
+        version = release(stCompileSdk) {
+            minorApiLevel = 1
+        }
+    }
     compileSdk = stCompileSdk
 
     defaultConfig {
         applicationId = "com.st.bluems"
         minSdk = stMinSdk
         targetSdk = stTargetSdk
-        versionCode = 356
-        versionName = "5.3.0"
+        versionCode = 365
+        versionName = "5.3.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -46,10 +49,6 @@ android {
             name = "VESPUCCI_ENVIRONMENT",
             value = "\"PROD\"" // "\"PRE_PROD\" ""\"DEV\""
         )
-    }
-
-    hilt {
-        enableAggregatingTask = true
     }
 
     buildTypes {
@@ -75,12 +74,16 @@ android {
         viewBinding = true
     }
 
-    ksp {
-        arg("room.schemaLocation", "$projectDir/schemas")
-        arg("room.generateKotlin", "true")
-    }
-
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+}
+
+hilt {
+    enableAggregatingTask = true
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.generateKotlin", "true")
 }
 
 licenseReport {

@@ -43,6 +43,7 @@ import com.st.cloud_azure_iot_central.model.FieldModel
 import com.st.cloud_azure_iot_central.network.AzureIoTCentralPnPConnection
 import com.st.preferences.StPreferences
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 import java.util.Date
 
 @HiltViewModel
@@ -148,8 +149,7 @@ class CloudAzureIotCentralViewModel
     fun startDemo(nodeId: String) {
         this.nodeId = nodeId
         //Retrieve the node with Catalog FW info
-        viewModelScope.launch(Dispatchers.IO) {
-
+        runBlocking {
             //Retrieve the Node
             node = blueManager.getNodeWithFirmwareInfo(nodeId)
 
@@ -157,6 +157,9 @@ class CloudAzureIotCentralViewModel
                 //Set like default BoardUid the BLE mac
                 _boardUid.value = node!!.advertiseInfo?.getAddress()?.replace(":", "") ?: ""
             }
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
 
             //Retrieve all the BlueST-SDK Ble Chars with a dtmi_name
             catalogBleCharsWithDtmiName =
@@ -334,7 +337,6 @@ class CloudAzureIotCentralViewModel
                         )
                     }
                 } ?: emptyList()).toMutableList()
-
             //Retrieve the Cloud Apps saved from preferences
             cloudAppsFromCatalog.forEachIndexed { index, cloudApp ->
                 if (cloudApp.cloudApp.url != null) {

@@ -1,8 +1,7 @@
 package com.st.heart_rate_demo.composable
 
-import android.content.Context
-import android.view.ViewGroup
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -22,32 +22,35 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.st.heart_rate_demo.HeartRateDemoViewModel
 import com.st.heart_rate_demo.R
+import com.st.heart_rate_demo.utils.BlueMSPlotEntry
 import com.st.ui.theme.ErrorText
+import com.st.ui.theme.Grey0
 import com.st.ui.theme.Grey5
 import com.st.ui.theme.InfoText
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.Shapes
 import com.st.ui.theme.SuccessText
-import java.util.LinkedList
 import java.util.Locale
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -55,7 +58,8 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 
-private val SECONDS_TO_PLOT_DEFAULT = 20.seconds
+private val SECONDS_TO_PLOT_DEFAULT = 10.seconds
+private const val NUMBER_LINES = 6
 
 @OptIn(ExperimentalTime::class)
 @Composable
@@ -67,26 +71,95 @@ fun HeartRateFragmentDemoContent(
     val locationData by viewModel.locationData.collectAsStateWithLifecycle()
     val heartData by viewModel.heartData.collectAsStateWithLifecycle()
 
-    val context = LocalContext.current
+    var mFirstNotificationTimeStamp by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
-    var heartPlot by remember { mutableStateOf<LineChart?>(value = null) }
-    var heartLineData by remember {
-        mutableStateOf<LineData?>(null)
+    var heartRateData: List<BlueMSPlotEntry> by remember {
+        mutableStateOf(
+            listOf()
+        )
+    }
+    var maxHeartRateY by remember { mutableFloatStateOf(-Float.MAX_VALUE) }
+    var minHeartRateY by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+
+    var energyData: List<BlueMSPlotEntry> by remember {
+        mutableStateOf(
+            listOf()
+        )
+    }
+    var maxEnergyY by remember { mutableFloatStateOf(-Float.MAX_VALUE) }
+    var minEnergyY by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+
+    val textMeasurerHeartRate = rememberTextMeasurer()
+    val textMeasurerEnergy = rememberTextMeasurer()
+
+
+    LaunchedEffect(key1 = heartData) {
+        heartData.first?.let { data ->
+            if (data.heartRate.value > 0) {
+                val actualTimeStamp = System.currentTimeMillis()
+                val localHeartData = heartRateData.toMutableList()
+                localHeartData.add(
+                    BlueMSPlotEntry(
+                        actualTimeStamp - mFirstNotificationTimeStamp,
+                        data.heartRate.value.toFloat()
+                    )
+                )
+
+                heartRateData = removeEntryOlderThan(
+                    localHeartData.toList(),
+                    SECONDS_TO_PLOT_DEFAULT
+                )
+
+                //Compute the Max and the Min
+                maxHeartRateY = -Float.MAX_VALUE
+                minHeartRateY = Float.MAX_VALUE
+                heartRateData.forEach { data ->
+                    val y = data.y
+                    if (y < minHeartRateY)
+                        minHeartRateY = y
+                    if (y > maxHeartRateY)
+                        maxHeartRateY = y
+                }
+            }
+
+            if (data.energyExpended.value > 0) {
+                val actualTimeStamp = System.currentTimeMillis()
+                val localEnergyData = energyData.toMutableList()
+                localEnergyData.add(
+                    BlueMSPlotEntry(
+                        actualTimeStamp - mFirstNotificationTimeStamp,
+                        data.energyExpended.value.toFloat()
+                    )
+                )
+                energyData = removeEntryOlderThan(
+                    localEnergyData.toList(),
+                    SECONDS_TO_PLOT_DEFAULT
+                )
+
+                //Compute the Max and the Min
+                maxEnergyY = -Float.MAX_VALUE
+                minEnergyY = Float.MAX_VALUE
+                energyData.forEach { data ->
+                    val y = data.y
+                    if (y < minEnergyY)
+                        minEnergyY = y
+                    if (y > maxEnergyY)
+                        maxEnergyY = y
+                }
+            }
+        }
     }
 
-    var energyPlot by remember { mutableStateOf<LineChart?>(value = null) }
-    var energyLineData by remember {
-        mutableStateOf<LineData?>(null)
-    }
-    var mFirstNotificationTimeStamp by remember { mutableLongStateOf(0) }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = LocalDimensions.current.paddingNormal,
+            .padding(
+                start = LocalDimensions.current.paddingNormal,
                 end = LocalDimensions.current.paddingNormal,
                 top = LocalDimensions.current.paddingNormal,
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(space = LocalDimensions.current.paddingLarge)
     ) {
@@ -287,52 +360,98 @@ fun HeartRateFragmentDemoContent(
                             .fillMaxWidth()
                             .weight(2f)
                     ) {
-                        AndroidView(factory = { ctx ->
-                            LineChart(ctx).also { chart ->
-                                chart.layoutParams = ViewGroup.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT,
-                                    ViewGroup.LayoutParams.MATCH_PARENT
-                                )
-                                heartPlot = chart
-                                heartLineData = initializePlot(
-                                    chart = chart,
-                                    context = context,
-                                    name = "bpm",
-                                    color = ContextCompat.getColor(
-                                        context,
-                                        com.st.ui.R.color.ErrorText
-                                    )
-                                )
-                                mFirstNotificationTimeStamp = System.currentTimeMillis()
-                            }
-                        }, update = {
-                            if(data.heartRate.value>0) {
-                                heartPlot?.let { plot ->
-                                    heartLineData?.let { lineData ->
-                                        val actualTimeStamp = System.currentTimeMillis()
-                                        val yData = data.heartRate.value.toFloat()
-                                        lineData.addEntry(
-                                            Entry(
-                                                (actualTimeStamp - mFirstNotificationTimeStamp).toFloat(),
-                                                yData
-                                            ), 0
-                                        )
-                                        lineData.removeEntryOlderThan(SECONDS_TO_PLOT_DEFAULT)
+                        if (heartRateData.isNotEmpty()) {
+                            Canvas(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 40.dp, vertical = 20.dp)
+                            ) {
+                                val width = size.width
+                                val height = size.height
+                                val minValue = if (heartRateData.size < 2) {
+                                    2
+                                } else {
+                                    heartRateData.size
+                                }
+                                val spacing = width / (minValue - 1)
+                                val labelLineSpacing = height / (NUMBER_LINES)
 
-                                        lineData.notifyDataChanged()
-                                        plot.notifyDataSetChanged()
-                                        plot.invalidate()
+                                // Draw Horizontal Grid Lines
+                                for (i in 0..NUMBER_LINES) {
+
+                                    val y = height - labelLineSpacing * i
+
+                                    val labelValue =
+                                        minHeartRateY + ((maxHeartRateY - minHeartRateY) / NUMBER_LINES) * i
+
+                                    // Draw Grid Lines
+                                    drawLine(
+                                        color = Color.LightGray.copy(alpha = 0.5f),
+                                        start = Offset(0f, y),
+                                        end = Offset(width, y),
+                                        strokeWidth = 1.dp.toPx()
+                                    )
+
+
+                                    // Draw Y-Axis Label (Text)
+                                    drawText(
+                                        textMeasurer = textMeasurerEnergy,
+                                        text = labelValue.toInt().toString(),
+                                        topLeft = Offset(-35.dp.toPx(), y - 10.dp.toPx()),
+                                        style = androidx.compose.ui.text.TextStyle(
+                                            fontSize = 10.sp,
+                                            color = Color.Gray
+                                        )
+                                    )
+                                }
+                                if (heartRateData.isNotEmpty()) {
+                                    val path = Path().apply {
+                                        heartRateData.forEachIndexed { index, value ->
+                                            // Calculate X and Y coordinates
+                                            // We flip Y because (0,0) is the top-left in Canvas
+                                            val x = index * spacing
+                                            val y =
+                                                height - (((value.y - minHeartRateY) / (maxHeartRateY - minHeartRateY)) * height)
+
+                                            if (index == 0) moveTo(x, y) else lineTo(x, y)
+                                        }
+                                    }
+
+                                    drawPath(
+                                        path = path,
+                                        color = ErrorText,
+                                        style = Stroke(width = 2.dp.toPx())
+                                    )
+
+                                    //Plot the circles
+                                    heartRateData.forEachIndexed { index, value ->
+                                        // Calculate X and Y coordinates
+                                        // We flip Y because (0,0) is the top-left in Canvas
+                                        val x = index * spacing
+                                        val y =
+                                            height - (((value.y - minHeartRateY) / (maxHeartRateY - minHeartRateY)) * height)
+
+                                        drawCircle(
+                                            color = ErrorText,
+                                            radius = 10f,
+                                            center = Offset(x = x, y = y)
+                                        )
+                                        drawCircle(
+                                            color = Grey0,
+                                            radius = 6f,
+                                            center = Offset(x = x, y = y)
+                                        )
                                     }
                                 }
                             }
-                        })
+                        }
                     }
                 }
             }
 
 
             //Energy Plot
-            if(data.energyExpended.value!=-1) {
+            if (data.energyExpended.value != -1) {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -388,45 +507,92 @@ fun HeartRateFragmentDemoContent(
                                 .fillMaxWidth()
                                 .weight(2f)
                         ) {
-                            AndroidView(factory = { ctx ->
-                                LineChart(ctx).also { chart ->
-                                    chart.layoutParams = ViewGroup.LayoutParams(
-                                        ViewGroup.LayoutParams.MATCH_PARENT,
-                                        ViewGroup.LayoutParams.MATCH_PARENT
-                                    )
-                                    energyPlot = chart
-                                    energyLineData = initializePlot(
-                                        chart = chart,
-                                        context = context,
-                                        name = "kJ",
-                                        color = ContextCompat.getColor(
-                                            context,
-                                            com.st.ui.R.color.InfoText
-                                        )
-                                    )
-                                    mFirstNotificationTimeStamp = System.currentTimeMillis()
-                                }
-                            }, update = {
-                                if (data.energyExpended.value > 0) {
-                                    energyPlot?.let { plot ->
-                                        energyLineData?.let { lineData ->
-                                            val actualTimeStamp = System.currentTimeMillis()
-                                            val yData = data.energyExpended.value.toFloat()
-                                            lineData.addEntry(
-                                                Entry(
-                                                    (actualTimeStamp - mFirstNotificationTimeStamp).toFloat(),
-                                                    yData
-                                                ), 0
-                                            )
-                                            lineData.removeEntryOlderThan(SECONDS_TO_PLOT_DEFAULT)
+                            if (energyData.isNotEmpty()) {
+                                Canvas(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 40.dp, vertical = 20.dp)
+                                ) {
+                                    val width = size.width
+                                    val height = size.height
+                                    val minValue = if (energyData.size < 2) {
+                                        2
+                                    } else {
+                                        energyData.size
+                                    }
+                                    val spacing = width / (minValue - 1)
+                                    val labelLineSpacing = height / (NUMBER_LINES)
 
-                                            lineData.notifyDataChanged()
-                                            plot.notifyDataSetChanged()
-                                            plot.invalidate()
+                                    // Draw Horizontal Grid Lines
+                                    for (i in 0..NUMBER_LINES) {
+
+                                        val y = height - labelLineSpacing * i
+
+                                        val labelValue =
+                                            minEnergyY + ((maxEnergyY - minEnergyY) / NUMBER_LINES) * i
+
+                                        // Draw Grid Lines
+                                        drawLine(
+                                            color = Color.LightGray.copy(alpha = 0.5f),
+                                            start = Offset(0f, y),
+                                            end = Offset(width, y),
+                                            strokeWidth = 1.dp.toPx()
+                                        )
+
+
+                                        // Draw Y-Axis Label (Text)
+                                        drawText(
+                                            textMeasurer = textMeasurerHeartRate,
+                                            text = labelValue.toInt().toString(),
+                                            topLeft = Offset(-35.dp.toPx(), y - 10.dp.toPx()),
+                                            style = androidx.compose.ui.text.TextStyle(
+                                                fontSize = 10.sp,
+                                                color = Color.Gray
+                                            )
+                                        )
+                                    }
+                                    if (energyData.isNotEmpty()) {
+                                        val path = Path().apply {
+                                            energyData.forEachIndexed { index, value ->
+                                                // Calculate X and Y coordinates
+                                                // We flip Y because (0,0) is the top-left in Canvas
+                                                val x = index * spacing
+                                                val y =
+                                                    height - (((value.y - minEnergyY) / (maxEnergyY - minEnergyY)) * height)
+
+                                                if (index == 0) moveTo(x, y) else lineTo(x, y)
+                                            }
+                                        }
+
+                                        drawPath(
+                                            path = path,
+                                            color = InfoText,
+                                            style = Stroke(width = 2.dp.toPx())
+                                        )
+
+                                        //Plot the circles
+                                        energyData.forEachIndexed { index, value ->
+                                            // Calculate X and Y coordinates
+                                            // We flip Y because (0,0) is the top-left in Canvas
+                                            val x = index * spacing
+                                            val y =
+                                                height - (((value.y - minEnergyY) / (maxEnergyY - minEnergyY)) * height)
+
+                                            drawCircle(
+                                                color = InfoText,
+                                                radius = 10f,
+                                                center = Offset(x = x, y = y)
+                                            )
+
+                                            drawCircle(
+                                                color = Grey0,
+                                                radius = 6f,
+                                                center = Offset(x = x, y = y)
+                                            )
                                         }
                                     }
                                 }
-                            })
+                            }
                         }
                     }
                 }
@@ -435,81 +601,30 @@ fun HeartRateFragmentDemoContent(
     }
 }
 
-private fun initializePlot(chart: LineChart, context: Context, name: String, color: Int): LineData {
-    val lineData: LineData
-
-    // Heart Rate Plot
-    // enable description text
-    //chart.description.isEnabled = true
-    //chart.description.text = "HearRate"
-    //chart.description.textColor = colorLabel
-    //chart.description.textSize = 14f
-
-    //disable description text
-    chart.description.isEnabled = false
-
-    // disable touch gestures
-    chart.setTouchEnabled(false)
-    // enable scaling and dragging
-    chart.isDragEnabled = true
-    chart.setScaleEnabled(true)
-    chart.setDrawGridBackground(false)
-    // if disabled, scaling can be done on x- and y-axis separately
-    chart.setPinchZoom(false)
-    // set an alternative background color
-    //chart.setBackgroundColor(Color.LTGRAY)
-    val dataSet = LineDataSet(LinkedList(), name)
-    //Enable the Circles
-    dataSet.setDrawCircles(true)
-    dataSet.circleColors = listOf(color)
-    //Size of the circles (default = 4f)
-    //mHeartRateDataSet.circleRadius = 5f
-
-    dataSet.color = color
-    //Smooth plot
-    dataSet.mode = LineDataSet.Mode.CUBIC_BEZIER
-
-    lineData = LineData(dataSet)
-    //Color of the Text Values
-    //mHeartRateData.setValueTextColor(Color.WHITE)
-    //Disable the Text Values
-    lineData.setDrawValues(false)
-    // add empty data
-    chart.data = lineData
-
-    // remove the legend
-    //chart.legend.isEnabled = false
-
-    // remove the label for x-Axis
-    chart.xAxis.setDrawLabels(false)
-
-    //Remove the Y Axis on the Right
-    chart.axisRight.isEnabled = false
-    //Set the Color for the Y Axis on the Left
-    chart.axisLeft.textColor = ContextCompat.getColor(context, com.st.ui.R.color.labelPlotContrast)
-
-    //Disable grid lines for x/y Axis
-    chart.xAxis.setDrawGridLines(false)
-    chart.axisLeft.setDrawGridLines(false)
-
-    return lineData
-}
-
-@ExperimentalTime
-private fun LineData.removeEntryOlderThan(timeRange: Duration?) {
+private fun removeEntryOlderThan(
+    list: List<BlueMSPlotEntry>,
+    timeRange: Duration?
+): List<BlueMSPlotEntry> {
     if (timeRange == null)
-        return
+        return list
+    var xMax = Long.MIN_VALUE
+    var xMin = Long.MAX_VALUE
+
+    list.forEach { data ->
+        if (data.x > xMax) {
+            xMax = data.x
+        }
+        if (data.x < xMin) {
+            xMin = data.x
+        }
+    }
+
     val plotRangeMs = (xMax - xMin).toDouble().milliseconds
     if (plotRangeMs > timeRange) {
         val minValidX = (xMax - timeRange.toDouble(DurationUnit.MILLISECONDS)).toFloat()
-        dataSets.forEach {
-            it.removeXLessThan(minValidX)
-        }
-    }
-}
-
-private fun ILineDataSet.removeXLessThan(value: Float) {
-    while (getEntryForIndex(0).x < value) {
-        removeFirst()
+        val newList = list.filter { it.x >= minValidX }
+        return newList
+    } else {
+        return list
     }
 }

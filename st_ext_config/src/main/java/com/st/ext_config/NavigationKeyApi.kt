@@ -126,19 +126,6 @@ fun EntryProviderScope<NavKey>.CertRequestNavScreen() {
     }
 }
 
-//@Composable
-//fun EntryProviderScope<NavKey>.DownloadTermsNavScreen(
-//    backState: NavBackStack<NavKey>
-//) {
-//    entry<DownloadTermsNavKey> {
-//        DownloadLicenseAgreementScreen(onLicenseAgree = { decision ->
-//            backState.removeLastOrNull()
-//            StDownloadTermsConfig.onDone(decision)
-//        })
-//    }
-//}
-
-
 @Composable
 fun EntryProviderScope<NavKey>.CertRegistrationNavScreen() {
     entry<CertRegistrationNavKey> { key ->

@@ -60,7 +60,7 @@ fun BlueMsButton(
     ) {
         if (iconPainter != null) {
             Icon(
-                modifier = Modifier.padding(end = LocalDimensions.current.paddingMedium),
+                modifier = Modifier.padding(end = LocalDimensions.current.paddingNormal),
                 painter = iconPainter,
                 contentDescription = text
             )
@@ -106,7 +106,7 @@ fun BlueMsButton(
         colors = buttonColors
     ) {
         Icon(
-            modifier = Modifier.padding(end = LocalDimensions.current.paddingMedium),
+            modifier = Modifier.padding(end = LocalDimensions.current.paddingNormal),
             imageVector = imageVector,
             contentDescription = text
         )

@@ -39,3 +39,6 @@ data class DemoShowCaseLogSettingsNavKey(
 
 @Serializable
 data object DemoShowCaseUserProfilingNavKey: NavKey
+
+@Serializable
+data object DemoShowCaseDownloadTermsNavKey : NavKey

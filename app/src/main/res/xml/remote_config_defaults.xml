@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<defaults>
-  <entry>
-    <key>bluems_5_3_0</key>
-    <value>{"deprecationDate": "2028-12-31","dismissionDate":"2029-12-31"}</value>
-  </entry>
-</defaults>
