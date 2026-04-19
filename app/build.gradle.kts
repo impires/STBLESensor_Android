@@ -6,10 +6,6 @@
  * If no LICENSE file comes with this software, it is provided AS-IS.
  */
 
-val stCompileSdk: Int by rootProject.extra
-val stMinSdk: Int by rootProject.extra
-val stTargetSdk: Int by rootProject.extra
-
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
@@ -25,17 +21,13 @@ apply(from = "st_dependencies.gradle")
 
 android {
     namespace = "com.st.bluems"
-    compileSdk {
-        version = release(stCompileSdk) {
-            minorApiLevel = 1
-        }
-    }
-    compileSdk = stCompileSdk
+    // Use the fetched variables
+    compileSdk = (rootProject.findProperty("stCompileSdk")?.toString() ?: "36").toInt()
 
     defaultConfig {
         applicationId = "com.st.bluems"
-        minSdk = stMinSdk
-        targetSdk = stTargetSdk
+        minSdk = (rootProject.findProperty("stMinSdk")?.toString() ?: "26").toInt()
+        targetSdk = (rootProject.findProperty("stTargetSdk")?.toString() ?: "36").toInt()
         versionCode = 365
         versionName = "5.3.2"
 
@@ -66,6 +58,11 @@ android {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+    }
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        }
     }
 
     buildFeatures {
@@ -135,12 +132,22 @@ dependencies {
     implementation(project(":st_login"))
 
     // Blue ST SDK
-    implementation(libs.st.sdk)
+    implementation(libs.st.sdk) {
+        exclude(group = "androidx.room", module = "room-runtime")
+        exclude(group = "androidx.room", module = "room-ktx")
+        exclude(group = "androidx.room", module = "room-common")
+        exclude(group = "androidx.room", module = "room-paging")
+        exclude(group = "androidx.room", module = "room-compiler")
+    }
 
     // Room
-    implementation(libs.bundles.room)
-    ksp(libs.androidx.room.compiler)
-    annotationProcessor(libs.androidx.room.compiler)
+    val roomVersion = "2.8.4"
+
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+
+    testImplementation("androidx.room:room-testing:$roomVersion")
 
     // Hilt
     implementation(libs.hilt.android)
@@ -148,7 +155,22 @@ dependencies {
     ksp(libs.kotlin.metadata)
 
     // Dependency required for API desugaring.
-    coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     debugImplementation(libs.androidx.compose.uitestmanifest)
+
+    // Test
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.bundles.test)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "androidx.room") {
+            useVersion("2.8.4")
+        }
+    }
+}
+
+

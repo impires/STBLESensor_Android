@@ -34,7 +34,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.st.blue_sdk.models.Boards
 import com.st.blue_sdk.models.Node
 import com.st.bluems.NFCConnectionViewModel
 import com.st.bluems.R
@@ -59,6 +58,10 @@ import com.st.ui.theme.SecondaryBlue
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.runtime.LaunchedEffect
+import com.st.bluems.multinode.ManagedNode
+import com.st.bluems.multinode.MultiNodeViewModel
+import com.st.bluems.multinode.MultiNodeScreen
 
 
 @Composable
@@ -67,6 +70,7 @@ fun DeviceListScreenNavigation(
     backState: NavBackStack<NavKey>,
     viewModel: HomeViewModel,
     nfcViewModel: NFCConnectionViewModel,
+    multiNodeViewModel: MultiNodeViewModel,
     isBleEnabled: Boolean,
     onEnableBle: () -> Unit,
     isLocationEnable: Boolean,
@@ -86,14 +90,27 @@ fun DeviceListScreenNavigation(
 
     val isBetaRelease by viewModel.isBetaRelease.collectAsStateWithLifecycle()
 
+    LaunchedEffect(devices) {
+        multiNodeViewModel.setDiscoveredNodes(
+            devices.map { node ->
+                ManagedNode(
+                    id = node.device.address,
+                    name = node.device.name ?: node.device.address,
+                    mac = node.device.address
+                )
+            }
+        )
+    }
+
     val context = LocalContext.current
 
     var forceScan by rememberSaveable {
         mutableStateOf(false)
     }
 
-    var isApplicationDeprecated by remember { mutableStateOf(false) }
-    var isApplicationDismissed by remember { mutableStateOf(false) }
+    var showMultiNodeScreen by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     ComposableLifecycle { _, event ->
         when (event) {
@@ -102,109 +119,104 @@ fun DeviceListScreenNavigation(
         }
     }
 
-    DeviceListWithPermissionsCheck(
-        modifier = modifier,
-        devices = devices,
-        forceScan = forceScan,
-        isBleEnabled = isBleEnabled,
-        isLocationEnable = isLocationEnable,
-        nfcNodeId = nfcNodeId,
-        pinnedDevices = pinnedDevices,
-        isLoading = isLoading,
-        isLoggedIn = isLoggedIn,
-        isExpert = isExpert,
-        isServerForced = isServerForced,
-        isBetaRelease = isBetaRelease,
-        disableHiddenDemos = disableHiddenDemos,
-        enableDisableHiddenDemos = {
-            viewModel.enableDisableHiddenDemos()
-        },
-        login = {
-            viewModel.login()
-        },
-        logout = {
-            viewModel.logout()
-        },
-        onEnableBle = onEnableBle,
-        onEnableLocation = onEnableLocation,
-        goToProfile = {
-            backState.add(HomeScreenProfileNavKey)
-        },
-        goToCatalog = {
-            if (boardsDescription.isEmpty()) {
-                Toast.makeText(context, "Boards Catalog not Available", Toast.LENGTH_SHORT).show()
-            } else {
-                backState.add(CatalogNavKey)
-            }
-        },
-        goToSourceCode = {
-            viewModel.openGitHubSourceCode()
-        },
-        goToAboutST = {
-            viewModel.openAboutUsPage()
-        },
-        goToPrivacyPolicy = {
-            viewModel.openPrivacyPolicyPage()
-        },
-        goToThirdPartiesLicenses = {
-            backState.add(LicensesNavKey)
-        },
-        switchVersionBetaRelease = {
-            viewModel.switchVersionBetaRelease()
-        },
-        switchServerForced = {
-            viewModel.switchServerForced()
-        },
-        readBetaCatalog = {
-            forceScan = true
-            viewModel.readBetaCatalog()
-            Toast.makeText(context, "Loaded Beta Catalog", Toast.LENGTH_SHORT).show()
-        },
-        readReleaseCatalog = {
-            forceScan = true
-            viewModel.readReleaseCatalog()
-            Toast.makeText(context, "Loaded Release Catalog", Toast.LENGTH_SHORT).show()
-        },
-        onPinChange = { id, isPin ->
-            if (isPin) {
-                viewModel.addToPinnedDevices(id)
-            } else {
-                viewModel.removeFromPinnedDevices(id)
-            }
-        },
-        onNodeSelected = { node ->
-            val nodeId = node.device.address
-            val maxPayloadSize = if (node.familyType == Boards.Family.WBA_FAMILY) 240 else 248
-            val enableServer = if (isServerForced) {
-                true
-            } else {
-                !((node.boardType == Boards.Model.SENSOR_TILE_BOX) || (node.boardType == Boards.Model.SENSOR_TILE_BOX_PRO) || (node.boardType == Boards.Model.SENSOR_TILE_BOX_PROB) || (node.boardType == Boards.Model.SENSOR_TILE_BOX_PROC))
-            }
-
-            nfcViewModel.setNFCNodeId(null)
-            viewModel.connect(
-                nodeId = nodeId,
-                maxPayloadSize = maxPayloadSize,
-                enableServer = enableServer
-            ) {
-                backState.add(DemoShowCaseNavKey(nodeId = nodeId))
-            }
-        },
-        onStartScan = {
-            viewModel.startScan()
-        },
-        onAddCatalogEntryFromFile = { fileUri ->
-            forceScan = true
-            val result = viewModel.setLocalBoardCatalog(fileUri = fileUri)
-            result?.let { res ->
-                if (res.startsWith("Added")) {
-                    Toast.makeText(context, result, Toast.LENGTH_SHORT).show()
+    if (showMultiNodeScreen) {
+        MultiNodeScreen(
+            viewModel = multiNodeViewModel,
+            modifier = modifier,
+            onBack = { showMultiNodeScreen = false }
+        )
+    } else {
+        DeviceListWithPermissionsCheck(
+            modifier = modifier,
+            devices = devices,
+            forceScan = forceScan,
+            isBleEnabled = isBleEnabled,
+            isLocationEnable = isLocationEnable,
+            nfcNodeId = nfcNodeId,
+            pinnedDevices = pinnedDevices,
+            isLoading = isLoading,
+            isLoggedIn = isLoggedIn,
+            isExpert = isExpert,
+            isServerForced = isServerForced,
+            isBetaRelease = isBetaRelease,
+            disableHiddenDemos = disableHiddenDemos,
+            enableDisableHiddenDemos = {
+                viewModel.enableDisableHiddenDemos()
+            },
+            login = {
+                viewModel.login()
+            },
+            logout = {
+                viewModel.logout()
+            },
+            onEnableBle = onEnableBle,
+            onEnableLocation = onEnableLocation,
+            goToProfile = {
+                backState.add(HomeScreenProfileNavKey)
+            },
+            goToCatalog = {
+                if (boardsDescription.isEmpty()) {
+                    Toast.makeText(context, "Boards Catalog not Available", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, result, Toast.LENGTH_LONG).show()
+                    backState.add(CatalogNavKey)
+                }
+            },
+            goToSourceCode = {
+                viewModel.openGitHubSourceCode()
+            },
+            goToAboutST = {
+                viewModel.openAboutUsPage()
+            },
+            goToPrivacyPolicy = {
+                viewModel.openPrivacyPolicyPage()
+            },
+            goToThirdPartiesLicenses = {
+                backState.add(LicensesNavKey)
+            },
+            switchVersionBetaRelease = {
+                viewModel.switchVersionBetaRelease()
+            },
+            switchServerForced = {
+                viewModel.switchServerForced()
+            },
+            readBetaCatalog = {
+                forceScan = true
+                viewModel.readBetaCatalog()
+                Toast.makeText(context, "Loaded Beta Catalog", Toast.LENGTH_SHORT).show()
+            },
+            readReleaseCatalog = {
+                forceScan = true
+                viewModel.readReleaseCatalog()
+                Toast.makeText(context, "Loaded Release Catalog", Toast.LENGTH_SHORT).show()
+            },
+            onPinChange = { id, isPin ->
+                if (isPin) {
+                    viewModel.addToPinnedDevices(id)
+                } else {
+                    viewModel.removeFromPinnedDevices(id)
+                }
+            },
+            onNodeSelected = { node ->
+                nfcViewModel.setNFCNodeId(null)
+                multiNodeViewModel.toggleNodeSelection(node.device.address)
+                showMultiNodeScreen = true
+            },
+            onStartScan = {
+                viewModel.startScan()
+            },
+            onAddCatalogEntryFromFile = { fileUri ->
+                forceScan = true
+                val result = viewModel.setLocalBoardCatalog(fileUri = fileUri)
+                result?.let { res ->
+                    if (res.startsWith("Added")) {
+                        Toast.makeText(context, result, Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, result, Toast.LENGTH_LONG).show()
+                    }
                 }
             }
-        }
-    )
+        )
+    }
 }
 
 @OptIn(

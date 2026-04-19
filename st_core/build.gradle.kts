@@ -6,8 +6,9 @@
  * If no LICENSE file comes with this software, it is provided AS-IS.
  */
 
-val stCompileSdk: Int by rootProject.extra
-val stMinSdk: Int by rootProject.extra
+val stCompileSdk: Int = libs.versions.stCompileSdk.get().toInt()
+val stMinSdk: Int = libs.versions.stMinSdk.get().toInt()
+val stTargetSdk: Int = libs.versions.stTargetSdk.get().toInt()
 
 plugins {
     alias(libs.plugins.androidLibrary)
@@ -20,14 +21,14 @@ apply(from = "publish.gradle")
 
 android {
     namespace = "com.st.core"
-    compileSdk {
-        version = release(stCompileSdk) {
-            minorApiLevel = 1
-        }
-    }
+
+    // Use the fetched variables
+    compileSdk = stCompileSdk
 
     defaultConfig {
         minSdk = stMinSdk
+
+        manifestPlaceholders["appAuthRedirectScheme"] = "stblesensor"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -44,7 +45,6 @@ android {
     }
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
@@ -66,6 +66,9 @@ hilt {
 dependencies {
     // Blue ST SDK
     implementation(libs.st.sdk)
+
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
 
     // Hilt
     implementation(libs.hilt.android)
@@ -90,8 +93,9 @@ dependencies {
     api(libs.bundles.network)
 
     // Test
-    //testApi(libs.junit.core)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.bundles.test)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 
     // Dependency required for API desugaring.
-    coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
 }

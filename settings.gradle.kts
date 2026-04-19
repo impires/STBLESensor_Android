@@ -13,8 +13,16 @@ pluginManagement {
     }
 }
 
-val GPR_USER: String by settings
-val GPR_API_KEY: String by settings
+plugins {
+    id("com.android.application") version "8.13.2" apply false
+    id("com.android.library") version "8.13.2" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.10" apply false
+    id("com.google.devtools.ksp") version "2.1.10-1.0.30" apply false
+    id("com.google.dagger.hilt.android") version "2.58" apply false
+}
+
+val GPR_USER = "impires"
+val GPR_API_KEY = "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"
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)

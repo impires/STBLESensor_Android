@@ -25,6 +25,7 @@ import com.st.user_profiling.ProfileViewModel
 import com.st.user_profiling.composable.UserProfilingNavigationScreen
 import kotlinx.serialization.Serializable
 import kotlin.collections.removeLastOrNull
+import com.st.bluems.multinode.MultiNodeViewModel
 
 @Composable
 fun HomeScreenNavigation(
@@ -63,11 +64,14 @@ fun HomeScreenNavigation(
             ),
             entryProvider = entryProvider {
                 entry<HomeScreenNavKey> {
+                    val multiNodeViewModel: MultiNodeViewModel = hiltViewModel()
+
                     DeviceListScreenNavigation(
                         modifier = modifier,
                         backState = backState,
                         viewModel = viewModel,
                         nfcViewModel = nfcViewModel,
+                        multiNodeViewModel = multiNodeViewModel,
                         isBleEnabled = isBleEnabled,
                         onEnableBle = onEnableBle,
                         isLocationEnable = isLocationEnable,

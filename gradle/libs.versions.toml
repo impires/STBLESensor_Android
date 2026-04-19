@@ -8,42 +8,42 @@
 [versions]
 accompanist = "0.36.0"
 accompanistPermission = "0.37.3"
-androidGradlePlugin = "9.1.0"
-androidxActivity = "1.13.0"
+androidGradlePlugin = "8.13.2"
+androidxActivity = "1.10.1"
 androidxCompat = "1.7.1"
-androidxComposeBom = "2026.03.01"
+androidxComposeBom = "2025.02.00"
 androidxConstraintlayout = "2.2.1"
-androidxCore = "1.18.0"
+androidxCore = "1.15.0"
 androidxDatastore = "1.2.1"
 androidxFragment = "1.8.9"
 androidxGridLayout = "1.1.0"
 androidxLegacy = "1.0.0"
-androidxLifecycle = "2.10.0"
-androidxLifecycleViewmodel = "2.10.0"
-androidxMaterial = "1.13.0"
+androidxLifecycle = "2.8.7"
+androidxLifecycleViewmodel = "2.8.7"
+androidxMaterial = "1.12.0"
 androidxPreference = "1.2.1"
-androidxRoom = "2.8.4"
+androidxRoom = "2.7.1"
 androidxSplash = "1.2.0"
 apacheCommons = "3.13.0"
 appCenterSdkVersion = "5.0.6"
 appauth = "0.11.1"
 benManes = "0.53.0"
-androidxCamera = "1.6.0"
+androidxCamera = "1.4.1"
 coil = "2.7.0"
-desugar_jdk_libs_nio = "2.1.5"
+desugar_jdk_libs = "2.1.5"
 firebaseCrashlytics = "3.0.6"
 googleCodeScanner = "16.1.0"
 arturboschDetekt = "1.23.8"
 googleGms = "4.4.4"
-googleHilt = "2.59.2"
+googleHilt = "2.58"
 iotDeviceClient = "2.5.0"
 jacksonAnnotations = "2.21"
 javaJwt = "4.5.1"
 jwt = "2.0.2"
-kotlin = "2.3.20"
+kotlin = "2.1.10"
 kotlinxCoroutines = "1.10.2"
 kotlinxSerializationJson = "1.10.0"
-devtoolsKsp = "2.3.2"
+devtoolsKsp = "2.1.10-1.0.30"
 media3Version = "1.10.0"
 mlkitBarcode = "17.3.0"
 okhttp = "5.3.2"
@@ -53,16 +53,27 @@ reorderable = "3.0.0"
 retrofit = "3.0.0"
 retrofitKotlinxSerializationJson = "1.0.0"
 stSdk = "1.2.18"
-stOpus= "1.2.4"
+stOpus = "1.2.2"
 ytPlayer = "13.0.0"
 runtimeLivedata = "1.10.6"
 jaredsburrowsLicense = "0.9.8"
 firebaseConfigKtx = "22.1.2"
-vico =  "3.1.0"
+vico =  "3.0.1"
 dynatrace = "8.335.1.1001"
-material3Version = "1.4.0"
+material3Version = "1.3.1"
 nav3Core = "1.1.0"
 lifecycleViewmodelNav3 = "2.10.0"
+
+androidxTestCore = "1.7.0"
+androidxTestExtJunit = "1.3.0"
+androidxTestRules = "1.7.0"
+androidxTestRunner = "1.7.0"
+androidxEspresso = "3.7.0"
+junit = "4.13.2"
+
+stMinSdk = "26"
+stCompileSdk = "36"
+stTargetSdk = "36"
 
 androidxHiltNavigationCompose = "1.3.0"
 guava = "33.5.0-android"
@@ -113,11 +124,11 @@ coil-kt-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 coil-kt-core = { module = "io.coil-kt:coil", version.ref = "coil" }
 coil-kt-gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
 coil-kt-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
-desugar_jdk_libs_nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugar_jdk_libs_nio" }
+desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs_minimal", version.ref = "desugar_jdk_libs" }
 google-playServices-codeScanner = { module = "com.google.android.gms:play-services-code-scanner", version.ref = "googleCodeScanner" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "googleHilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "googleHilt" }
-kotlin-metadata = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
+kotlin-metadata = "org.jetbrains.kotlin:kotlin-metadata-jvm:2.3.20"
 iot-device-client = { module = "com.microsoft.azure.sdk.iot:iot-device-client", version.ref = "iotDeviceClient" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jacksonAnnotations" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
@@ -136,12 +147,20 @@ androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtim
 firebase-config-ktx = { group = "com.google.firebase", name = "firebase-config-ktx", version.ref = "firebaseConfigKtx" }
 
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 
 dynatrace-lib = { module = "com.dynatrace.agent:agent-android", version.ref = "dynatrace" }
 microsoft-appcenter-analytics = { module = "com.microsoft.appcenter:appcenter-analytics", version.ref = "appCenterSdkVersion" }
 
 androidx-hilt-navigationcompose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidxHiltNavigationCompose" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidxTestRules" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxEspresso" }
+junit = { module = "junit:junit", version.ref = "junit" }
 
 #Navigation 3
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
@@ -223,6 +242,13 @@ network = [
 room = [
     "androidx-room-ktx",
     "androidx-room-runtime"
+]
+test = [
+    "androidx-test-core",
+    "androidx-test-ext-junit",
+    "androidx-test-rules",
+    "androidx-test-runner",
+    "junit"
 ]
 
 [plugins]
