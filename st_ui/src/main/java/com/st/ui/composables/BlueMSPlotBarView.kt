@@ -35,6 +35,7 @@ import com.patrykandpatrick.vico.compose.common.component.LineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
+import com.patrykandpatrick.vico.compose.common.Fill
 import com.st.ui.theme.Grey3
 import com.st.ui.theme.LocalDimensions
 import com.st.ui.theme.PrimaryBlue
@@ -43,7 +44,6 @@ import com.st.ui.theme.WarningText
 import kotlin.collections.any
 import kotlin.collections.map
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.patrykandpatrick.vico.compose.common.Fill
 
 private val BottomAxisLabelKey = ExtraStore.Key<List<String>>()
 

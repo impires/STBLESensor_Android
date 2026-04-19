@@ -6,8 +6,9 @@
  * If no LICENSE file comes with this software, it is provided AS-IS.
  */
 
-val stCompileSdk: Int by rootProject.extra
-val stMinSdk: Int by rootProject.extra
+val stCompileSdk: Int = (rootProject.findProperty("stCompileSdk") as String).toInt()
+val stMinSdk: Int = (rootProject.findProperty("stMinSdk") as String).toInt()
+val stTargetSdk: Int = (rootProject.findProperty("stTargetSdk") as String).toInt()
 
 plugins {
     alias(libs.plugins.androidLibrary)
@@ -21,14 +22,14 @@ apply(from = "publish.gradle")
 
 android {
     namespace = "com.st.ui"
-    compileSdk {
-        version = release(stCompileSdk) {
-            minorApiLevel = 1
-        }
-    }
+
+    // Use the fetched variables
+    compileSdk = stCompileSdk
 
     defaultConfig {
         minSdk = stMinSdk
+
+        manifestPlaceholders["appAuthRedirectScheme"] = "stblesensor"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -47,7 +48,6 @@ android {
     }
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
@@ -124,11 +124,16 @@ dependencies {
     // Test
     //testApi(libs.junit.core)
 
-    //Vico Chart
+    // Vico Chart
+    implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
 
     // Dependency required for API desugaring.
-    coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
 
     debugImplementation(libs.androidx.compose.uitestmanifest)
+
+    // Test
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.bundles.test)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }
