@@ -32,34 +32,132 @@ class BoardSdLoggingTransportImpl @Inject constructor(
         val componentName = root.keys().next()
         val componentObject = root.optJSONObject(componentName)
             ?: throw IllegalArgumentException(
-                "PnPL json must be like {'component':{'field':value}}"
+                "PnPL json must be like {\"component\":{\"field\":value}}"
             )
 
-        val fields = mutableMapOf<String, Any>()
-
-        val fieldIterator = componentObject.keys()
-        while (fieldIterator.hasNext()) {
-            val fieldName = fieldIterator.next()
-            val rawValue = componentObject.get(fieldName)
-            fields[fieldName] = jsonValueToKotlin(rawValue)
-        }
-
-        Log.d(
-            TAG,
-            "Writing PnPL change nodeId=$nodeId component=$componentName fields=$fields"
+        val pnplCmd = buildPnplCmd(
+            componentName = componentName,
+            componentObject = componentObject
         )
+
+        Log.d(TAG, "Writing PnPL nodeId=$nodeId cmd=$pnplCmd")
 
         blueManager.writeFeatureCommand(
             responseTimeout = 0,
             nodeId = nodeId,
             featureCommand = PnPLCommand(
                 feature = feature,
-                cmd = PnPLCmd(
-                    command = componentName,
-                    fields = fields
-                )
+                cmd = pnplCmd
             )
         )
+    }
+
+    private fun buildPnplCmd(
+        componentName: String,
+        componentObject: JSONObject
+    ): PnPLCmd {
+        return if (componentName == "log_controller") {
+            buildLogControllerCmd(componentName, componentObject)
+        } else {
+            buildPropertySetCmd(componentName, componentObject)
+        }
+    }
+
+    private fun buildPropertySetCmd(
+        componentName: String,
+        componentObject: JSONObject
+    ): PnPLCmd {
+        val fields = extractFields(componentObject)
+
+        Log.d(
+            TAG,
+            "Property SET component=$componentName fields=$fields"
+        )
+
+        return PnPLCmd(
+            command = componentName,
+            fields = fields
+        )
+    }
+
+    private fun buildLogControllerCmd(
+        componentName: String,
+        componentObject: JSONObject
+    ): PnPLCmd {
+        val keys = mutableListOf<String>()
+        val it = componentObject.keys()
+        while (it.hasNext()) {
+            keys += it.next()
+        }
+
+        if (keys.isEmpty()) {
+            throw IllegalArgumentException("log_controller command is empty")
+        }
+
+        val entryName = keys.first()
+        val rawValue = componentObject.get(entryName)
+
+        return when {
+            entryName == "start_log" && rawValue is Boolean && rawValue -> {
+                Log.d(TAG, "COMMAND component=log_controller command=start_log")
+                PnPLCmd(
+                    component = componentName,
+                    command = "start_log"
+                )
+            }
+
+            entryName == "start_log" && rawValue is Boolean && !rawValue -> {
+                Log.d(TAG, "COMMAND component=log_controller command=stop_log")
+                PnPLCmd(
+                    component = componentName,
+                    command = "stop_log"
+                )
+            }
+
+            entryName == "stop_log" && rawValue is Boolean && rawValue -> {
+                Log.d(TAG, "COMMAND component=log_controller command=stop_log")
+                PnPLCmd(
+                    component = componentName,
+                    command = "stop_log"
+                )
+            }
+
+            rawValue is JSONObject -> {
+                val commandFields = extractFields(rawValue)
+
+                Log.d(
+                    TAG,
+                    "COMMAND component=$componentName command=$entryName fields=$commandFields"
+                )
+
+                PnPLCmd(
+                    component = componentName,
+                    command = entryName,
+                    fields = commandFields
+                )
+            }
+
+            else -> {
+                Log.d(TAG, "COMMAND component=$componentName command=$entryName")
+                PnPLCmd(
+                    component = componentName,
+                    command = entryName
+                )
+            }
+        }
+    }
+
+    private fun extractFields(obj: JSONObject): Map<String, Any> {
+        val fields = linkedMapOf<String, Any>()
+        val fieldIterator = obj.keys()
+
+        while (fieldIterator.hasNext()) {
+            val fieldName = fieldIterator.next()
+            val rawValue = obj.get(fieldName)
+            fields[fieldName] = jsonValueToKotlin(rawValue)
+        }
+
+        return fields
     }
 
     private fun jsonValueToKotlin(value: Any): Any {
