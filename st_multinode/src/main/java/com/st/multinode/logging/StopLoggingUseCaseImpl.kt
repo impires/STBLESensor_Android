@@ -2,27 +2,21 @@ package com.st.multinode.logging
 
 import android.util.Log
 import javax.inject.Inject
-import kotlinx.coroutines.delay
 
 class StopLoggingUseCaseImpl @Inject constructor(
-    private val boardSdLoggingTransport: BoardSdLoggingTransport
+    private val officialSdLogEngine: OfficialSdLogEngine
 ) : StopLoggingUseCase {
 
     override suspend fun stop(nodeId: String): Result<Unit> {
-        return try {
-            val stopResult = boardSdLoggingTransport.stopSdLogging(nodeId)
-            if (stopResult.isFailure) {
-                return stopResult
-            }
+        val result = officialSdLogEngine.stop(nodeId)
 
-            delay(3000)
-
-            Log.d(TAG, "Board SD logging stopped for nodeId=$nodeId")
-            Result.success(Unit)
-        } catch (t: Throwable) {
-            Log.e(TAG, "Board SD logging stop failed for nodeId=$nodeId", t)
-            Result.failure(t)
+        if (result.isFailure) {
+            Log.e(TAG, "Stop failed for nodeId=$nodeId", result.exceptionOrNull())
+        } else {
+            Log.d(TAG, "Stop succeeded for nodeId=$nodeId")
         }
+
+        return result
     }
 
     companion object {

@@ -1,41 +1,22 @@
 package com.st.multinode.logging
 
 import android.util.Log
-import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 class StartLoggingUseCaseImpl @Inject constructor(
-    private val boardSdLoggingTransport: BoardSdLoggingTransport
+    private val officialSdLogEngine: OfficialSdLogEngine
 ) : StartLoggingUseCase {
 
     override suspend fun start(nodeId: String): Result<Unit> {
-        return try {
-            val enableResult = boardSdLoggingTransport.setProperty(
-                nodeId = nodeId,
-                component = "stts22h_temp",
-                fields = mapOf(
-                    "enable" to true,
-                    "odr" to 1
-                )
-            )
+        val result = officialSdLogEngine.start(nodeId)
 
-            if (enableResult.isFailure) {
-                return enableResult
-            }
-
-            delay(500)
-
-            val startResult = boardSdLoggingTransport.startSdLogging(nodeId)
-            if (startResult.isFailure) {
-                return startResult
-            }
-
-            Log.d(TAG, "Board SD logging started for nodeId=$nodeId")
-            Result.success(Unit)
-        } catch (t: Throwable) {
-            Log.e(TAG, "Board SD logging start failed for nodeId=$nodeId", t)
-            Result.failure(t)
+        if (result.isFailure) {
+            Log.e(TAG, "Start failed for nodeId=$nodeId", result.exceptionOrNull())
+        } else {
+            Log.d(TAG, "Start succeeded for nodeId=$nodeId")
         }
+
+        return result
     }
 
     companion object {

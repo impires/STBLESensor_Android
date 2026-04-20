@@ -11,11 +11,13 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.st.blue_sdk.BlueManager
 import com.st.multinode.data.MultiNodeRepository
+import com.st.multinode.logging.OfficialSdLogEngine
 import com.st.multinode.logging.StartLoggingUseCase
 import com.st.multinode.logging.StopLoggingUseCase
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,18 +26,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MultiNodeAcquisitionService : Service() {
-
-    @Inject
-    lateinit var blueManager: BlueManager
 
     @Inject
     lateinit var repository: MultiNodeRepository
@@ -46,10 +42,12 @@ class MultiNodeAcquisitionService : Service() {
     @Inject
     lateinit var stopLoggingUseCase: StopLoggingUseCase
 
+    @Inject
+    lateinit var officialSdLogEngine: OfficialSdLogEngine
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val nodeJobs = ConcurrentHashMap<String, Job>()
-    private val featureJobs = ConcurrentHashMap<String, Job>()
     private val activeLoggingNodes = ConcurrentHashMap.newKeySet<String>()
     private val prepareSemaphore = Semaphore(2)
 
@@ -160,32 +158,18 @@ class MultiNodeAcquisitionService : Service() {
                     }
                 }
 
-                val streamResult = startFeatureStreaming(nodeId)
-                Log.d(TAG, "startFeatureStreaming for $nodeId: $streamResult")
-
-                if (streamResult.isFailure) {
-                    repository.markLogging(nodeId, false)
-                    repository.markError(
-                        nodeId = nodeId,
-                        message = streamResult.exceptionOrNull()?.message ?: "No features available"
-                    )
-                    repository.disconnect(nodeId)
-                    return@launch
-                }
-
-                delay(1000L)
+                delay(2000L)
 
                 val startResult = startLoggingUseCase.start(nodeId)
                 Log.d(TAG, "startLoggingUseCase.start for $nodeId: $startResult")
 
                 if (startResult.isFailure) {
-                    stopFeatureStreaming(nodeId)
                     repository.markLogging(nodeId, false)
                     repository.markError(
                         nodeId = nodeId,
                         message = startResult.exceptionOrNull()?.message ?: "Start failed"
                     )
-                    repository.disconnect(nodeId)
+                    Log.e(TAG, "Start failed for $nodeId, keeping connection open for debugging", startResult.exceptionOrNull())
                     return@launch
                 }
 
@@ -199,12 +183,12 @@ class MultiNodeAcquisitionService : Service() {
                 throw cancelled
             } catch (t: Throwable) {
                 Log.e(TAG, "Unexpected acquisition error for $nodeId", t)
-                stopFeatureStreaming(nodeId)
                 repository.markLogging(nodeId, false)
                 repository.markError(
                     nodeId = nodeId,
                     message = t.message ?: "Unexpected acquisition error"
                 )
+                officialSdLogEngine.release(nodeId)
                 repository.disconnect(nodeId)
             } finally {
                 nodeJobs.remove(nodeId)
@@ -215,48 +199,6 @@ class MultiNodeAcquisitionService : Service() {
 
         nodeJobs[nodeId] = job
         updateNotification()
-    }
-
-    private suspend fun startFeatureStreaming(nodeId: String): Result<Unit> {
-        if (featureJobs[nodeId]?.isActive == true) {
-            return Result.success(Unit)
-        }
-
-        val features = blueManager.nodeFeatures(nodeId)
-        Log.d(TAG, "nodeFeatures for $nodeId -> count=${features.size}")
-
-        if (features.isEmpty()) {
-            return Result.failure(
-                IllegalStateException("No loggable features found for node $nodeId")
-            )
-        }
-
-        val featureJob = serviceScope.launch {
-            blueManager.getFeatureUpdates(
-                nodeId = nodeId,
-                features = features,
-                autoEnable = true
-            ).collect {
-                // manter vivo
-                // isto ativa as features na board e deixa os sensores a produzir dados
-            }
-        }
-
-        featureJobs[nodeId] = featureJob
-        return Result.success(Unit)
-    }
-
-    private suspend fun stopFeatureStreaming(nodeId: String) {
-        featureJobs.remove(nodeId)?.cancelAndJoin()
-
-        runCatching {
-            val features = blueManager.nodeFeatures(nodeId)
-            if (features.isNotEmpty()) {
-                blueManager.disableFeatures(nodeId, features)
-            }
-        }.onFailure {
-            Log.e(TAG, "disableFeatures failed for $nodeId", it)
-        }
     }
 
     private suspend fun stopManagedLogging(nodeId: String) {
@@ -274,12 +216,12 @@ class MultiNodeAcquisitionService : Service() {
             )
         }
 
-        delay(3000L)
-
-        stopFeatureStreaming(nodeId)
+        delay(2000L)
 
         repository.markLogging(nodeId, false)
         activeLoggingNodes.remove(nodeId)
+
+        officialSdLogEngine.release(nodeId)
 
         val disconnectResult = repository.disconnect(nodeId)
         Log.d(TAG, "disconnectResult for $nodeId: $disconnectResult")
@@ -299,8 +241,7 @@ class MultiNodeAcquisitionService : Service() {
     private suspend fun stopAllManagedLogging() {
         val ids = (
                 activeLoggingNodes.toList() +
-                        nodeJobs.keys().toList() +
-                        featureJobs.keys().toList()
+                        nodeJobs.keys().toList()
                 ).distinct()
 
         ids.forEach { nodeId ->
@@ -309,7 +250,7 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     private fun maybeStopSelf() {
-        if (activeLoggingNodes.isEmpty() && nodeJobs.isEmpty() && featureJobs.isEmpty()) {
+        if (activeLoggingNodes.isEmpty() && nodeJobs.isEmpty()) {
             stopSelf()
         }
     }

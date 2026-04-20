@@ -17,7 +17,7 @@ class BoardSdLoggingTransportImpl @Inject constructor(
         return runCatching {
             val feature = requirePnpl(nodeId)
 
-            Log.d(TAG, "Sending START SD logging to $nodeId")
+            Log.d(TAG, "Sending START SD logging to $nodeId with interface=2")
 
             blueManager.writeFeatureCommand(
                 responseTimeout = 0,
@@ -27,10 +27,14 @@ class BoardSdLoggingTransportImpl @Inject constructor(
                     cmd = PnPLCmd(
                         component = "log_controller",
                         command = "start_log",
-                        fields = mapOf("interface" to 0)
+                        fields = mapOf("interface" to 2)
                     )
                 )
             )
+
+            Unit
+        }.onFailure {
+            Log.e(TAG, "startSdLogging failed for nodeId=$nodeId", it)
         }
     }
 
@@ -38,7 +42,7 @@ class BoardSdLoggingTransportImpl @Inject constructor(
         return runCatching {
             val feature = requirePnpl(nodeId)
 
-            Log.d(TAG, "Sending STOP SD logging to $nodeId")
+            Log.d(TAG, "Sending STOP SD logging to $nodeId with interface=2")
 
             blueManager.writeFeatureCommand(
                 responseTimeout = 0,
@@ -48,10 +52,14 @@ class BoardSdLoggingTransportImpl @Inject constructor(
                     cmd = PnPLCmd(
                         component = "log_controller",
                         command = "stop_log",
-                        fields = mapOf("interface" to 0)
+                        fields = mapOf("interface" to 2)
                     )
                 )
             )
+
+            Unit
+        }.onFailure {
+            Log.e(TAG, "stopSdLogging failed for nodeId=$nodeId", it)
         }
     }
 
@@ -76,6 +84,10 @@ class BoardSdLoggingTransportImpl @Inject constructor(
                     )
                 )
             )
+
+            Unit
+        }.onFailure {
+            Log.e(TAG, "setProperty failed for nodeId=$nodeId component=$component", it)
         }
     }
 
