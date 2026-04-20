@@ -55,9 +55,9 @@ subprojects {
                 if (requested.group == "org.jetbrains.kotlin" && requested.name == "kotlin-metadata-jvm") {
                     useVersion("2.3.20")
                 }
-                if (requested.group == "androidx.room") {
-                    useVersion("2.6.1")
-                }
+//                if (requested.group == "androidx.room") {
+//                    useVersion("2.6.1")
+//                }
             }
             force("com.squareup:javapoet:1.13.0")
         }

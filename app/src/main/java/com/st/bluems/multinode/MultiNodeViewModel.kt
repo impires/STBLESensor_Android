@@ -6,16 +6,20 @@ import com.st.bluems.StartLoggingUseCase
 import com.st.bluems.StopLoggingUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 @HiltViewModel
 class MultiNodeViewModel @Inject constructor(
     private val repository: MultiNodeRepository,
-    private val startLoggingUseCase: StartLoggingUseCase,
-    private val stopLoggingUseCase: StopLoggingUseCase
+    private val acquisitionServiceController: AcquisitionServiceController
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MultiNodeUiState())
@@ -23,10 +27,10 @@ class MultiNodeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            repository.discoveredNodes().collect { nodes ->
-                _uiState.value = _uiState.value.copy(
-                    discovered = mergeNodesKeepingLocalState(nodes)
-                )
+            repository.managedNodes().collect { nodes ->
+                _uiState.update { current ->
+                    current.copy(discovered = nodes)
+                }
             }
         }
     }
@@ -36,234 +40,125 @@ class MultiNodeViewModel @Inject constructor(
     }
 
     fun addOrUpdateDiscoveredNode(node: ManagedNode) {
-        val current = _uiState.value.discovered.toMutableList()
-        val index = current.indexOfFirst { it.id == node.id || it.mac == node.mac }
-
-        if (index >= 0) {
-            val oldNode = current[index]
-            current[index] = node.copy(
-                isSelected = oldNode.isSelected,
-                isConnected = oldNode.isConnected,
-                isReady = oldNode.isReady,
-                isLogging = oldNode.isLogging,
-                error = node.error ?: oldNode.error
-            )
-        } else {
-            current.add(node)
-        }
-
-        repository.updateDiscoveredNodes(current)
+        repository.upsertDiscoveredNode(node)
     }
 
     fun toggleNodeSelection(nodeId: String) {
-        val state = _uiState.value
-        val nodes = state.discovered
-        val node = nodes.firstOrNull { it.id == nodeId } ?: return
-
-        val selectedCount = nodes.count { it.isSelected }
-
-        if (!node.isSelected && selectedCount >= 4) {
-            return
-        }
-
-        val updated = nodes.map {
-            if (it.id == nodeId) {
-                it.copy(isSelected = !it.isSelected)
-            } else {
-                it
-            }
-        }
-
-        _uiState.value = state.copy(discovered = updated)
+        repository.toggleSelection(nodeId = nodeId, maxSelected = 4)
     }
 
-    fun prepareSelected() {
-        val nodesToPrepare = _uiState.value.discovered.filter { it.isSelected }
-        if (nodesToPrepare.isEmpty()) return
+    fun clearAllSelections() {
+        repository.clearSelection()
+    }
+
+    fun prepareSelected(
+        enableServer: Boolean = false,
+        maxPayloadSize: Int = 248,
+        maxConnectionRetries: Int = 3
+    ) {
+        val selectedNodeIds = _uiState.value.discovered
+            .filter { it.isSelected }
+            .map { it.id }
+
+        if (selectedNodeIds.isEmpty()) return
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isConnecting = true)
+            _uiState.update { it.copy(isConnecting = true) }
 
-            nodesToPrepare.forEach { node ->
-                updateNode(node.id) {
-                    it.copy(
-                        error = null,
-                        isConnected = false,
-                        isReady = false
-                    )
-                }
+            val semaphore = Semaphore(2)
 
-                val readyResult = repository.markReady(node.id)
-
-                if (readyResult.isSuccess) {
-                    updateNode(node.id) {
-                        it.copy(
-                            isConnected = true,
-                            isReady = true,
-                            error = null
-                        )
+            coroutineScope {
+                selectedNodeIds.map { nodeId ->
+                    launch {
+                        semaphore.withPermit {
+                            val result = repository.connectAndAwaitReady(
+                                nodeId = nodeId,
+                                maxConnectionRetries = maxConnectionRetries,
+                                maxPayloadSize = maxPayloadSize,
+                                enableServer = enableServer
+                            )
+                            if (result.isFailure) {
+                                repository.markError(
+                                    nodeId = nodeId,
+                                    message = result.exceptionOrNull()?.message ?: "Node not ready"
+                                )
+                            }
+                        }
                     }
-                } else {
-                    updateNode(node.id) {
-                        it.copy(
-                            isConnected = false,
-                            isReady = false,
-                            error = readyResult.exceptionOrNull()?.message ?: "Node not ready"
-                        )
-                    }
-                }
+                }.joinAll()
             }
 
-            _uiState.value = _uiState.value.copy(isConnecting = false)
+            _uiState.update { it.copy(isConnecting = false) }
         }
     }
 
     fun disconnectSelected() {
-        val nodesToDisconnect = _uiState.value.discovered.filter { it.isSelected && it.isConnected }
-        if (nodesToDisconnect.isEmpty()) return
+        val selectedNodes = _uiState.value.discovered.filter { it.isSelected }
+        if (selectedNodes.isEmpty()) return
+
+        val serviceOwned = selectedNodes
+            .filter { it.isLogging }
+            .map { it.id }
+
+        val plainDisconnect = selectedNodes
+            .filter { !it.isLogging && (it.isConnected || it.isReady) }
+            .map { it.id }
 
         viewModelScope.launch {
-            nodesToDisconnect.forEach { node ->
-                val result = repository.disconnect(node.id)
+            if (serviceOwned.isNotEmpty()) {
+                acquisitionServiceController.stopLogging(serviceOwned)
+            }
 
-                if (result.isSuccess) {
-                    updateNode(node.id) {
-                        it.copy(
-                            isConnected = false,
-                            isReady = false,
-                            isLogging = false,
-                            error = null
-                        )
-                    }
-                } else {
-                    updateNode(node.id) {
-                        it.copy(
-                            error = result.exceptionOrNull()?.message ?: "Disconnect failed"
-                        )
-                    }
+            plainDisconnect.forEach { nodeId ->
+                val result = repository.disconnect(nodeId)
+                if (result.isFailure) {
+                    repository.markError(
+                        nodeId = nodeId,
+                        message = result.exceptionOrNull()?.message ?: "Disconnect failed"
+                    )
                 }
             }
         }
     }
 
-    fun markNodeConnected(nodeId: String, connected: Boolean) {
-        updateNode(nodeId) {
-            it.copy(
-                isConnected = connected,
-                isReady = if (!connected) false else it.isReady,
-                error = if (connected) null else it.error
-            )
-        }
-    }
+    fun startAll(
+        enableServer: Boolean = false,
+        maxPayloadSize: Int = 248,
+        maxConnectionRetries: Int = 3
+    ) {
+        val nodesToStart = _uiState.value.discovered
+            .filter { it.isSelected && !it.isLogging }
 
-    fun markNodeReady(nodeId: String, ready: Boolean) {
-        updateNode(nodeId) {
-            it.copy(
-                isReady = ready,
-                error = if (ready) null else it.error
-            )
-        }
-    }
-
-    fun markNodeError(nodeId: String, message: String) {
-        updateNode(nodeId) {
-            it.copy(error = message)
-        }
-    }
-
-    fun clearNodeError(nodeId: String) {
-        updateNode(nodeId) {
-            it.copy(error = null)
-        }
-    }
-
-    fun startAll() {
-        val nodesToStart = _uiState.value.discovered.filter { it.isSelected && it.isReady }
         if (nodesToStart.isEmpty()) return
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isStartingAll = true)
+            _uiState.update { it.copy(isStartingAll = true) }
 
-            nodesToStart.forEach { node ->
-                val result = startLoggingUseCase.start(node.id)
-                if (result.isSuccess) {
-                    updateNode(node.id) {
-                        it.copy(
-                            isLogging = true,
-                            error = null
-                        )
-                    }
-                } else {
-                    updateNode(node.id) {
-                        it.copy(
-                            isLogging = false,
-                            error = result.exceptionOrNull()?.message ?: "Start failed"
-                        )
-                    }
-                }
-            }
+            acquisitionServiceController.startLogging(
+                nodeIds = nodesToStart.map { it.id },
+                enableServer = enableServer,
+                maxPayloadSize = maxPayloadSize,
+                maxConnectionRetries = maxConnectionRetries
+            )
 
-            _uiState.value = _uiState.value.copy(isStartingAll = false)
+            _uiState.update { it.copy(isStartingAll = false) }
         }
     }
 
     fun stopAll() {
-        val nodesToStop = _uiState.value.discovered.filter { it.isSelected && it.isLogging }
+        val nodesToStop = _uiState.value.discovered
+            .filter { it.isSelected && (it.isLogging || it.isConnected || it.isReady) }
+
         if (nodesToStop.isEmpty()) return
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isStoppingAll = true)
+            _uiState.update { it.copy(isStoppingAll = true) }
 
-            nodesToStop.forEach { node ->
-                val result = stopLoggingUseCase.stop(node.id)
-                if (result.isSuccess) {
-                    updateNode(node.id) {
-                        it.copy(
-                            isLogging = false,
-                            error = null
-                        )
-                    }
-                } else {
-                    updateNode(node.id) {
-                        it.copy(
-                            error = result.exceptionOrNull()?.message ?: "Stop failed"
-                        )
-                    }
-                }
-            }
+            acquisitionServiceController.stopLogging(
+                nodeIds = nodesToStop.map { it.id }
+            )
 
-            _uiState.value = _uiState.value.copy(isStoppingAll = false)
-        }
-    }
-
-    fun clearAllSelections() {
-        val updated = _uiState.value.discovered.map { it.copy(isSelected = false) }
-        _uiState.value = _uiState.value.copy(discovered = updated)
-    }
-
-    private fun updateNode(nodeId: String, transform: (ManagedNode) -> ManagedNode) {
-        val updated = _uiState.value.discovered.map { node ->
-            if (node.id == nodeId) transform(node) else node
-        }
-        _uiState.value = _uiState.value.copy(discovered = updated)
-    }
-
-    private fun mergeNodesKeepingLocalState(newNodes: List<ManagedNode>): List<ManagedNode> {
-        val oldMap = _uiState.value.discovered.associateBy { it.id }
-
-        return newNodes.map { newNode ->
-            val oldNode = oldMap[newNode.id]
-            if (oldNode == null) {
-                newNode
-            } else {
-                newNode.copy(
-                    isSelected = oldNode.isSelected,
-                    isConnected = oldNode.isConnected,
-                    isReady = oldNode.isReady,
-                    isLogging = oldNode.isLogging,
-                    error = oldNode.error
-                )
-            }
+            _uiState.update { it.copy(isStoppingAll = false) }
         }
     }
 }
