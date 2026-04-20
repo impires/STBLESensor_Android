@@ -1,10 +1,11 @@
 package com.st.multinode
 
-import com.st.blue_sdk.di.LogDirectoryPath
+import android.content.Context
 import com.st.blue_sdk.features.Feature
 import com.st.blue_sdk.features.FeatureUpdate
 import com.st.blue_sdk.logger.Logger
 import com.st.blue_sdk.models.Node
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -17,8 +18,11 @@ import android.util.Log
 
 @Singleton
 class MultiNodeCsvFileLogger @Inject constructor(
-    @param:LogDirectoryPath private val logDirectoryPath: String,
+    @ApplicationContext private val context: Context
 ) : Logger {
+
+    private val logDirectoryPath: String
+        get() = File(context.getExternalFilesDir(null), "STMicroelectronics/logs").absolutePath
 
     companion object {
         const val TAG = "MultiNodeCsvFileLogger"
@@ -27,15 +31,19 @@ class MultiNodeCsvFileLogger @Inject constructor(
     }
 
     private val formatterMap = ConcurrentHashMap<String, Formatter>()
+    private val activeNodes = ConcurrentHashMap.newKeySet<String>()
     private var startLog = Date()
 
     override var isEnabled: Boolean = false
         set(value) {
             if (value) {
-                startLog = Date()
+                if (activeNodes.isEmpty()) {
+                    startLog = Date()
+                }
             } else {
                 formatterMap.values.forEach { it.close() }
                 formatterMap.clear()
+                activeNodes.clear()
             }
             field = value
         }
@@ -56,6 +64,8 @@ class MultiNodeCsvFileLogger @Inject constructor(
         update: FeatureUpdate<*>
     ): Boolean {
         if (!isEnabled) return false
+
+        activeNodes.add(safeNodeIdentity(node))
 
         Log.d(TAG, "log() called for node=${safeNodeLabel(node)} feature=${feature.name} value=${update.logValue}")
 

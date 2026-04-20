@@ -1,7 +1,7 @@
-package com.st.bluems
+package com.st.multinode.logging
 
 import com.st.blue_sdk.BlueManager
-import com.st.core.multinode.MultiNodeCsvFileLogger
+import com.st.multinode.MultiNodeCsvFileLogger
 import javax.inject.Inject
 
 class StopLoggingUseCaseImpl @Inject constructor(

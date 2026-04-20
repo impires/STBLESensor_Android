@@ -57,10 +57,6 @@ android {
     }
 }
 
-hilt {
-    enableAggregatingTask = true
-}
-
 dependencies {
     // Blue ST module:
     // - UI
@@ -132,8 +128,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(project(":app"))
-    //implementation(project(":app"))
+    implementation(project(":st_multinode"))
 
     ksp(libs.hilt.compiler)
 

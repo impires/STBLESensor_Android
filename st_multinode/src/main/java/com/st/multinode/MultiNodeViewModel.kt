@@ -2,8 +2,8 @@ package com.st.multinode
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.st.multinode.data.MultiNodeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +13,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import javax.inject.Inject
 
 @HiltViewModel
 class MultiNodeViewModel @Inject constructor(
@@ -35,10 +36,6 @@ class MultiNodeViewModel @Inject constructor(
 
     fun setDiscoveredNodes(nodes: List<ManagedNode>) {
         repository.updateDiscoveredNodes(nodes)
-    }
-
-    fun addOrUpdateDiscoveredNode(node: ManagedNode) {
-        repository.upsertDiscoveredNode(node)
     }
 
     fun toggleNodeSelection(nodeId: String) {

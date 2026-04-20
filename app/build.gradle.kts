@@ -131,6 +131,8 @@ dependencies {
     // - Login
     implementation(project(":st_login"))
 
+    implementation(project(":st_multinode"))
+
     // Blue ST SDK
     implementation(libs.st.sdk) {
         exclude(group = "androidx.room", module = "room-runtime")

@@ -25,7 +25,7 @@ import com.st.user_profiling.ProfileViewModel
 import com.st.user_profiling.composable.UserProfilingNavigationScreen
 import kotlinx.serialization.Serializable
 import kotlin.collections.removeLastOrNull
-import com.st.core.multinode.MultiNodeViewModel
+import com.st.multinode.MultiNodeViewModel
 
 @Composable
 fun HomeScreenNavigation(

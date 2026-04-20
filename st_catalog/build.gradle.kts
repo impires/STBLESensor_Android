@@ -57,10 +57,6 @@ android {
     }
 }
 
-hilt {
-    enableAggregatingTask = true
-}
-
 dependencies {
     // Blue ST module:
     // - Core

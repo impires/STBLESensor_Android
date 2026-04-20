@@ -1,5 +1,6 @@
-package com.st.multinode
+package com.st.multinode.data
 
+import com.st.multinode.ManagedNode
 import kotlinx.coroutines.flow.StateFlow
 
 interface MultiNodeRepository {
@@ -7,8 +8,6 @@ interface MultiNodeRepository {
     fun managedNodes(): StateFlow<List<ManagedNode>>
 
     fun updateDiscoveredNodes(nodes: List<ManagedNode>)
-
-    fun upsertDiscoveredNode(node: ManagedNode)
 
     fun toggleSelection(nodeId: String, maxSelected: Int = 4)
 

@@ -2,8 +2,6 @@ package com.st.multinode
 
 import com.st.blue_sdk.BlueManager
 import com.st.blue_sdk.models.NodeState
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,7 +19,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.Result.Companion.failure
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class NodeSessionManager @Inject constructor(
@@ -71,7 +70,7 @@ class NodeSessionManager @Inject constructor(
                     error = "Timeout waiting for node $nodeId to become ready"
                 )
             }
-            return failure(
+            return Result.failure(
                 IllegalStateException("Timeout waiting for node $nodeId to become ready")
             )
         }
@@ -80,7 +79,7 @@ class NodeSessionManager @Inject constructor(
             NodeSessionPhase.Ready,
             NodeSessionPhase.Logging -> Result.success(Unit)
 
-            else -> failure(
+            else -> Result.failure(
                 IllegalStateException(finalState.error ?: "Node $nodeId is not ready")
             )
         }
@@ -113,7 +112,7 @@ class NodeSessionManager @Inject constructor(
                     error = t.message ?: "Disconnect failed"
                 )
             }
-            failure(t)
+            Result.failure(t)
         }
     }
 

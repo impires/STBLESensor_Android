@@ -1,11 +1,7 @@
 package com.st.bluems.di
 
-import com.st.bluems.StartLoggingUseCase
-import com.st.bluems.StartLoggingUseCaseImpl
-import com.st.bluems.StopLoggingUseCase
-import com.st.bluems.StopLoggingUseCaseImpl
-import com.st.core.multinode.MultiNodeRepository
-import com.st.core.multinode.MultiNodeRepositoryImpl
+import com.st.bluems.AcquisitionServiceControllerImpl
+import com.st.multinode.AcquisitionServiceController
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -18,19 +14,7 @@ abstract class MultiNodeModule {
 
     @Binds
     @Singleton
-    abstract fun bindMultiNodeRepository(
-        impl: MultiNodeRepositoryImpl
-    ): MultiNodeRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindStartLoggingUseCase(
-        impl: StartLoggingUseCaseImpl
-    ): StartLoggingUseCase
-
-    @Binds
-    @Singleton
-    abstract fun bindStopLoggingUseCase(
-        impl: StopLoggingUseCaseImpl
-    ): StopLoggingUseCase
+    abstract fun bindAcquisitionServiceController(
+        impl: AcquisitionServiceControllerImpl
+    ): AcquisitionServiceController
 }

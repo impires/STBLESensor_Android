@@ -1,28 +1,27 @@
 plugins {
-    alias(libs.plugins.androidApplication)
-    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.androidLibrary)
     alias(libs.plugins.arturboschDetekt)
-    //alias(libs.plugins.googleHilt)
+    alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.devtoolsKsp)
+    alias(libs.plugins.googleHilt)
     alias(libs.plugins.jaredsburrowsLicense)
 }
 
+val stCompileSdk: Int = (rootProject.findProperty("stCompileSdk") as String).toInt()
+val stMinSdk: Int = (rootProject.findProperty("stMinSdk") as String).toInt()
+
 android {
-    namespace = "com.example.st_multinode"
-    compileSdk {
-        version = release(36)
-    }
+    namespace = "com.st.multinode"
+    // Use the fetched variables
+    compileSdk = stCompileSdk
 
     defaultConfig {
-        applicationId = "com.example.st_multinode"
-        minSdk = 24
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        minSdk = stMinSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["appAuthRedirectScheme"] = "stblesensor"
     }
 
     buildTypes {
@@ -34,12 +33,14 @@ android {
             )
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+
+    buildFeatures {
+        compose = true
     }
-    kotlinOptions {
-        jvmTarget = "11"
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }
 
@@ -48,8 +49,12 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.material)
     implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
     implementation(libs.st.sdk)
-    implementation(libs.hilt.android)
+    implementation(project(":st_core"))
+
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.bundles.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)

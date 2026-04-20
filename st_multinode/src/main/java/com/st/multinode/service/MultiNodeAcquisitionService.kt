@@ -1,22 +1,22 @@
-package com.st.multinode
+package com.st.multinode.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.st.bluems.MainActivity
-import com.st.bluems.R
-import com.st.bluems.StartLoggingUseCase
-import com.st.bluems.StopLoggingUseCase
+import com.st.blue_sdk.BlueManager
+import com.st.multinode.logging.StartLoggingUseCase
+import com.st.multinode.logging.StopLoggingUseCase
+import com.st.multinode.data.MultiNodeRepository
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +27,8 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import com.st.blue_sdk.BlueManager
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MultiNodeAcquisitionService : Service() {
@@ -72,6 +73,7 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d("MultiNodeAcquisition", "onStartCommand action=${intent?.action}")
         when (intent?.action) {
             ACTION_START_LOGGING -> {
                 val nodeIds = intent.getStringArrayListExtra(EXTRA_NODE_IDS).orEmpty()
@@ -130,6 +132,7 @@ class MultiNodeAcquisitionService : Service() {
         maxPayloadSize: Int,
         maxConnectionRetries: Int
     ) {
+        Log.d("MultiNodeAcquisition", "startManagedLogging nodeId=$nodeId")
         if (activeLoggingNodes.contains(nodeId)) return
         if (nodeJobs[nodeId]?.isActive == true) return
 
@@ -145,6 +148,8 @@ class MultiNodeAcquisitionService : Service() {
                         enableServer = enableServer
                     )
 
+                    Log.d("MultiNodeAcquisition", "prepareResult for $nodeId: $prepareResult")
+
                     if (prepareResult.isFailure) {
                         repository.markError(
                             nodeId = nodeId,
@@ -155,6 +160,7 @@ class MultiNodeAcquisitionService : Service() {
                 }
 
                 val startResult = startLoggingUseCase.start(nodeId)
+                Log.d("MultiNodeAcquisition", "startLoggingUseCase.start for $nodeId: $startResult")
                 if (startResult.isFailure) {
                     repository.markLogging(nodeId, false)
                     repository.markError(
@@ -166,6 +172,7 @@ class MultiNodeAcquisitionService : Service() {
                 }
 
                 val streamResult = startFeatureStreaming(nodeId)
+                Log.d("MultiNodeAcquisition", "startFeatureStreaming for $nodeId: $streamResult")
                 if (streamResult.isFailure) {
                     stopLoggingUseCase.stop(nodeId)
                     repository.markLogging(nodeId, false)
@@ -340,13 +347,13 @@ class MultiNodeAcquisitionService : Service() {
         .setContentText(text)
         .setOngoing(true)
         .setOnlyAlertOnce(true)
-        .setSmallIcon(R.mipmap.ic_launcher)
+        .setSmallIcon(android.R.drawable.stat_sys_download)
         .setContentIntent(mainPendingIntent())
         .build()
 
     private fun mainPendingIntent(): PendingIntent {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            Intent.setFlags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
         return PendingIntent.getActivity(

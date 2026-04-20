@@ -1,5 +1,9 @@
-package com.st.multinode
+package com.st.multinode.data
 
+import com.st.multinode.ManagedNode
+import com.st.multinode.NodeSessionManager
+import com.st.multinode.NodeSessionPhase
+import com.st.multinode.NodeSessionState
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -55,7 +59,7 @@ class MultiNodeRepositoryImpl @Inject constructor(
             val keepNode =
                 oldNode.isSelected ||
                         oldNode.isLogging ||
-                        session?.phase in activePhases
+                        activePhases.contains(session?.phase)
 
             if (keepNode) {
                 merged.putIfAbsent(keyOf(oldNode), oldNode)
@@ -63,24 +67,6 @@ class MultiNodeRepositoryImpl @Inject constructor(
         }
 
         _discoveredNodes.value = merged.values.toList()
-    }
-
-    override fun upsertDiscoveredNode(node: ManagedNode) {
-        val previous = _discoveredNodes.value.toMutableList()
-        val index = previous.indexOfFirst { sameNode(it, node) }
-
-        if (index >= 0) {
-            val oldNode = previous[index]
-            previous[index] = node.copy(
-                isSelected = oldNode.isSelected,
-                isLogging = oldNode.isLogging,
-                error = oldNode.error
-            )
-        } else {
-            previous.add(node)
-        }
-
-        _discoveredNodes.value = previous
     }
 
     override fun toggleSelection(nodeId: String, maxSelected: Int) {

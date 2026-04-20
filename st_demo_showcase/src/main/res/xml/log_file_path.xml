@@ -35,7 +35,7 @@
   ~ OF SUCH DAMAGE.
   -->
 <paths>
-    <external-path
+    <external-files-path
         name="BlueSTSDK_logs"
-        path="Download/STMicroelectronics/logs/" />
+        path="STMicroelectronics/logs/" />
 </paths>
