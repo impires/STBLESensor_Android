@@ -1,4 +1,4 @@
-package com.st.bluems.multinode
+package com.st.core.multinode
 
 import kotlinx.coroutines.flow.StateFlow
 

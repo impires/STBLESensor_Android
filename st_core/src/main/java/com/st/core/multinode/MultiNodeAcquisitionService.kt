@@ -1,10 +1,9 @@
-package com.st.bluems.multinode
+package com.st.core.multinode
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
@@ -28,9 +27,15 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import com.st.blue_sdk.BlueManager
 
 @AndroidEntryPoint
 class MultiNodeAcquisitionService : Service() {
+
+    @Inject
+    lateinit var blueManager: BlueManager
+
+    private val featureJobs = ConcurrentHashMap<String, Job>()
 
     @Inject
     lateinit var repository: MultiNodeRepository
@@ -54,7 +59,7 @@ class MultiNodeAcquisitionService : Service() {
         super.onCreate()
 
         notificationManager = NotificationManagerCompat.from(this)
-        powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        powerManager = getSystemService(POWER_SERVICE) as PowerManager
 
         createNotificationChannel()
         startForeground(
@@ -143,31 +148,43 @@ class MultiNodeAcquisitionService : Service() {
                     if (prepareResult.isFailure) {
                         repository.markError(
                             nodeId = nodeId,
-                            message = prepareResult.exceptionOrNull()?.message
-                                ?: "Connection failed"
+                            message = prepareResult.exceptionOrNull()?.message ?: "Connection failed"
                         )
                         return@launch
                     }
                 }
 
                 val startResult = startLoggingUseCase.start(nodeId)
-
-                if (startResult.isSuccess) {
-                    activeLoggingNodes.add(nodeId)
-                    repository.markLogging(nodeId, true)
-                    repository.markError(nodeId, null)
-                    acquireWakeLockIfNeeded()
-                } else {
+                if (startResult.isFailure) {
                     repository.markLogging(nodeId, false)
                     repository.markError(
                         nodeId = nodeId,
                         message = startResult.exceptionOrNull()?.message ?: "Start failed"
                     )
                     repository.disconnect(nodeId)
+                    return@launch
                 }
+
+                val streamResult = startFeatureStreaming(nodeId)
+                if (streamResult.isFailure) {
+                    stopLoggingUseCase.stop(nodeId)
+                    repository.markLogging(nodeId, false)
+                    repository.markError(
+                        nodeId = nodeId,
+                        message = streamResult.exceptionOrNull()?.message ?: "No features available"
+                    )
+                    repository.disconnect(nodeId)
+                    return@launch
+                }
+
+                activeLoggingNodes.add(nodeId)
+                repository.markLogging(nodeId, true)
+                repository.markError(nodeId, null)
+                acquireWakeLockIfNeeded()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (t: Throwable) {
+                stopFeatureStreaming(nodeId)
                 repository.markLogging(nodeId, false)
                 repository.markError(
                     nodeId = nodeId,
@@ -185,8 +202,48 @@ class MultiNodeAcquisitionService : Service() {
         updateNotification()
     }
 
+    private suspend fun startFeatureStreaming(nodeId: String): Result<Unit> {
+        if (featureJobs[nodeId]?.isActive == true) {
+            return Result.success(Unit)
+        }
+
+        val features = blueManager.nodeFeatures(nodeId)
+        if (features.isEmpty()) {
+            return Result.failure(
+                IllegalStateException("No loggable features found for node $nodeId")
+            )
+        }
+
+        val featureJob = serviceScope.launch {
+            blueManager.getFeatureUpdates(
+                nodeId = nodeId,
+                features = features,
+                autoEnable = true
+            ).collect {
+                // Intentionally empty.
+                // BlueST SDK forwards each FeatureUpdate to enabled loggers internally.
+            }
+        }
+
+        featureJobs[nodeId] = featureJob
+        return Result.success(Unit)
+    }
+
+    private suspend fun stopFeatureStreaming(nodeId: String) {
+        featureJobs.remove(nodeId)?.cancelAndJoin()
+
+        runCatching {
+            val features = blueManager.nodeFeatures(nodeId)
+            if (features.isNotEmpty()) {
+                blueManager.disableFeatures(nodeId, features)
+            }
+        }
+    }
+
     private suspend fun stopManagedLogging(nodeId: String) {
         nodeJobs.remove(nodeId)?.cancelAndJoin()
+
+        stopFeatureStreaming(nodeId)
 
         val stopResult = stopLoggingUseCase.stop(nodeId)
         if (stopResult.isFailure) {
@@ -213,7 +270,9 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     private suspend fun stopAllManagedLogging() {
-        val ids = (activeLoggingNodes.toList() + nodeJobs.keys().toList()).distinct()
+        val ids = (activeLoggingNodes.toList() + nodeJobs.keys().toList() + featureJobs.keys().toList())
+            .distinct()
+
         ids.forEach { nodeId ->
             stopManagedLogging(nodeId)
         }
@@ -287,7 +346,7 @@ class MultiNodeAcquisitionService : Service() {
 
     private fun mainPendingIntent(): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            Intent.setFlags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
         return PendingIntent.getActivity(
@@ -309,7 +368,7 @@ class MultiNodeAcquisitionService : Service() {
             description = "Keeps BLE acquisition alive during screen lock"
         }
 
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(channel)
     }
 

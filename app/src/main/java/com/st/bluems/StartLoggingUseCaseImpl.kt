@@ -1,7 +1,7 @@
 package com.st.bluems
 
 import com.st.blue_sdk.BlueManager
-import com.st.blue_sdk.logger.CsvFileLogger
+import com.st.core.multinode.MultiNodeCsvFileLogger
 import javax.inject.Inject
 
 class StartLoggingUseCaseImpl @Inject constructor(
@@ -12,7 +12,7 @@ class StartLoggingUseCaseImpl @Inject constructor(
         return try {
             blueManager.enableAllLoggers(
                 nodeId = nodeId,
-                loggerTags = listOf(CsvFileLogger.TAG)
+                loggerTags = listOf(MultiNodeCsvFileLogger.TAG)
             )
             Result.success(Unit)
         } catch (t: Throwable) {

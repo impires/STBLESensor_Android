@@ -59,9 +59,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.runtime.LaunchedEffect
-import com.st.bluems.multinode.ManagedNode
-import com.st.bluems.multinode.MultiNodeViewModel
-import com.st.bluems.multinode.MultiNodeScreen
+import com.st.core.multinode.ManagedNode
+import com.st.core.multinode.MultiNodeViewModel
+import com.st.core.multinode.MultiNodeScreen
 
 
 @Composable

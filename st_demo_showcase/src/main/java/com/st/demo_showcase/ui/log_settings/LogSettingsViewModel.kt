@@ -17,7 +17,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import com.st.blue_sdk.BlueManager
 import com.st.blue_sdk.di.LogDirectoryPath
-import com.st.blue_sdk.logger.CsvFileLogger
+import com.st.core.multinode.MultiNodeCsvFileLogger
 import com.st.blue_sdk.logger.LogCatLogger
 import com.st.blue_sdk.logger.db_logger.DbLogger
 import com.st.demo_showcase.R
@@ -70,7 +70,7 @@ class LogSettingsViewModel @Inject constructor(
 
     private fun isCsvLoggerEnabled(nodeId: String): Boolean =
         blueManager.getAllLoggers(nodeId = nodeId)
-            .find { it.id == CsvFileLogger.TAG && it.isEnabled } != null
+            .find { it.id == MultiNodeCsvFileLogger.TAG && it.isEnabled } != null
 
     private fun isDbLoggerEnabled(nodeId: String): Boolean =
         blueManager.getAllLoggers(nodeId = nodeId)
@@ -95,9 +95,15 @@ class LogSettingsViewModel @Inject constructor(
 
     private fun enableDisableCsvLogger(nodeId: String, newState: Boolean) {
         if (newState) {
-            blueManager.enableAllLoggers(nodeId = nodeId, loggerTags = listOf(CsvFileLogger.TAG))
+            blueManager.enableAllLoggers(
+                nodeId = nodeId,
+                loggerTags = listOf(MultiNodeCsvFileLogger.TAG)
+            )
         } else {
-            blueManager.disableAllLoggers(nodeId = nodeId, loggerTags = listOf(CsvFileLogger.TAG))
+            blueManager.disableAllLoggers(
+                nodeId = nodeId,
+                loggerTags = listOf(MultiNodeCsvFileLogger.TAG)
+            )
         }
     }
 
@@ -193,5 +199,7 @@ class LogSettingsViewModel @Inject constructor(
 }
 
 enum class LogType(val tag: String) {
-    LOG_CAT(tag = LogCatLogger.TAG), CSV(tag = CsvFileLogger.TAG), DB(tag = DbLogger.TAG)
+    LOG_CAT(tag = LogCatLogger.TAG),
+    CSV(tag = MultiNodeCsvFileLogger.TAG),
+    DB(tag = DbLogger.TAG)
 }

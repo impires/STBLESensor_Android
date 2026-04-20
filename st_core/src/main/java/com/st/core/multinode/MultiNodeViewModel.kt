@@ -1,9 +1,7 @@
-package com.st.bluems.multinode
+package com.st.core.multinode
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.st.bluems.StartLoggingUseCase
-import com.st.bluems.StopLoggingUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.coroutineScope

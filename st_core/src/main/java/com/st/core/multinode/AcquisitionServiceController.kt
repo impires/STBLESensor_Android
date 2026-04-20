@@ -1,4 +1,4 @@
-package com.st.bluems.multinode
+package com.st.core.multinode
 
 import android.content.Context
 import android.content.Intent

@@ -4,8 +4,8 @@ import com.st.bluems.StartLoggingUseCase
 import com.st.bluems.StartLoggingUseCaseImpl
 import com.st.bluems.StopLoggingUseCase
 import com.st.bluems.StopLoggingUseCaseImpl
-import com.st.bluems.multinode.MultiNodeRepository
-import com.st.bluems.multinode.MultiNodeRepositoryImpl
+import com.st.core.multinode.MultiNodeRepository
+import com.st.core.multinode.MultiNodeRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

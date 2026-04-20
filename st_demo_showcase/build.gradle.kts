@@ -132,7 +132,8 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    
+    //implementation(project(":app"))
+
     ksp(libs.hilt.compiler)
 
     // Dependency required for API desugaring.
