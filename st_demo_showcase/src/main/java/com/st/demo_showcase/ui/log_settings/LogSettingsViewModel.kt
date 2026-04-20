@@ -17,7 +17,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import com.st.blue_sdk.BlueManager
 import com.st.blue_sdk.di.LogDirectoryPath
-import com.st.core.multinode.MultiNodeCsvFileLogger
+import com.st.bluems.multinode.MultiNodeCsvFileLogger
 import com.st.blue_sdk.logger.LogCatLogger
 import com.st.blue_sdk.logger.db_logger.DbLogger
 import com.st.demo_showcase.R

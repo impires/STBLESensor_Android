@@ -1,4 +1,4 @@
-package com.st.core.multinode
+package com.st.multinode
 
 import com.st.blue_sdk.di.LogDirectoryPath
 import com.st.blue_sdk.features.Feature

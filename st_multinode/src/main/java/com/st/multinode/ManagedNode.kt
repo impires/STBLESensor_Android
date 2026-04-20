@@ -1,4 +1,4 @@
-package com.st.core.multinode
+package com.st.multinode
 
 data class ManagedNode(
     val id: String,

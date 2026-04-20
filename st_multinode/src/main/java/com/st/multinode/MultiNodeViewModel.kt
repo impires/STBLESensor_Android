@@ -1,4 +1,4 @@
-package com.st.core.multinode
+package com.st.multinode
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -1,4 +1,4 @@
-package com.st.core.multinode
+package com.st.multinode
 
 import kotlinx.coroutines.flow.StateFlow
 

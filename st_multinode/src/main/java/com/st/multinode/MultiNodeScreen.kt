@@ -1,4 +1,4 @@
-package com.st.core.multinode
+package com.st.multinode
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

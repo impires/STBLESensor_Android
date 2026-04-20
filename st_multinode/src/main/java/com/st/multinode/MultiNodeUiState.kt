@@ -1,4 +1,4 @@
-package com.st.core.multinode
+package com.st.multinode
 
 data class MultiNodeUiState(
     val discovered: List<ManagedNode> = emptyList(),

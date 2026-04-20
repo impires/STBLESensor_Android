@@ -1,4 +1,4 @@
-package com.st.core.multinode
+package com.st.multinode
 
 import com.st.blue_sdk.BlueManager
 import com.st.blue_sdk.models.NodeState
