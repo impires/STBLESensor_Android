@@ -1,26 +1,28 @@
 package com.st.multinode.logging
 
 import android.util.Log
-import com.st.blue_sdk.BlueManager
-import com.st.multinode.MultiNodeCsvFileLogger
 import javax.inject.Inject
 
 class StartLoggingUseCaseImpl @Inject constructor(
-    private val blueManager: BlueManager
+    private val boardSdLoggingTransport: BoardSdLoggingTransport
 ) : StartLoggingUseCase {
 
     override suspend fun start(nodeId: String): Result<Unit> {
-        Log.d("StartLoggingUseCase", "start() called for nodeId=$nodeId")
         return try {
-            blueManager.enableAllLoggers(
+            boardSdLoggingTransport.sendPnplCommand(
                 nodeId = nodeId,
-                loggerTags = listOf(MultiNodeCsvFileLogger.TAG)
+                json = """{"log_controller":{"start_log":true}}"""
             )
-            Log.d("StartLoggingUseCase", "enableAllLoggers success for nodeId=$nodeId")
+
+            Log.d(TAG, "Board SD logging started for nodeId=$nodeId")
             Result.success(Unit)
         } catch (t: Throwable) {
-            Log.e("StartLoggingUseCase", "enableAllLoggers failed for nodeId=$nodeId", t)
+            Log.e(TAG, "Board SD logging start failed for nodeId=$nodeId", t)
             Result.failure(t)
         }
+    }
+
+    companion object {
+        private const val TAG = "StartLoggingUseCase"
     }
 }

@@ -1,0 +1,64 @@
+package com.st.multinode
+
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.ContextCompat
+import com.st.multinode.service.MultiNodeAcquisitionService
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class AcquisitionServiceControllerImpl @Inject constructor(
+    @ApplicationContext private val context: Context
+) : AcquisitionServiceController {
+
+    override fun startLogging(
+        nodeIds: List<String>,
+        enableServer: Boolean,
+        maxPayloadSize: Int,
+        maxConnectionRetries: Int
+    ) {
+        val intent = Intent(context, MultiNodeAcquisitionService::class.java).apply {
+            action = MultiNodeAcquisitionService.ACTION_START_LOGGING
+            putStringArrayListExtra(
+                MultiNodeAcquisitionService.EXTRA_NODE_IDS,
+                ArrayList(nodeIds)
+            )
+            putExtra(
+                MultiNodeAcquisitionService.EXTRA_ENABLE_SERVER,
+                enableServer
+            )
+            putExtra(
+                MultiNodeAcquisitionService.EXTRA_MAX_PAYLOAD_SIZE,
+                maxPayloadSize
+            )
+            putExtra(
+                MultiNodeAcquisitionService.EXTRA_MAX_CONNECTION_RETRIES,
+                maxConnectionRetries
+            )
+        }
+
+        ContextCompat.startForegroundService(context, intent)
+    }
+
+    override fun stopLogging(nodeIds: List<String>) {
+        val intent = Intent(context, MultiNodeAcquisitionService::class.java).apply {
+            action = MultiNodeAcquisitionService.ACTION_STOP_LOGGING
+            putStringArrayListExtra(
+                MultiNodeAcquisitionService.EXTRA_NODE_IDS,
+                ArrayList(nodeIds)
+            )
+        }
+
+        ContextCompat.startForegroundService(context, intent)
+    }
+
+    override fun stopAll() {
+        val intent = Intent(context, MultiNodeAcquisitionService::class.java).apply {
+            action = MultiNodeAcquisitionService.ACTION_STOP_ALL
+        }
+
+        ContextCompat.startForegroundService(context, intent)
+    }
+}

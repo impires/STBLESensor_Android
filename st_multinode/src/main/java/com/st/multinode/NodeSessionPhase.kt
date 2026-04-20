@@ -11,7 +11,7 @@ enum class NodeSessionPhase {
     Error
 }
 
-data class NodeSessionState (
+data class NodeSessionState(
     val nodeId: String,
     val phase: NodeSessionPhase = NodeSessionPhase.Idle,
     val retryCount: Int = 0,

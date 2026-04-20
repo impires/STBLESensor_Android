@@ -5,8 +5,8 @@ data class ManagedNode(
     val name: String,
     val mac: String,
     val isSelected: Boolean = false,
-    val isConnected: Boolean = false,
-    val isReady: Boolean = false,
     val isLogging: Boolean = false,
+    val isReady: Boolean = false,
+    val isConnected: Boolean = false,
     val error: String? = null
 )

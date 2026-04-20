@@ -2,107 +2,71 @@ package com.st.multinode.data
 
 import com.st.multinode.ManagedNode
 import com.st.multinode.NodeSessionManager
-import com.st.multinode.NodeSessionPhase
-import com.st.multinode.NodeSessionState
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 @Singleton
 class MultiNodeRepositoryImpl @Inject constructor(
-    private val sessionManager: NodeSessionManager
+    private val nodeSessionManager: NodeSessionManager
 ) : MultiNodeRepository {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val _managedNodes = MutableStateFlow<List<ManagedNode>>(emptyList())
 
-    private val _discoveredNodes = MutableStateFlow<List<ManagedNode>>(emptyList())
-
-    private val managedNodesState: StateFlow<List<ManagedNode>> =
-        combine(_discoveredNodes, sessionManager.states) { discovered, sessions ->
-            discovered.map { node ->
-                node.withSession(sessions[node.id])
-            }
-        }.stateIn(
-            scope = scope,
-            started = SharingStarted.Eagerly,
-            initialValue = emptyList()
-        )
-
-    override fun managedNodes(): StateFlow<List<ManagedNode>> = managedNodesState
+    override fun managedNodes(): StateFlow<List<ManagedNode>> = _managedNodes.asStateFlow()
 
     override fun updateDiscoveredNodes(nodes: List<ManagedNode>) {
-        val previous = _discoveredNodes.value
-        val currentSessions = sessionManager.states.value
+        _managedNodes.update { current ->
+            nodes.map { incoming ->
+                val existing = current.firstOrNull { it.id == incoming.id }
 
-        val merged = LinkedHashMap<String, ManagedNode>()
-
-        nodes.forEach { newNode ->
-            val oldNode = previous.firstOrNull { sameNode(it, newNode) }
-
-            merged[keyOf(newNode)] = newNode.copy(
-                isSelected = oldNode?.isSelected ?: false,
-                isLogging = oldNode?.isLogging ?: false,
-                error = oldNode?.error
-            )
-        }
-
-        previous.forEach { oldNode ->
-            val session = currentSessions[oldNode.id]
-            val keepNode =
-                oldNode.isSelected ||
-                        oldNode.isLogging ||
-                        activePhases.contains(session?.phase)
-
-            if (keepNode) {
-                merged.putIfAbsent(keyOf(oldNode), oldNode)
+                if (existing != null) {
+                    existing.copy(
+                        name = incoming.name,
+                        mac = incoming.mac
+                    )
+                } else {
+                    incoming
+                }
             }
         }
-
-        _discoveredNodes.value = merged.values.toList()
     }
 
     override fun toggleSelection(nodeId: String, maxSelected: Int) {
-        val current = _discoveredNodes.value
-        val selectedCount = current.count { it.isSelected }
-        val target = current.firstOrNull { it.id == nodeId } ?: return
+        _managedNodes.update { current ->
+            val selectedCount = current.count { it.isSelected }
 
-        if (!target.isSelected && selectedCount >= maxSelected) return
-
-        _discoveredNodes.update { nodes ->
-            nodes.map { node ->
-                if (node.id == nodeId) {
-                    node.copy(isSelected = !node.isSelected)
-                } else {
+            current.map { node ->
+                if (node.id != nodeId) {
                     node
+                } else {
+                    val canSelect = node.isSelected || selectedCount < maxSelected
+                    if (canSelect) {
+                        node.copy(isSelected = !node.isSelected)
+                    } else {
+                        node
+                    }
                 }
             }
         }
     }
 
     override fun clearSelection() {
-        _discoveredNodes.update { nodes ->
-            nodes.map { it.copy(isSelected = false) }
+        _managedNodes.update { current ->
+            current.map { it.copy(isSelected = false) }
         }
     }
 
     override fun markLogging(nodeId: String, isLogging: Boolean) {
-        if (isLogging) {
-            sessionManager.markLogging(nodeId, true)
-        }
-
-        _discoveredNodes.update { nodes ->
-            nodes.map { node ->
+        _managedNodes.update { current ->
+            current.map { node ->
                 if (node.id == nodeId) {
                     node.copy(
                         isLogging = isLogging,
+                        isReady = !isLogging,
                         error = null
                     )
                 } else {
@@ -110,11 +74,13 @@ class MultiNodeRepositoryImpl @Inject constructor(
                 }
             }
         }
+
+        nodeSessionManager.markLogging(nodeId, isLogging)
     }
 
     override fun markError(nodeId: String, message: String?) {
-        _discoveredNodes.update { nodes ->
-            nodes.map { node ->
+        _managedNodes.update { current ->
+            current.map { node ->
                 if (node.id == nodeId) {
                     node.copy(error = message)
                 } else {
@@ -130,28 +96,31 @@ class MultiNodeRepositoryImpl @Inject constructor(
         maxPayloadSize: Int,
         enableServer: Boolean
     ): Result<Unit> {
-        return sessionManager.connectAndAwaitReady(
+        val result = nodeSessionManager.connectAndAwaitReady(
             nodeId = nodeId,
             maxConnectionRetries = maxConnectionRetries,
             maxPayloadSize = maxPayloadSize,
             enableServer = enableServer
         )
-    }
 
-    override suspend fun disconnect(nodeId: String): Result<Unit> {
-        val result = sessionManager.disconnect(nodeId)
-
-        if (result.isSuccess) {
-            _discoveredNodes.update { nodes ->
-                nodes.map { node ->
-                    if (node.id == nodeId) {
+        _managedNodes.update { current ->
+            current.map { node ->
+                if (node.id == nodeId) {
+                    if (result.isSuccess) {
                         node.copy(
-                            isLogging = false,
+                            isConnected = true,
+                            isReady = true,
                             error = null
                         )
                     } else {
-                        node
+                        node.copy(
+                            isConnected = false,
+                            isReady = false,
+                            error = result.exceptionOrNull()?.message
+                        )
                     }
+                } else {
+                    node
                 }
             }
         }
@@ -159,53 +128,28 @@ class MultiNodeRepositoryImpl @Inject constructor(
         return result
     }
 
-    private fun ManagedNode.withSession(session: NodeSessionState?): ManagedNode {
-        if (session == null) return this
+    override suspend fun disconnect(nodeId: String): Result<Unit> {
+        val result = nodeSessionManager.disconnect(nodeId)
 
-        return copy(
-            isConnected = session.phase in setOf(
-                NodeSessionPhase.Connected,
-                NodeSessionPhase.Ready,
-                NodeSessionPhase.Logging
-            ),
-            isReady = session.phase in setOf(
-                NodeSessionPhase.Ready,
-                NodeSessionPhase.Logging
-            ),
-            isLogging = when (session.phase) {
-                NodeSessionPhase.Logging -> true
-                NodeSessionPhase.Disconnected,
-                NodeSessionPhase.Disconnecting,
-                NodeSessionPhase.Error -> false
-                else -> isLogging
-            },
-            error = when {
-                session.error != null -> session.error
-                session.phase in setOf(
-                    NodeSessionPhase.Connected,
-                    NodeSessionPhase.Ready,
-                    NodeSessionPhase.Logging
-                ) -> null
-                else -> error
+        _managedNodes.update { current ->
+            current.map { node ->
+                if (node.id == nodeId) {
+                    node.copy(
+                        isConnected = false,
+                        isReady = false,
+                        isLogging = false,
+                        error = if (result.isFailure) {
+                            result.exceptionOrNull()?.message
+                        } else {
+                            null
+                        }
+                    )
+                } else {
+                    node
+                }
             }
-        )
-    }
+        }
 
-    private fun sameNode(left: ManagedNode, right: ManagedNode): Boolean {
-        return left.id == right.id || left.mac == right.mac
-    }
-
-    private fun keyOf(node: ManagedNode): String {
-        return if (node.id.isNotBlank()) node.id else node.mac
-    }
-
-    private companion object {
-        val activePhases = setOf(
-            NodeSessionPhase.Connecting,
-            NodeSessionPhase.Connected,
-            NodeSessionPhase.Ready,
-            NodeSessionPhase.Logging,
-            NodeSessionPhase.Disconnecting
-        )
+        return result
     }
 }

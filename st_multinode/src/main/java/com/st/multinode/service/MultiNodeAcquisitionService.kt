@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
@@ -13,9 +12,9 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.st.blue_sdk.BlueManager
+import com.st.multinode.data.MultiNodeRepository
 import com.st.multinode.logging.StartLoggingUseCase
 import com.st.multinode.logging.StopLoggingUseCase
-import com.st.multinode.data.MultiNodeRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +23,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -36,8 +37,6 @@ class MultiNodeAcquisitionService : Service() {
     @Inject
     lateinit var blueManager: BlueManager
 
-    private val featureJobs = ConcurrentHashMap<String, Job>()
-
     @Inject
     lateinit var repository: MultiNodeRepository
 
@@ -48,7 +47,9 @@ class MultiNodeAcquisitionService : Service() {
     lateinit var stopLoggingUseCase: StopLoggingUseCase
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private val nodeJobs = ConcurrentHashMap<String, Job>()
+    private val featureJobs = ConcurrentHashMap<String, Job>()
     private val activeLoggingNodes = ConcurrentHashMap.newKeySet<String>()
     private val prepareSemaphore = Semaphore(2)
 
@@ -73,7 +74,8 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("MultiNodeAcquisition", "onStartCommand action=${intent?.action}")
+        Log.d(TAG, "onStartCommand action=${intent?.action}")
+
         when (intent?.action) {
             ACTION_START_LOGGING -> {
                 val nodeIds = intent.getStringArrayListExtra(EXTRA_NODE_IDS).orEmpty()
@@ -109,9 +111,7 @@ class MultiNodeAcquisitionService : Service() {
                 }
             }
 
-            else -> {
-                updateNotification()
-            }
+            else -> updateNotification()
         }
 
         return START_STICKY
@@ -132,7 +132,8 @@ class MultiNodeAcquisitionService : Service() {
         maxPayloadSize: Int,
         maxConnectionRetries: Int
     ) {
-        Log.d("MultiNodeAcquisition", "startManagedLogging nodeId=$nodeId")
+        Log.d(TAG, "startManagedLogging nodeId=$nodeId")
+
         if (activeLoggingNodes.contains(nodeId)) return
         if (nodeJobs[nodeId]?.isActive == true) return
 
@@ -148,7 +149,7 @@ class MultiNodeAcquisitionService : Service() {
                         enableServer = enableServer
                     )
 
-                    Log.d("MultiNodeAcquisition", "prepareResult for $nodeId: $prepareResult")
+                    Log.d(TAG, "prepareResult for $nodeId: $prepareResult")
 
                     if (prepareResult.isFailure) {
                         repository.markError(
@@ -159,22 +160,10 @@ class MultiNodeAcquisitionService : Service() {
                     }
                 }
 
-                val startResult = startLoggingUseCase.start(nodeId)
-                Log.d("MultiNodeAcquisition", "startLoggingUseCase.start for $nodeId: $startResult")
-                if (startResult.isFailure) {
-                    repository.markLogging(nodeId, false)
-                    repository.markError(
-                        nodeId = nodeId,
-                        message = startResult.exceptionOrNull()?.message ?: "Start failed"
-                    )
-                    repository.disconnect(nodeId)
-                    return@launch
-                }
-
                 val streamResult = startFeatureStreaming(nodeId)
-                Log.d("MultiNodeAcquisition", "startFeatureStreaming for $nodeId: $streamResult")
+                Log.d(TAG, "startFeatureStreaming for $nodeId: $streamResult")
+
                 if (streamResult.isFailure) {
-                    stopLoggingUseCase.stop(nodeId)
                     repository.markLogging(nodeId, false)
                     repository.markError(
                         nodeId = nodeId,
@@ -184,13 +173,32 @@ class MultiNodeAcquisitionService : Service() {
                     return@launch
                 }
 
+                delay(1000L)
+
+                val startResult = startLoggingUseCase.start(nodeId)
+                Log.d(TAG, "startLoggingUseCase.start for $nodeId: $startResult")
+
+                if (startResult.isFailure) {
+                    stopFeatureStreaming(nodeId)
+                    repository.markLogging(nodeId, false)
+                    repository.markError(
+                        nodeId = nodeId,
+                        message = startResult.exceptionOrNull()?.message ?: "Start failed"
+                    )
+                    repository.disconnect(nodeId)
+                    return@launch
+                }
+
                 activeLoggingNodes.add(nodeId)
                 repository.markLogging(nodeId, true)
                 repository.markError(nodeId, null)
                 acquireWakeLockIfNeeded()
+                updateNotification()
+
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (t: Throwable) {
+                Log.e(TAG, "Unexpected acquisition error for $nodeId", t)
                 stopFeatureStreaming(nodeId)
                 repository.markLogging(nodeId, false)
                 repository.markError(
@@ -215,6 +223,8 @@ class MultiNodeAcquisitionService : Service() {
         }
 
         val features = blueManager.nodeFeatures(nodeId)
+        Log.d(TAG, "nodeFeatures for $nodeId -> count=${features.size}")
+
         if (features.isEmpty()) {
             return Result.failure(
                 IllegalStateException("No loggable features found for node $nodeId")
@@ -227,8 +237,8 @@ class MultiNodeAcquisitionService : Service() {
                 features = features,
                 autoEnable = true
             ).collect {
-                // Intentionally empty.
-                // BlueST SDK forwards each FeatureUpdate to enabled loggers internally.
+                // manter vivo
+                // isto ativa as features na board e deixa os sensores a produzir dados
             }
         }
 
@@ -244,15 +254,19 @@ class MultiNodeAcquisitionService : Service() {
             if (features.isNotEmpty()) {
                 blueManager.disableFeatures(nodeId, features)
             }
+        }.onFailure {
+            Log.e(TAG, "disableFeatures failed for $nodeId", it)
         }
     }
 
     private suspend fun stopManagedLogging(nodeId: String) {
+        Log.d(TAG, "stopManagedLogging nodeId=$nodeId")
+
         nodeJobs.remove(nodeId)?.cancelAndJoin()
 
-        stopFeatureStreaming(nodeId)
-
         val stopResult = stopLoggingUseCase.stop(nodeId)
+        Log.d(TAG, "stopLoggingUseCase.stop for $nodeId: $stopResult")
+
         if (stopResult.isFailure) {
             repository.markError(
                 nodeId = nodeId,
@@ -260,10 +274,16 @@ class MultiNodeAcquisitionService : Service() {
             )
         }
 
+        delay(3000L)
+
+        stopFeatureStreaming(nodeId)
+
         repository.markLogging(nodeId, false)
         activeLoggingNodes.remove(nodeId)
 
         val disconnectResult = repository.disconnect(nodeId)
+        Log.d(TAG, "disconnectResult for $nodeId: $disconnectResult")
+
         if (disconnectResult.isFailure) {
             repository.markError(
                 nodeId = nodeId,
@@ -277,8 +297,11 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     private suspend fun stopAllManagedLogging() {
-        val ids = (activeLoggingNodes.toList() + nodeJobs.keys().toList() + featureJobs.keys().toList())
-            .distinct()
+        val ids = (
+                activeLoggingNodes.toList() +
+                        nodeJobs.keys().toList() +
+                        featureJobs.keys().toList()
+                ).distinct()
 
         ids.forEach { nodeId ->
             stopManagedLogging(nodeId)
@@ -286,7 +309,7 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     private fun maybeStopSelf() {
-        if (activeLoggingNodes.isEmpty() && nodeJobs.isEmpty()) {
+        if (activeLoggingNodes.isEmpty() && nodeJobs.isEmpty() && featureJobs.isEmpty()) {
             stopSelf()
         }
     }
@@ -294,12 +317,18 @@ class MultiNodeAcquisitionService : Service() {
     private fun acquireWakeLockIfNeeded() {
         if (wakeLock?.isHeld == true) return
 
-        wakeLock = powerManager.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK,
-            "$packageName:multi-node-acquisition"
-        ).apply {
-            setReferenceCounted(false)
-            acquire(8 * 60 * 60 * 1000L)
+        try {
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "$packageName:multi-node-acquisition"
+            ).apply {
+                setReferenceCounted(false)
+                acquire(8 * 60 * 60 * 1000L)
+            }
+        } catch (security: SecurityException) {
+            Log.e(TAG, "WakeLock permission missing", security)
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to acquire WakeLock", t)
         }
     }
 
@@ -307,25 +336,32 @@ class MultiNodeAcquisitionService : Service() {
         val shouldRelease = force || activeLoggingNodes.isEmpty()
         if (!shouldRelease) return
 
-        wakeLock?.let { lock ->
-            if (lock.isHeld) {
-                lock.release()
+        try {
+            wakeLock?.let { lock ->
+                if (lock.isHeld) {
+                    lock.release()
+                }
             }
+        } catch (security: SecurityException) {
+            Log.e(TAG, "WakeLock release permission issue", security)
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to release WakeLock", t)
+        } finally {
+            wakeLock = null
         }
-        wakeLock = null
     }
 
     private fun updateNotification() {
-        val connectingCount = nodeJobs.size
+        val preparingCount = nodeJobs.size
         val loggingCount = activeLoggingNodes.size
 
         val text = when {
-            loggingCount > 0 && connectingCount > 0 ->
-                "Logging on $loggingCount node(s), preparing $connectingCount"
+            loggingCount > 0 && preparingCount > 0 ->
+                "Logging on $loggingCount node(s), preparing $preparingCount"
             loggingCount > 0 ->
                 "Logging on $loggingCount node(s)"
-            connectingCount > 0 ->
-                "Preparing $connectingCount node(s)"
+            preparingCount > 0 ->
+                "Preparing $preparingCount node(s)"
             else ->
                 "Waiting for multi-device acquisition"
         }
@@ -352,14 +388,14 @@ class MultiNodeAcquisitionService : Service() {
         .build()
 
     private fun mainPendingIntent(): PendingIntent {
-        val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
+        } ?: Intent()
 
         return PendingIntent.getActivity(
             this,
             1001,
-            intent,
+            launchIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
@@ -380,6 +416,8 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     companion object {
+        private const val TAG = "MultiNodeAcquisition"
+
         const val ACTION_START_LOGGING =
             "com.st.bluems.multinode.action.START_LOGGING"
         const val ACTION_STOP_LOGGING =
