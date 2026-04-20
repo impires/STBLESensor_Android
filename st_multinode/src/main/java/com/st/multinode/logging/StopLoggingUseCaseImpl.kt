@@ -2,20 +2,18 @@ package com.st.multinode.logging
 
 import android.util.Log
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.delay
 
-@Singleton
 class StopLoggingUseCaseImpl @Inject constructor(
     private val boardSdLoggingTransport: BoardSdLoggingTransport
 ) : StopLoggingUseCase {
 
     override suspend fun stop(nodeId: String): Result<Unit> {
         return try {
-            boardSdLoggingTransport.sendPnplCommand(
-                nodeId = nodeId,
-                json = """{"log_controller":{"stop_log":true}}"""
-            )
+            val stopResult = boardSdLoggingTransport.stopSdLogging(nodeId)
+            if (stopResult.isFailure) {
+                return stopResult
+            }
 
             delay(3000)
 
