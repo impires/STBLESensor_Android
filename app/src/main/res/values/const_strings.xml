@@ -6,5 +6,5 @@
   ~ If no LICENSE file comes with this software, it is provided AS-IS.
   -->
 <resources>
-    <string name="app_name">ST BLE Sensor</string>
+    <string name="app_name">ST BLE Sensor Custom</string>
 </resources>
