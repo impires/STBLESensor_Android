@@ -328,7 +328,7 @@ class HighSpeedDataLogViewModel @Inject constructor(
 
 
     private fun createAndStartTimer() {
-        timer = object: CountDownTimer(10000, 1000) {
+        timer = object: CountDownTimer(20000, 1000) {
             override fun onTick(millisUntilFinished: Long) {}
 
             override fun onFinish() {
