@@ -11,18 +11,24 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.st.blue_sdk.BlueManager
 import com.st.core.api.ApplicationAnalyticsService
+import com.st.multinode.data.MultiNodeRepository
 import com.st.preferences.StPreferences
 import com.st.user_profiling.model.LevelProficiency
 import com.st.user_profiling.model.ProfileType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val preferences: StPreferences,
     private val blueManager: BlueManager,
+    private val multiNodeRepository: MultiNodeRepository,
     private val appAnalyticsService: Set<@JvmSuppressWildcards ApplicationAnalyticsService>
 ) : ViewModel() {
 
@@ -31,6 +37,10 @@ class MainViewModel @Inject constructor(
     val shouldShowWelcome = preferences.mustShowWelcome()
     val shouldShowProfile = preferences.hasSelectedProfile().not()
     val shouldShowTerms = preferences.hasAcceptedTerms().not()
+
+    val isAnyNodeLogging = multiNodeRepository.managedNodes()
+        .map { nodes -> nodes.any { it.isLogging } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun initApplicationAnalytics(
         etnaApplication: ApplicationAnalyticsService.ApplicationNameEtna,

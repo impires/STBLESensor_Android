@@ -12,6 +12,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +20,8 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -128,6 +131,15 @@ class MainActivity : AppCompatActivity() {
         viewModel.reportApplicationAnalytics(applicationContext)
 
         setContent {
+            val isLogging by viewModel.isAnyNodeLogging.collectAsState()
+            LaunchedEffect(isLogging) {
+                if (isLogging) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+
             BlueMSTheme {
                 val backState =
                     rememberNavBackStack(

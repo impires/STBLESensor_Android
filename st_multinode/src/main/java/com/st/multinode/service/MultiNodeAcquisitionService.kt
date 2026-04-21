@@ -92,6 +92,9 @@ class MultiNodeAcquisitionService : Service() {
             
             // 1. Preparar cada nó sequencialmente
             val preparedNodes = mutableListOf<String>()
+            if (nodeIds.isNotEmpty()) {
+                acquireWakeLockIfNeeded()
+            }
             nodeIds.forEach { nodeId ->
                 if (activeLoggingNodes.contains(nodeId)) return@forEach
                 
@@ -102,10 +105,18 @@ class MultiNodeAcquisitionService : Service() {
                 }
             }
 
-            // 2. Disparar todos em paralelo
-            Log.d(TAG, "Disparando start para ${preparedNodes.size} nós simultaneamente")
-            preparedNodes.map { nodeId ->
+            if (preparedNodes.isEmpty()) {
+                Log.e(TAG, "Nenhum nó pronto para iniciar logging. Abortando aquisição.")
+                updateNotification()
+                maybeStopSelf()
+                return@launch
+            }
+
+            // 2. Disparar todos com um pequeno escalonamento (stagger)
+            Log.d(TAG, "Disparando start para ${preparedNodes.size} nós com stagger")
+            preparedNodes.forEachIndexed { index, nodeId ->
                 launch {
+                    delay(index * 2000L) // Aumentado para 2s para dar tempo ao firmware de estabilizar o SD
                     val result = officialSdLogEngine.triggerLogging(nodeId)
                     if (result.isSuccess) {
                         activeLoggingNodes.add(nodeId)
@@ -116,9 +127,14 @@ class MultiNodeAcquisitionService : Service() {
                     }
                     updateNotification()
                 }
-            }.joinAll()
+            }
             
-            maybeStopSelf()
+            // Aguarda os triggers terminarem antes de talvez parar o serviço
+            // (Note: we don't joinAll here because it's a batchJob that holds the service alive)
+            // But we need to ensure the service stays alive if batchJob is still running.
+            // batchJob is launched in serviceScope.
+            
+            //maybeStopSelf()
         }
 
         // Guardar o Job para permitir cancelamento se o utilizador carregar em "Stop"
@@ -143,9 +159,11 @@ class MultiNodeAcquisitionService : Service() {
 
             val sdResult = officialSdLogEngine.prepareForLogging(nodeId)
             if (sdResult.isFailure) {
+                Log.e(TAG, "[$nodeId] prepareForLogging falhou", sdResult.exceptionOrNull())
                 repository.markError(nodeId, sdResult.exceptionOrNull()?.message ?: "SD Prepare failed")
                 return@withPermit false
             }
+
             true
         }
     }
@@ -180,8 +198,13 @@ class MultiNodeAcquisitionService : Service() {
 
     private fun acquireWakeLockIfNeeded() {
         if (wakeLock?.isHeld == true) return
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "$packageName:multi-node")
-            .apply { acquire(8 * 60 * 60 * 1000L) }
+        // Usamos SCREEN_DIM_WAKE_LOCK + ACQUIRE_CAUSES_WAKEUP para tentar manter a tela/sistema ativos
+        // conforme solicitado pelo usuário ("disable to lock screen")
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            "$packageName:multi-node-active"
+        ).apply { acquire(8 * 60 * 60 * 1000L) }
+        Log.d(TAG, "WakeLock (SCREEN_DIM) adquirido.")
     }
 
     private fun releaseWakeLock(force: Boolean) {
