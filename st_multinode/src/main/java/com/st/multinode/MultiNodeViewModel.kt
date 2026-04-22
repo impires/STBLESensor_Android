@@ -46,6 +46,10 @@ class MultiNodeViewModel @Inject constructor(
         repository.clearSelection()
     }
 
+    fun updateFlowFileName(newName: String) {
+        _uiState.update { it.copy(flowFileName = newName) }
+    }
+
     fun prepareSelected(
         enableServer: Boolean = false,
         maxPayloadSize: Int = 150, // Reduzido de 248
@@ -131,6 +135,7 @@ class MultiNodeViewModel @Inject constructor(
             // Se passar 248 aqui, a board bloqueia no momento do log.
             acquisitionServiceController.startLogging(
                 nodeIds = nodesToStart.map { it.id },
+                flowFileName = _uiState.value.flowFileName,
                 enableServer = enableServer,
                 maxPayloadSize = maxPayloadSize, // Agora vai usar 150
                 maxConnectionRetries = maxConnectionRetries

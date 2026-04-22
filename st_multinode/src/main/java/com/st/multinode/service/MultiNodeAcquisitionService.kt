@@ -14,12 +14,9 @@ import androidx.core.app.NotificationManagerCompat
 import com.st.multinode.data.MultiNodeRepository
 import com.st.multinode.logging.OfficialSdLogEngine
 import com.st.multinode.logging.SdFlowStarter
-import com.st.multinode.logging.StartLoggingUseCase
-import com.st.multinode.logging.StopLoggingUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,16 +24,15 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.withTimeout
 
 @AndroidEntryPoint
 class MultiNodeAcquisitionService : Service() {
-
-    @Inject
-    lateinit var sdFlowStarter: SdFlowStarter
 
     @Inject
     lateinit var repository: MultiNodeRepository
@@ -44,12 +40,13 @@ class MultiNodeAcquisitionService : Service() {
     @Inject
     lateinit var officialSdLogEngine: OfficialSdLogEngine
 
+    @Inject
+    lateinit var sdFlowStarter: SdFlowStarter
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val nodeJobs = ConcurrentHashMap<String, Job>()
     private val activeLoggingNodes = ConcurrentHashMap.newKeySet<String>()
-    
-    // Semáforo de 1 para garantir que a preparação física (SD/BLE) é feita sem colisões
     private val prepareSemaphore = Semaphore(1)
 
     private lateinit var notificationManager: NotificationManagerCompat
@@ -61,24 +58,36 @@ class MultiNodeAcquisitionService : Service() {
         notificationManager = NotificationManagerCompat.from(this)
         powerManager = getSystemService(POWER_SERVICE) as PowerManager
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification("ST BLE Sensor", "Ready for multi-device acquisition"))
+        startForeground(
+            NOTIFICATION_ID,
+            buildNotification("ST BLE Sensor", "Ready for multi-device acquisition")
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START_LOGGING -> {
                 val nodeIds = intent.getStringArrayListExtra(EXTRA_NODE_IDS).orEmpty()
+                val flowFileName = intent.getStringExtra(EXTRA_FLOW_FILE_NAME).orEmpty()
                 val enableServer = intent.getBooleanExtra(EXTRA_ENABLE_SERVER, false)
                 val maxPayloadSize = intent.getIntExtra(EXTRA_MAX_PAYLOAD_SIZE, 150)
                 val maxConnectionRetries = intent.getIntExtra(EXTRA_MAX_CONNECTION_RETRIES, 3)
 
-                val flowFileName = intent.getStringExtra(EXTRA_FLOW_FILE_NAME).orEmpty()
-                startNodesInBatch(nodeIds, flowFileName, enableServer, maxPayloadSize, maxConnectionRetries)
+                Log.d(TAG, "Flow recebido: $flowFileName")
+                startNodesInBatch(
+                    nodeIds = nodeIds,
+                    flowFileName = flowFileName,
+                    enableServer = enableServer,
+                    maxPayloadSize = maxPayloadSize,
+                    maxConnectionRetries = maxConnectionRetries
+                )
             }
+
             ACTION_STOP_LOGGING -> {
                 val nodeIds = intent.getStringArrayListExtra(EXTRA_NODE_IDS).orEmpty()
                 serviceScope.launch { nodeIds.forEach { stopManagedLogging(it) } }
             }
+
             ACTION_STOP_ALL -> {
                 serviceScope.launch { stopAllManagedLogging() }
             }
@@ -130,12 +139,24 @@ class MultiNodeAcquisitionService : Service() {
                     delay(index * 2000L)
 
                     val result = sdFlowStarter.startFlow(nodeId, flowFileName)
+
                     if (result.isSuccess) {
-                        activeLoggingNodes.add(nodeId)
-                        repository.markLogging(nodeId, true)
-                        acquireWakeLockIfNeeded()
+                        val started = waitForLoggingStart(nodeId)
+
+                        if (started) {
+                            activeLoggingNodes.add(nodeId)
+                            repository.markLogging(nodeId, true)
+                            acquireWakeLockIfNeeded()
+                        } else {
+                            Log.e(TAG, "[$nodeId] Flow não entrou em RUN")
+                            repository.markError(nodeId, "Flow não iniciou")
+                        }
                     } else {
-                        repository.markError(nodeId, result.exceptionOrNull()?.message ?: "Flow start failed")
+                        Log.e(TAG, "[$nodeId] Falha no startFlow", result.exceptionOrNull())
+                        repository.markError(
+                            nodeId,
+                            result.exceptionOrNull()?.message ?: "Falha no startFlow"
+                        )
                     }
 
                     updateNotification()
@@ -145,6 +166,31 @@ class MultiNodeAcquisitionService : Service() {
 
         nodeIds.forEach { nodeId ->
             nodeJobs[nodeId] = batchJob
+        }
+    }
+
+    private suspend fun waitForLoggingStart(nodeId: String): Boolean {
+        return try {
+            withTimeout(30000) {
+                val pollingJob = launch {
+                    while (true) {
+                        delay(10000)
+                        Log.d(TAG, "[$nodeId] Ainda aguardando logging... solicitando status novamente.")
+                        officialSdLogEngine.requestStatus(nodeId)
+                    }
+                }
+                try {
+                    officialSdLogEngine.states
+                        .filter { it[nodeId]?.isLogging == true }
+                        .first()
+                    true
+                } finally {
+                    pollingJob.cancel()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "[$nodeId] Timeout à espera de logging", e)
+            false
         }
     }
 
@@ -168,6 +214,8 @@ class MultiNodeAcquisitionService : Service() {
                 repository.markError(nodeId, "Connection failed")
                 return@withPermit false
             }
+
+            delay(1000)
 
             val prepResult = sdFlowStarter.prepareFlow(nodeId, flowFileName)
             if (prepResult.isFailure) {
@@ -218,56 +266,77 @@ class MultiNodeAcquisitionService : Service() {
 
     private fun acquireWakeLockIfNeeded() {
         if (wakeLock?.isHeld == true) return
-        // Usamos SCREEN_DIM_WAKE_LOCK + ACQUIRE_CAUSES_WAKEUP para tentar manter a tela/sistema ativos
-        // conforme solicitado pelo usuário ("disable to lock screen")
         wakeLock = powerManager.newWakeLock(
-            PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-            "$packageName:multi-node-active"
-        ).apply { acquire(8 * 60 * 60 * 1000L) }
-        Log.d(TAG, "WakeLock (SCREEN_DIM) adquirido.")
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "$packageName:MultiNodeAcquisition"
+        ).apply {
+            setReferenceCounted(false)
+            acquire()
+        }
     }
 
     private fun releaseWakeLock(force: Boolean) {
-        if ((force || activeLoggingNodes.isEmpty()) && wakeLock?.isHeld == true) {
-            wakeLock?.release()
+        if (force || activeLoggingNodes.isEmpty()) {
+            runCatching {
+                if (wakeLock?.isHeld == true) wakeLock?.release()
+            }
             wakeLock = null
         }
     }
 
     private fun updateNotification() {
-        val count = activeLoggingNodes.size
-        val text = if (count > 0) "Logging on $count node(s)" else "Waiting for acquisition"
-        notificationManager.notify(NOTIFICATION_ID, buildNotification("ST BLE Sensor", text))
+        val content = when {
+            activeLoggingNodes.isNotEmpty() -> "Logging em ${activeLoggingNodes.size} nó(s)"
+            else -> "A preparar/parado"
+        }
+        notificationManager.notify(
+            NOTIFICATION_ID,
+            buildNotification("ST BLE Sensor", content)
+        )
     }
 
-    private fun buildNotification(title: String, text: String) = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentTitle(title).setContentText(text).setOngoing(true).setSmallIcon(android.R.drawable.stat_sys_download)
-        .setContentIntent(mainPendingIntent()).build()
-
-    private fun mainPendingIntent(): PendingIntent {
-        val intent = packageManager.getLaunchIntentForPackage(packageName) ?: Intent()
-        return PendingIntent.getActivity(this, 1001, intent, PendingIntent.FLAG_IMMUTABLE)
-    }
+    private fun buildNotification(title: String, text: String) =
+        NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    packageManager.getLaunchIntentForPackage(packageName),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            )
+            .build()
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Acquisition", NotificationManager.IMPORTANCE_LOW)
-            val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
+            val mgr = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val channel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                "MultiNode Acquisition",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            mgr.createNotificationChannel(channel)
         }
     }
 
     companion object {
         private const val TAG = "MultiNodeAcquisition"
+        private const val NOTIFICATION_CHANNEL_ID = "multi_node_acquisition"
+        private const val NOTIFICATION_ID = 42001
+
         const val ACTION_START_LOGGING = "com.st.bluems.multinode.action.START_LOGGING"
         const val ACTION_STOP_LOGGING = "com.st.bluems.multinode.action.STOP_LOGGING"
         const val ACTION_STOP_ALL = "com.st.bluems.multinode.action.STOP_ALL"
+
         const val EXTRA_NODE_IDS = "extra_node_ids"
         const val EXTRA_ENABLE_SERVER = "extra_enable_server"
         const val EXTRA_MAX_PAYLOAD_SIZE = "extra_max_payload_size"
         const val EXTRA_MAX_CONNECTION_RETRIES = "extra_max_connection_retries"
-        private const val CHANNEL_ID = "multi_node_acquisition"
-        private const val NOTIFICATION_ID = 4102
         const val EXTRA_FLOW_FILE_NAME = "extra_flow_file_name"
     }
 }

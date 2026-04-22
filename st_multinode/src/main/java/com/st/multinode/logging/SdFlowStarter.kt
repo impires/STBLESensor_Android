@@ -17,7 +17,11 @@ class SdFlowStarter @Inject constructor(
     suspend fun prepareFlow(nodeId: String, flowFileName: String): Result<Unit> = runCatching {
         val compName = "sd_log"
 
-        Log.d(TAG, "[$nodeId] Preparar flow do SD: $flowFileName")
+        require(flowFileName.isNotBlank()) {
+            "Flow file name vazio"
+        }
+
+        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName")
 
         val datetimeShort = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ROOT).format(Date())
 
@@ -52,7 +56,7 @@ class SdFlowStarter @Inject constructor(
             nodeId,
             PnPLCmd(
                 component = compName,
-                command = "file_name",
+                command = "load_file",
                 fields = mapOf("value" to flowFileName)
             )
         )
@@ -64,7 +68,11 @@ class SdFlowStarter @Inject constructor(
     suspend fun startFlow(nodeId: String, flowFileName: String): Result<Unit> = runCatching {
         val compName = "sd_log"
 
-        Log.d(TAG, "[$nodeId] Garantir flow selecionado: $flowFileName")
+        require(flowFileName.isNotBlank()) {
+            "Flow file name vazio"
+        }
+
+        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName")
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(
