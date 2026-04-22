@@ -133,14 +133,17 @@ class OfficialSdLogEngine @Inject constructor(
 
                 observeFeatureJobs[nodeId] = scope.launch {
                     updateFlow
-                        .catch { e -> Log.e(TAG, "[$nodeId] Erro no stream PnPL", e) }
+                        .catch { e ->
+                            Log.e(TAG, "[$nodeId] Erro no stream PnPL", e)
+                        }
                         .collect { update ->
+                            Log.e(TAG, "[$nodeId] UPDATE RAW BYTES: ${update.rawData.joinToString(",")}")
+                            Log.e(TAG, "[$nodeId] UPDATE RAW STRING: ${update.rawData.toString(Charsets.UTF_8)}")
+                            Log.e(TAG, "[$nodeId] UPDATE DATA CLASS: ${update.data?.javaClass?.name}")
+
                             val config = update.data as? PnPLConfig
 
                             if (config?.deviceStatus?.value == null && config?.setCommandResponse?.value == null) {
-                                Log.e(TAG, "[$nodeId] RAW RX BYTES: ${update.rawData.joinToString(",")}")
-                                Log.e(TAG, "[$nodeId] RAW RX STRING: ${update.rawData.toString(Charsets.UTF_8)}")
-
                                 val extracted = manualExtractPnPL(nodeId, update.rawData)
 
                                 if (extracted == null) {
@@ -150,6 +153,7 @@ class OfficialSdLogEngine @Inject constructor(
                                     handleStatusUpdate(nodeId, extracted)
                                 }
                             } else if (config != null) {
+                                Log.e(TAG, "[$nodeId] PnPLConfig recebido")
                                 handleStatusUpdate(nodeId, config)
                             }
                         }

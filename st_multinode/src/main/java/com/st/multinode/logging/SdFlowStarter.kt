@@ -15,15 +15,14 @@ class SdFlowStarter @Inject constructor(
 ) {
 
     suspend fun prepareFlow(nodeId: String, flowFileName: String): Result<Unit> = runCatching {
-        val compName = "sd_log"
-
         require(flowFileName.isNotBlank()) {
             "Flow file name vazio"
         }
 
-        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName")
-
+        val compName = "sd_log"
         val datetimeShort = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ROOT).format(Date())
+
+        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName")
 
         Log.d(TAG, "[$nodeId] set_time")
         officialSdLogEngine.sendRawCommand(
@@ -51,7 +50,7 @@ class SdFlowStarter @Inject constructor(
         )
         delay(1500)
 
-        Log.d(TAG, "[$nodeId] selecionar flow no SD: $flowFileName")
+        Log.d(TAG, "[$nodeId] load_file")
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(
@@ -60,28 +59,61 @@ class SdFlowStarter @Inject constructor(
                 fields = mapOf("value" to flowFileName)
             )
         )
+        delay(2000)
+
+        Log.d(TAG, "[$nodeId] get_status após load_file")
+        officialSdLogEngine.sendRawCommand(
+            nodeId,
+            PnPLCmd(component = compName, command = "get_status")
+        )
         delay(1500)
 
         Log.i(TAG, "[$nodeId] Flow preparado")
     }
 
     suspend fun startFlow(nodeId: String, flowFileName: String): Result<Unit> = runCatching {
-        val compName = "sd_log"
-
         require(flowFileName.isNotBlank()) {
             "Flow file name vazio"
         }
 
+        val compName = "sd_log"
+
         Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName")
+
+        Log.d(TAG, "[$nodeId] load_file")
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(
                 component = compName,
-                command = "file_name",
+                command = "load_file",
                 fields = mapOf("value" to flowFileName)
             )
         )
-        delay(1000)
+        delay(2000)
+
+        Log.d(TAG, "[$nodeId] get_status após load_file")
+        officialSdLogEngine.sendRawCommand(
+            nodeId,
+            PnPLCmd(component = compName, command = "get_status")
+        )
+        delay(1500)
+
+        Log.d(TAG, "[$nodeId] run")
+        officialSdLogEngine.sendRawCommand(
+            nodeId,
+            PnPLCmd(
+                component = compName,
+                command = "run"
+            )
+        )
+        delay(3000)
+
+        Log.d(TAG, "[$nodeId] get_status após run")
+        officialSdLogEngine.sendRawCommand(
+            nodeId,
+            PnPLCmd(component = compName, command = "get_status")
+        )
+        delay(1500)
 
         Log.d(TAG, "[$nodeId] start_log")
         officialSdLogEngine.sendRawCommand(
@@ -92,10 +124,9 @@ class SdFlowStarter @Inject constructor(
                 fields = mapOf("interface" to 2)
             )
         )
-
         delay(5000)
 
-        Log.d(TAG, "[$nodeId] get_status")
+        Log.d(TAG, "[$nodeId] get_status final")
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(component = compName, command = "get_status")

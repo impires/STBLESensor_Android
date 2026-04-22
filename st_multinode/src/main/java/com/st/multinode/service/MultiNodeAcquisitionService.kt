@@ -69,11 +69,13 @@ class MultiNodeAcquisitionService : Service() {
             ACTION_START_LOGGING -> {
                 val nodeIds = intent.getStringArrayListExtra(EXTRA_NODE_IDS).orEmpty()
                 val flowFileName = intent.getStringExtra(EXTRA_FLOW_FILE_NAME).orEmpty()
+                    .ifBlank { "defaultAppPro.json" }
                 val enableServer = intent.getBooleanExtra(EXTRA_ENABLE_SERVER, false)
                 val maxPayloadSize = intent.getIntExtra(EXTRA_MAX_PAYLOAD_SIZE, 150)
                 val maxConnectionRetries = intent.getIntExtra(EXTRA_MAX_CONNECTION_RETRIES, 3)
 
                 Log.d(TAG, "Flow recebido: $flowFileName")
+
                 startNodesInBatch(
                     nodeIds = nodeIds,
                     flowFileName = flowFileName,
