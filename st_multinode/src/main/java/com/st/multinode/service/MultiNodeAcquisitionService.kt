@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.st.multinode.data.MultiNodeRepository
 import com.st.multinode.logging.OfficialSdLogEngine
+import com.st.multinode.logging.SdFlowStarter
 import com.st.multinode.logging.StartLoggingUseCase
 import com.st.multinode.logging.StopLoggingUseCase
 import dagger.hilt.android.AndroidEntryPoint
@@ -33,6 +34,9 @@ import kotlinx.coroutines.joinAll
 
 @AndroidEntryPoint
 class MultiNodeAcquisitionService : Service() {
+
+    @Inject
+    lateinit var sdFlowStarter: SdFlowStarter
 
     @Inject
     lateinit var repository: MultiNodeRepository
@@ -68,7 +72,8 @@ class MultiNodeAcquisitionService : Service() {
                 val maxPayloadSize = intent.getIntExtra(EXTRA_MAX_PAYLOAD_SIZE, 150)
                 val maxConnectionRetries = intent.getIntExtra(EXTRA_MAX_CONNECTION_RETRIES, 3)
 
-                startNodesInBatch(nodeIds, enableServer, maxPayloadSize, maxConnectionRetries)
+                val flowFileName = intent.getStringExtra(EXTRA_FLOW_FILE_NAME).orEmpty()
+                startNodesInBatch(nodeIds, flowFileName, enableServer, maxPayloadSize, maxConnectionRetries)
             }
             ACTION_STOP_LOGGING -> {
                 val nodeIds = intent.getStringArrayListExtra(EXTRA_NODE_IDS).orEmpty()
@@ -83,61 +88,61 @@ class MultiNodeAcquisitionService : Service() {
 
     private fun startNodesInBatch(
         nodeIds: List<String>,
+        flowFileName: String,
         enableServer: Boolean,
         maxPayloadSize: Int,
         maxConnectionRetries: Int
     ) {
         val batchJob = serviceScope.launch {
             Log.d(TAG, "Iniciando batch para ${nodeIds.size} nós")
-            
-            // 1. Preparar cada nó sequencialmente
+
             val preparedNodes = mutableListOf<String>()
             if (nodeIds.isNotEmpty()) {
                 acquireWakeLockIfNeeded()
             }
+
             nodeIds.forEach { nodeId ->
                 if (activeLoggingNodes.contains(nodeId)) return@forEach
-                
+
                 updateNotification()
-                val success = prepareSingleNode(nodeId, enableServer, maxPayloadSize, maxConnectionRetries)
+                val success = prepareSingleNode(
+                    nodeId = nodeId,
+                    flowFileName = flowFileName,
+                    enableServer = enableServer,
+                    maxPayloadSize = maxPayloadSize,
+                    maxConnectionRetries = maxConnectionRetries
+                )
                 if (success) {
                     preparedNodes.add(nodeId)
                 }
             }
 
             if (preparedNodes.isEmpty()) {
-                Log.e(TAG, "Nenhum nó pronto para iniciar logging. Abortando aquisição.")
+                Log.e(TAG, "Nenhum nó pronto para iniciar flow. Abortando aquisição.")
                 updateNotification()
                 maybeStopSelf()
                 return@launch
             }
 
-            // 2. Disparar todos com um pequeno escalonamento (stagger)
-            Log.d(TAG, "Disparando start para ${preparedNodes.size} nós com stagger")
+            Log.d(TAG, "Disparando start do flow para ${preparedNodes.size} nós com stagger")
             preparedNodes.forEachIndexed { index, nodeId ->
                 launch {
-                    delay(index * 2000L) // Aumentado para 2s para dar tempo ao firmware de estabilizar o SD
-                    val result = officialSdLogEngine.triggerLogging(nodeId)
+                    delay(index * 2000L)
+
+                    val result = sdFlowStarter.startFlow(nodeId, flowFileName)
                     if (result.isSuccess) {
                         activeLoggingNodes.add(nodeId)
                         repository.markLogging(nodeId, true)
                         acquireWakeLockIfNeeded()
                     } else {
-                        repository.markError(nodeId, result.exceptionOrNull()?.message ?: "Trigger failed")
+                        repository.markError(nodeId, result.exceptionOrNull()?.message ?: "Flow start failed")
                     }
+
                     updateNotification()
                 }
             }
-            
-            // Aguarda os triggers terminarem antes de talvez parar o serviço
-            // (Note: we don't joinAll here because it's a batchJob that holds the service alive)
-            // But we need to ensure the service stays alive if batchJob is still running.
-            // batchJob is launched in serviceScope.
-            
-            //maybeStopSelf()
         }
 
-        // Guardar o Job para permitir cancelamento se o utilizador carregar em "Stop"
         nodeIds.forEach { nodeId ->
             nodeJobs[nodeId] = batchJob
         }
@@ -145,22 +150,32 @@ class MultiNodeAcquisitionService : Service() {
 
     private suspend fun prepareSingleNode(
         nodeId: String,
+        flowFileName: String,
         enableServer: Boolean,
         maxPayloadSize: Int,
         maxConnectionRetries: Int
     ): Boolean {
         return prepareSemaphore.withPermit {
             Log.d(TAG, "[$nodeId] Preparando...")
-            val connResult = repository.connectAndAwaitReady(nodeId, maxConnectionRetries, maxPayloadSize, enableServer)
+            val connResult = repository.connectAndAwaitReady(
+                nodeId,
+                maxConnectionRetries,
+                maxPayloadSize,
+                enableServer
+            )
+
             if (connResult.isFailure) {
                 repository.markError(nodeId, "Connection failed")
                 return@withPermit false
             }
 
-            val sdResult = officialSdLogEngine.prepareForLogging(nodeId)
-            if (sdResult.isFailure) {
-                Log.e(TAG, "[$nodeId] prepareForLogging falhou", sdResult.exceptionOrNull())
-                repository.markError(nodeId, sdResult.exceptionOrNull()?.message ?: "SD Prepare failed")
+            val prepResult = sdFlowStarter.prepareFlow(nodeId, flowFileName)
+            if (prepResult.isFailure) {
+                Log.e(TAG, "[$nodeId] prepareFlow falhou", prepResult.exceptionOrNull())
+                repository.markError(
+                    nodeId,
+                    prepResult.exceptionOrNull()?.message ?: "Flow prepare failed"
+                )
                 return@withPermit false
             }
 
@@ -178,11 +193,16 @@ class MultiNodeAcquisitionService : Service() {
 
     private suspend fun stopManagedLogging(nodeId: String) {
         nodeJobs.remove(nodeId)?.cancelAndJoin()
-        officialSdLogEngine.stop(nodeId)
+
+        runCatching { sdFlowStarter.stopFlow(nodeId) }
+        runCatching { officialSdLogEngine.stop(nodeId) }
+
         repository.markLogging(nodeId, false)
         activeLoggingNodes.remove(nodeId)
+
         officialSdLogEngine.release(nodeId)
         repository.disconnect(nodeId)
+
         releaseWakeLock(force = false)
         updateNotification()
         maybeStopSelf()
@@ -248,5 +268,6 @@ class MultiNodeAcquisitionService : Service() {
         const val EXTRA_MAX_CONNECTION_RETRIES = "extra_max_connection_retries"
         private const val CHANNEL_ID = "multi_node_acquisition"
         private const val NOTIFICATION_ID = 4102
+        const val EXTRA_FLOW_FILE_NAME = "extra_flow_file_name"
     }
 }

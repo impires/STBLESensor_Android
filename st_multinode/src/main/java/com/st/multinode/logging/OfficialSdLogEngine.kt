@@ -273,6 +273,10 @@ class OfficialSdLogEngine @Inject constructor(
         allowSpecialFloatingPointValues = true
     }
 
+    suspend fun sendRawCommand(nodeId: String, cmd: PnPLCmd) {
+        sendCommand(nodeId, cmd)
+    }
+
     private fun manualExtractPnPL(nodeId: String, rawData: ByteArray): PnPLConfig? {
         if (rawData.isEmpty()) return null
         val header = rawData[0].toInt() and 0xFF
