@@ -60,7 +60,7 @@ class MultiNodeAcquisitionService : Service() {
         createNotificationChannel()
         startForeground(
             NOTIFICATION_ID,
-            buildNotification("ST BLE Sensor", "Ready for multi-device acquisition")
+            buildNotification("Ready for multi-device acquisition")
         )
     }
 
@@ -176,7 +176,7 @@ class MultiNodeAcquisitionService : Service() {
             withTimeout(30000) {
                 val pollingJob = launch {
                     while (true) {
-                        delay(10000)
+                        delay(3000)
                         Log.d(TAG, "[$nodeId] Ainda aguardando logging... solicitando status novamente.")
                         officialSdLogEngine.requestStatus(nodeId)
                     }
@@ -273,7 +273,7 @@ class MultiNodeAcquisitionService : Service() {
             "$packageName:MultiNodeAcquisition"
         ).apply {
             setReferenceCounted(false)
-            acquire()
+            acquire(12 * 60 * 60 * 1000L) // 12 hours timeout
         }
     }
 
@@ -291,15 +291,29 @@ class MultiNodeAcquisitionService : Service() {
             activeLoggingNodes.isNotEmpty() -> "Logging em ${activeLoggingNodes.size} nó(s)"
             else -> "A preparar/parado"
         }
-        notificationManager.notify(
-            NOTIFICATION_ID,
-            buildNotification("ST BLE Sensor", content)
-        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        try {
+            notificationManager.notify(
+                NOTIFICATION_ID,
+                buildNotification(content)
+            )
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Erro ao enviar notificação", e)
+        }
     }
 
-    private fun buildNotification(title: String, text: String) =
+    private fun buildNotification(text: String) =
         NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(title)
+            .setContentTitle("ST BLE Sensor")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
             .setOngoing(true)
@@ -315,15 +329,13 @@ class MultiNodeAcquisitionService : Service() {
             .build()
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val mgr = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                "MultiNode Acquisition",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            mgr.createNotificationChannel(channel)
-        }
+        val mgr = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val channel = NotificationChannel(
+            NOTIFICATION_CHANNEL_ID,
+            "MultiNode Acquisition",
+            NotificationManager.IMPORTANCE_LOW
+        )
+        mgr.createNotificationChannel(channel)
     }
 
     companion object {

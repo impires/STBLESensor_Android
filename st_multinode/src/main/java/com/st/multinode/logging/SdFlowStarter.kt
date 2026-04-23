@@ -19,10 +19,10 @@ class SdFlowStarter @Inject constructor(
             "Flow file name vazio"
         }
 
-        val compName = "sd_log"
+        val compName = officialSdLogEngine.getLogComponentName(nodeId)
         val datetimeShort = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ROOT).format(Date())
 
-        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName")
+        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName (usando componente: $compName)")
 
         Log.d(TAG, "[$nodeId] set_time")
         officialSdLogEngine.sendRawCommand(
@@ -72,73 +72,60 @@ class SdFlowStarter @Inject constructor(
     }
 
     suspend fun startFlow(nodeId: String, flowFileName: String): Result<Unit> = runCatching {
-        require(flowFileName.isNotBlank()) {
-            "Flow file name vazio"
-        }
+        require(flowFileName.isNotBlank()) { "Flow file name vazio" }
 
-        val compName = "sd_log"
+        val logComp = officialSdLogEngine.getLogComponentName(nodeId)
+        val controllerComp = "log_controller"
 
-        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName")
+        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName (logComp=$logComp, controllerComp=$controllerComp)")
 
-        Log.d(TAG, "[$nodeId] load_file")
+        Log.d(TAG, "[$nodeId] get_status inicial em $logComp")
         officialSdLogEngine.sendRawCommand(
             nodeId,
-            PnPLCmd(
-                component = compName,
-                command = "load_file",
-                fields = mapOf("value" to flowFileName)
-            )
+            PnPLCmd(component = logComp, command = "get_status")
         )
-        delay(2000)
-
-        Log.d(TAG, "[$nodeId] get_status após load_file")
-        officialSdLogEngine.sendRawCommand(
-            nodeId,
-            PnPLCmd(component = compName, command = "get_status")
-        )
-        delay(1500)
+        delay(1000)
 
         Log.d(TAG, "[$nodeId] run")
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(
-                component = compName,
+                component = logComp,
                 command = "run"
             )
         )
         delay(3000)
 
-        Log.d(TAG, "[$nodeId] get_status após run")
         officialSdLogEngine.sendRawCommand(
             nodeId,
-            PnPLCmd(component = compName, command = "get_status")
+            PnPLCmd(component = logComp, command = "get_status")
         )
-        delay(1500)
+        delay(2000)
 
         Log.d(TAG, "[$nodeId] start_log")
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(
-                component = compName,
+                component = logComp,
                 command = "start_log",
                 fields = mapOf("interface" to 2)
             )
         )
         delay(5000)
 
-        Log.d(TAG, "[$nodeId] get_status final")
         officialSdLogEngine.sendRawCommand(
             nodeId,
-            PnPLCmd(component = compName, command = "get_status")
+            PnPLCmd(component = logComp, command = "get_status")
         )
+        delay(2000)
 
         Log.i(TAG, "[$nodeId] Comandos de start do flow enviados")
     }
 
     suspend fun stopFlow(nodeId: String): Result<Unit> = runCatching {
-        val compName = "sd_log"
+        val compName = officialSdLogEngine.getLogComponentName(nodeId)
 
-        Log.d(TAG, "[$nodeId] stop_log")
+        Log.d(TAG, "[$nodeId] stop_log (usando componente: $compName)")
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(

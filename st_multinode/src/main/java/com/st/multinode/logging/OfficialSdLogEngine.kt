@@ -25,7 +25,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -42,6 +43,8 @@ class OfficialSdLogEngine @Inject constructor(
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val initialSyncAttempted = ConcurrentHashMap.newKeySet<String>()
 
     private val observeFeatureJobs = ConcurrentHashMap<String, Job>()
     private val pnplFeatures = ConcurrentHashMap<String, PnPL>()
@@ -64,8 +67,27 @@ class OfficialSdLogEngine @Inject constructor(
     }
 
     suspend fun requestStatus(nodeId: String) {
-        val compName = getLogComponentName(nodeId)
-        sendCommand(nodeId, PnPLCmd(component = compName, command = "get_status"))
+        val compName = nodeComponentNames[nodeId]
+        Log.d(TAG, "[$nodeId] Solicitando status (comp=${compName ?: "desconhecido"})")
+
+        if (compName == null) {
+            runCatching { sendInternalCommand(nodeId, PnPLCmd.ALL) }
+            runCatching { sendInternalCommand(nodeId, PnPLCmd(component = SD_LOG_COMPONENT, command = "get_status")) }
+            runCatching { sendInternalCommand(nodeId, PnPLCmd(component = "log_controller", command = "get_status")) }
+        } else {
+            runCatching { sendInternalCommand(nodeId, PnPLCmd(component = compName, command = "get_status")) }
+            if (compName == SD_LOG_COMPONENT) {
+                runCatching { sendInternalCommand(nodeId, PnPLCmd(component = "log_controller", command = "get_status")) }
+            }
+        }
+    }
+
+    private suspend fun sendInternalCommand(nodeId: String, cmd: PnPLCmd) {
+        val pnplFeature = pnplFeatures[nodeId] ?: return
+        commandMutex.withLock {
+            Log.v(TAG, "[$nodeId] Escrevendo comando PnPL (interno): ${cmd.command ?: "ALL"} em ${cmd.component ?: "ROOT"}")
+            blueManager.writeFeatureCommand(nodeId, PnPLCommand(pnplFeature, cmd), 0L)
+        }
     }
 
     suspend fun stop(nodeId: String): Result<Unit> = runCatching {
@@ -86,6 +108,7 @@ class OfficialSdLogEngine @Inject constructor(
         pnplFeatures.remove(nodeId)
         nodeBuffers.remove(nodeId)
         nodeComponentNames.remove(nodeId)
+        initialSyncAttempted.remove(nodeId)
 
         _states.update { current ->
             current.toMutableMap().apply {
@@ -94,7 +117,7 @@ class OfficialSdLogEngine @Inject constructor(
         }
     }
 
-    private fun getLogComponentName(nodeId: String): String {
+    fun getLogComponentName(nodeId: String): String {
         return nodeComponentNames[nodeId] ?: SD_LOG_COMPONENT
     }
 
@@ -131,64 +154,96 @@ class OfficialSdLogEngine @Inject constructor(
 
                 val updateFlow = blueManager.getFeatureUpdates(nodeId, listOf(pnplFeature), true)
 
+                Log.e(TAG, "[$nodeId] SUBSCRIBED TO PnPL FLOW")
+
                 observeFeatureJobs[nodeId] = scope.launch {
                     updateFlow
                         .catch { e ->
                             Log.e(TAG, "[$nodeId] Erro no stream PnPL", e)
                         }
                         .collect { update ->
-                            Log.e(TAG, "[$nodeId] UPDATE RAW BYTES: ${update.rawData.joinToString(",")}")
-                            Log.e(TAG, "[$nodeId] UPDATE RAW STRING: ${update.rawData.toString(Charsets.UTF_8)}")
-                            Log.e(TAG, "[$nodeId] UPDATE DATA CLASS: ${update.data?.javaClass?.name}")
+                            Log.e(TAG, "[$nodeId] ENTERED COLLECT")
+
+                            val rawData = update.rawData
+                            val rawString = rawData.toString(Charsets.UTF_8).trim()
+
+                            Log.e(TAG, "[$nodeId] PnPL RX Raw (hex): ${rawData.joinToString(" ") { "%02X".format(it) }}")
+                            Log.e(TAG, "[$nodeId] PnPL RX Raw (str): $rawString")
+                            Log.e(TAG, "[$nodeId] Update Data Class: ${update.data?.javaClass?.name}")
 
                             val config = update.data as? PnPLConfig
 
                             if (config?.deviceStatus?.value == null && config?.setCommandResponse?.value == null) {
+                                Log.v(TAG, "[$nodeId] Fragmento PnPL recebido (raw=${rawData.size} bytes), tentando reassemblagem...")
+
                                 val extracted = manualExtractPnPL(nodeId, update.rawData)
 
-                                if (extracted == null) {
-                                    Log.e(TAG, "[$nodeId] manualExtractPnPL FALHOU")
-                                } else {
-                                    Log.d(TAG, "[$nodeId] manualExtractPnPL OK")
+                                if (extracted != null) {
+                                    Log.i(TAG, "[$nodeId] manualExtractPnPL REASSEMBLED OK")
                                     handleStatusUpdate(nodeId, extracted)
                                 }
                             } else if (config != null) {
                                 Log.e(TAG, "[$nodeId] PnPLConfig recebido")
                                 handleStatusUpdate(nodeId, config)
+                            } else {
+                                Log.e(TAG, "[$nodeId] Update recebido mas config continua null")
                             }
                         }
                 }
 
-                needsWait = _states.value[nodeId] == null
+                needsWait = !_states.value.containsKey(nodeId)
             }
         }
 
-        if (needsWait) {
-            Log.d(TAG, "[$nodeId] Aguardando sincronização inicial do SDK...")
-            try {
-                withTimeout(5000) {
-                    _states.first { it.containsKey(nodeId) }
+        val shouldWaitNow = needsWait && initialSyncAttempted.add(nodeId)
+
+        if (shouldWaitNow) {
+            Log.d(TAG, "[$nodeId] Iniciando sincronização inicial (timeout 8s)...")
+
+            // Dispara solicitações de status periódicas até receber o primeiro estado ou dar timeout
+            val syncJob = scope.launch {
+                try {
+                    repeat(5) {
+                        requestStatus(nodeId)
+                        delay(1500)
+                    }
+                } catch (e: Exception) {
+                    Log.v(TAG, "[$nodeId] Cancelando retry de status inicial")
                 }
-            } catch (_: Exception) {
-                Log.w(TAG, "[$nodeId] Timeout na sincronização inicial. Prosseguindo mesmo assim.")
+            }
+
+            try {
+                withTimeoutOrNull(8000) {
+                    _states.first { it.containsKey(nodeId) }
+                } ?: Log.w(TAG, "[$nodeId] Sincronização inicial incompleta após 8s. Prosseguindo assim mesmo.")
+            } finally {
+                syncJob.cancel()
             }
         }
     }
 
-    private fun manualExtractPnPL(nodeId: String, rawData: ByteArray): PnPLConfig? {
-        if (rawData.size < 3) return null
+    private fun manualExtractPnPL(
+        nodeId: String,
+        rawData: ByteArray,
+        forceEnd: Boolean = false
+    ): PnPLConfig? {
+        if (rawData.isEmpty()) return null
 
         val header = rawData[0].toInt() and 0xFF
-        val payloadStartIndex = 3
+        val payloadStartIndex = 1
 
-        Log.d(TAG, "[$nodeId] manualExtractPnPL header=0x${header.toString(16)} size=${rawData.size}")
+        Log.v(TAG, "[$nodeId] manualExtractPnPL header=0x${"%02X".format(header)} size=${rawData.size}")
 
-        // 0x00 = pacote completo
-        // 0x20 = pacote completo variante
-        // 0x10 = início de pacote multi-frame
-        // 0x80 = fim de pacote multi-frame
-        val isStart = (header == 0x00 || header == 0x20 || header == 0x10)
-        val isEnd = (header == 0x00 || header == 0x20 || header == 0x80)
+        // ST PnPL fragmentation headers:
+        // 0x00: Single/Complete
+        // 0x01: Start of fragmented message (standard)
+        // 0x80: Start of fragmented message (alternative)
+        // 0x02: Middle/Continuation fragment (standard)
+        // 0x40: Middle/Continuation fragment (alternative)
+        // 0x03: End/Last fragment (standard)
+        // 0x20, 0x10: End/Last fragment (alternative)
+        val isStart = (header == 0x00 || header == 0x01 || header == 0x80)
+        val isEnd = forceEnd || (header == 0x00 || header == 0x03 || header == 0x20 || header == 0x10)
 
         val buffer = nodeBuffers.getOrPut(nodeId) { ByteArrayOutputStream() }
 
@@ -197,7 +252,12 @@ class OfficialSdLogEngine @Inject constructor(
         }
 
         if (rawData.size > payloadStartIndex) {
-            buffer.write(rawData, payloadStartIndex, rawData.size - payloadStartIndex)
+            // Filter null bytes (0x00) which are often added as padding in BLE and break JSON parsing
+            for (i in payloadStartIndex until rawData.size) {
+                if (rawData[i] != 0.toByte()) {
+                    buffer.write(rawData[i].toInt())
+                }
+            }
         }
 
         if (!isEnd) return null
@@ -207,6 +267,11 @@ class OfficialSdLogEngine @Inject constructor(
         if (jsonStart < 0) return null
 
         val jsonString = rawString.substring(jsonStart)
+
+        // Basic check to see if JSON is likely complete before parsing
+        if (!jsonString.endsWith("}")) {
+            return null
+        }
 
         return try {
             val jsonElement = jsonHandler.parseToJsonElement(jsonString)
@@ -222,30 +287,9 @@ class OfficialSdLogEngine @Inject constructor(
                     value = null
                 )
             )
-        } catch (firstError: Exception) {
-            try {
-                val jsonElement = jsonHandler.parseToJsonElement(jsonString)
-
-                PnPLConfig(
-                    deviceStatus = FeatureField(
-                        name = "DeviceStatus",
-                        value = PnPLDevice(
-                            null,
-                            null,
-                            null,
-                            null,
-                            listOf(jsonElement.jsonObject)
-                        )
-                    ),
-                    setCommandResponse = FeatureField(
-                        name = "SetCommandResponse",
-                        value = null
-                    )
-                )
-            } catch (secondError: Exception) {
-                Log.e(TAG, "[$nodeId] manualExtractPnPL falhou", secondError)
-                null
-            }
+        } catch (e: Exception) {
+            Log.e(TAG, "[$nodeId] manualExtractPnPL falhou", e)
+            null
         }
     }
 
@@ -265,6 +309,7 @@ class OfficialSdLogEngine @Inject constructor(
         var sdMounted: Boolean? = null
         var isLogging: Boolean? = null
         var bestLogComponent: String? = null
+        var logStatusReady = false
 
         fun extractFromObject(obj: JsonObject, componentName: String?) {
             var foundInThis = false
@@ -282,10 +327,16 @@ class OfficialSdLogEngine @Inject constructor(
             val logValPrim = obj[LOG_STATUS_JSON_KEY]?.jsonPrimitive
                 ?: obj["is_logging"]?.jsonPrimitive
                 ?: obj["status"]?.jsonPrimitive
+                ?: obj["logging"]?.jsonPrimitive
+                ?: obj["log"]?.jsonPrimitive
 
             if (logValPrim != null) {
                 val boolVal = logValPrim.booleanOrNull ?: logValPrim.intOrNull?.let { it == 1 }
                 val content = logValPrim.content.lowercase()
+
+                if (content.contains("ready to start") || content.contains("log ready")) {
+                    logStatusReady = true
+                }
 
                 isLogging = when {
                     boolVal != null -> boolVal
@@ -294,10 +345,18 @@ class OfficialSdLogEngine @Inject constructor(
                     content.contains("recording") -> true
                     content.contains("running") -> true
                     content.contains("acquiring") -> true
+                    content.contains("active") -> true
+                    content.contains("on") -> true
                     content.contains("ready") -> false
                     content.contains("stopped") -> false
                     content.contains("idle") -> false
+                    content.contains("off") -> false
                     else -> isLogging
+                }
+
+                // New heuristic: if the log_status is "Ready to start", we are definitely NOT logging yet
+                if (content.contains("ready to start") || content.contains("log ready")) {
+                    isLogging = false
                 }
 
                 foundInThis = true
@@ -345,8 +404,12 @@ class OfficialSdLogEngine @Inject constructor(
         }
 
         val prevState = _states.value[nodeId]
+
+        // Se o log está pronto para começar, assumimos que o SD está ok mesmo se sd_mounted não vier no JSON
+        val finalSdMounted = if (logStatusReady) true else (sdMounted ?: prevState?.sdMounted ?: false)
+
         val mergedState = SdLogState(
-            sdMounted = (sdMounted ?: prevState?.sdMounted) == true,
+            sdMounted = finalSdMounted,
             isLogging = (isLogging ?: prevState?.isLogging) == true
         )
 
@@ -367,6 +430,16 @@ class OfficialSdLogEngine @Inject constructor(
                 TAG,
                 "[$nodeId] Estado inalterado: SD=${mergedState.sdMounted}, LOG=${mergedState.isLogging}"
             )
+        }
+    }
+
+    suspend fun awaitCondition(nodeId: String, timeout: Long = 10000, condition: (SdLogState) -> Boolean): Boolean {
+        return try {
+            withTimeoutOrNull(timeout) {
+                _states.first { it[nodeId]?.let(condition) == true }
+            } != null
+        } catch (e: Exception) {
+            false
         }
     }
 
