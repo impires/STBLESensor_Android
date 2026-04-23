@@ -15,62 +15,28 @@ class SdFlowStarter @Inject constructor(
 ) {
 
     suspend fun prepareFlow(nodeId: String, flowFileName: String): Result<Unit> = runCatching {
-        require(flowFileName.isNotBlank()) {
-            "Flow file name vazio"
-        }
+        require(flowFileName.isNotBlank()) { "Flow file name vazio" }
 
         officialSdLogEngine.ensurePnplReady(nodeId)
 
         val logComp = officialSdLogEngine.getLogComponentName(nodeId)
-        val datetimeShort = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ROOT).format(Date())
+        val controllerComp = officialSdLogEngine.getControllerComponentName(nodeId)
 
-        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName (usando componente: $logComp)")
+        Log.d("SdFlowStarter", "prepareFlow($nodeId)")
+        Log.d("SdFlowStarter", "logComp=$logComp controllerComp=$controllerComp flow=$flowFileName")
 
-        Log.d(TAG, "[$nodeId] set_time")
-        officialSdLogEngine.sendRawCommand(
-            nodeId,
-            PnPLCmd(
-                component = logComp,
-                command = "set_time",
-                fields = mapOf("datetime" to datetimeShort)
-            )
-        )
-        delay(1000)
-
-        Log.d(TAG, "[$nodeId] acquisition_info")
-        officialSdLogEngine.sendRawCommand(
-            nodeId,
-            PnPLCmd(
-                component = logComp,
-                command = "acquisition_info",
-                fields = mapOf(
-                    "name" to "M_$datetimeShort",
-                    "description" to "MN",
-                    "interface" to 2
-                )
-            )
-        )
-        delay(1500)
-
-        Log.d(TAG, "[$nodeId] load_file")
-        officialSdLogEngine.sendRawCommand(
-            nodeId,
-            PnPLCmd(
-                component = logComp,
-                command = "load_file",
-                fields = mapOf("value" to flowFileName)
-            )
-        )
-        delay(2000)
-
-        Log.d(TAG, "[$nodeId] get_status após load_file")
+        // discovery leve apenas
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(component = logComp, command = "get_status")
         )
-        delay(1500)
 
-        Log.i(TAG, "[$nodeId] Flow preparado")
+        delay(300)
+
+        officialSdLogEngine.sendRawCommand(
+            nodeId,
+            PnPLCmd(component = controllerComp, command = "get_status")
+        )
     }
 
     suspend fun startFlow(nodeId: String, flowFileName: String): Result<Unit> = runCatching {
@@ -79,46 +45,41 @@ class SdFlowStarter @Inject constructor(
         officialSdLogEngine.ensurePnplReady(nodeId)
 
         val logComp = officialSdLogEngine.getLogComponentName(nodeId)
-        val controllerComp = officialSdLogEngine.getControllerComponentName()
+        val controllerComp = officialSdLogEngine.getControllerComponentName(nodeId)
 
-        Log.d(TAG, "[$nodeId] Flow recebido: $flowFileName (logComp=$logComp, controllerComp=$controllerComp)")
+        Log.d("SdFlowStarter", "startFlow($nodeId)")
+        Log.d("SdFlowStarter", "logComp=$logComp controllerComp=$controllerComp flow=$flowFileName")
 
-        Log.d(TAG, "[$nodeId] get_status inicial em $logComp")
-        officialSdLogEngine.sendRawCommand(
-            nodeId,
-            PnPLCmd(component = logComp, command = "get_status")
-        )
-        delay(1000)
-
-        Log.d(TAG, "[$nodeId] get_status inicial em $controllerComp")
+        // 1. estado inicial
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(component = controllerComp, command = "get_status")
         )
-        delay(1000)
+        delay(500)
 
-        Log.d(TAG, "[$nodeId] run em $controllerComp")
+        // 2. carregar o flow apenas no arranque
+        officialSdLogEngine.sendRawCommand(
+            nodeId,
+            PnPLCmd(
+                component = controllerComp,
+                command = "load_file",
+                fields = mapOf("value" to flowFileName)
+            )
+        )
+
+        Log.d("SdFlowStarter", "load_file enviado para $controllerComp")
+        delay(2000)
+
+        // 3. arrancar o flow
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(component = controllerComp, command = "run")
         )
+
+        Log.d("SdFlowStarter", "run enviado para $controllerComp")
         delay(3000)
 
-        Log.d(TAG, "[$nodeId] get_status após run em $logComp")
-        officialSdLogEngine.sendRawCommand(
-            nodeId,
-            PnPLCmd(component = logComp, command = "get_status")
-        )
-        delay(1000)
-
-        Log.d(TAG, "[$nodeId] get_status após run em $controllerComp")
-        officialSdLogEngine.sendRawCommand(
-            nodeId,
-            PnPLCmd(component = controllerComp, command = "get_status")
-        )
-        delay(2000)
-
-        Log.d(TAG, "[$nodeId] start_log em $logComp")
+        // 4. iniciar logging SD
         officialSdLogEngine.sendRawCommand(
             nodeId,
             PnPLCmd(
@@ -127,23 +88,8 @@ class SdFlowStarter @Inject constructor(
                 fields = mapOf("interface" to 2)
             )
         )
-        delay(3000)
 
-        Log.d(TAG, "[$nodeId] get_status final em $logComp")
-        officialSdLogEngine.sendRawCommand(
-            nodeId,
-            PnPLCmd(component = logComp, command = "get_status")
-        )
-        delay(1000)
-
-        Log.d(TAG, "[$nodeId] get_status final em $controllerComp")
-        officialSdLogEngine.sendRawCommand(
-            nodeId,
-            PnPLCmd(component = controllerComp, command = "get_status")
-        )
-        delay(2000)
-
-        Log.i(TAG, "[$nodeId] Comandos de start do flow enviados")
+        Log.d("SdFlowStarter", "start_log enviado para $logComp")
     }
 
     suspend fun stopFlow(nodeId: String): Result<Unit> = runCatching {

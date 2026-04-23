@@ -113,7 +113,9 @@ class OfficialSdLogEngine @Inject constructor(
         return nodeComponentNames[nodeId] ?: SD_LOG_COMPONENT
     }
 
-    fun getControllerComponentName(): String = LOG_CONTROLLER_COMPONENT
+    fun getControllerComponentName(nodeId: String): String {
+        return nodeControllerNames[nodeId] ?: LOG_CONTROLLER_COMPONENT
+    }
 
     suspend fun ensurePnplReady(nodeId: String) {
         val pnplFeature = pnpLock.withLock {
@@ -131,7 +133,7 @@ class OfficialSdLogEngine @Inject constructor(
                     field.set(feature, true)
                 }
 
-                feature.setMaxPayLoadSize(240)
+                feature.setMaxPayLoadSize(150)
                 pnplFeatures[nodeId] = feature
                 return@withLock feature
             }
