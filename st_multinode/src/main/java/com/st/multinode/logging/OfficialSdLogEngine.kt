@@ -10,6 +10,7 @@ import com.st.blue_sdk.features.extended.pnpl.model.PnPLDevice
 import com.st.blue_sdk.features.extended.pnpl.request.PnPLCmd
 import com.st.blue_sdk.features.extended.pnpl.request.PnPLCommand
 import java.io.ByteArrayOutputStream
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,17 +26,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.util.Locale
 
 @Singleton
 class OfficialSdLogEngine @Inject constructor(
@@ -44,12 +45,14 @@ class OfficialSdLogEngine @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val initialSyncAttempted = ConcurrentHashMap.newKeySet<String>()
-
     private val observeFeatureJobs = ConcurrentHashMap<String, Job>()
     private val pnplFeatures = ConcurrentHashMap<String, PnPL>()
     private val nodeBuffers = ConcurrentHashMap<String, ByteArrayOutputStream>()
     private val nodeComponentNames = ConcurrentHashMap<String, String>()
+    private val initialSyncAttempted = Collections.synchronizedSet(mutableSetOf<String>())
+
+    private val nodeControllerNames = ConcurrentHashMap<String, String>()
+    private val nodeFileNames = ConcurrentHashMap<String, String>()
 
     private val pnpLock = Mutex()
     private val commandMutex = Mutex()
@@ -67,27 +70,14 @@ class OfficialSdLogEngine @Inject constructor(
     }
 
     suspend fun requestStatus(nodeId: String) {
-        val compName = nodeComponentNames[nodeId]
-        Log.d(TAG, "[$nodeId] Solicitando status (comp=${compName ?: "desconhecido"})")
-
-        if (compName == null) {
-            runCatching { sendInternalCommand(nodeId, PnPLCmd.ALL) }
-            runCatching { sendInternalCommand(nodeId, PnPLCmd(component = SD_LOG_COMPONENT, command = "get_status")) }
-            runCatching { sendInternalCommand(nodeId, PnPLCmd(component = "log_controller", command = "get_status")) }
-        } else {
-            runCatching { sendInternalCommand(nodeId, PnPLCmd(component = compName, command = "get_status")) }
-            if (compName == SD_LOG_COMPONENT) {
-                runCatching { sendInternalCommand(nodeId, PnPLCmd(component = "log_controller", command = "get_status")) }
-            }
-        }
+        val compName = getLogComponentName(nodeId)
+        Log.d(TAG, "[$nodeId] Solicitando status (comp=$compName)")
+        sendCommand(nodeId, PnPLCmd(component = compName, command = "get_status"))
     }
 
-    private suspend fun sendInternalCommand(nodeId: String, cmd: PnPLCmd) {
-        val pnplFeature = pnplFeatures[nodeId] ?: return
-        commandMutex.withLock {
-            Log.v(TAG, "[$nodeId] Escrevendo comando PnPL (interno): ${cmd.command ?: "ALL"} em ${cmd.component ?: "ROOT"}")
-            blueManager.writeFeatureCommand(nodeId, PnPLCommand(pnplFeature, cmd), 0L)
-        }
+    suspend fun requestStatusFor(nodeId: String, component: String) {
+        Log.d(TAG, "[$nodeId] Solicitando status explícito em $component")
+        sendCommand(nodeId, PnPLCmd(component = component, command = "get_status"))
     }
 
     suspend fun stop(nodeId: String): Result<Unit> = runCatching {
@@ -109,6 +99,8 @@ class OfficialSdLogEngine @Inject constructor(
         nodeBuffers.remove(nodeId)
         nodeComponentNames.remove(nodeId)
         initialSyncAttempted.remove(nodeId)
+        nodeControllerNames.remove(nodeId)
+        nodeFileNames.remove(nodeId)
 
         _states.update { current ->
             current.toMutableMap().apply {
@@ -121,7 +113,9 @@ class OfficialSdLogEngine @Inject constructor(
         return nodeComponentNames[nodeId] ?: SD_LOG_COMPONENT
     }
 
-    private suspend fun ensurePnplReady(nodeId: String) {
+    fun getControllerComponentName(): String = LOG_CONTROLLER_COMPONENT
+
+    suspend fun ensurePnplReady(nodeId: String) {
         val pnplFeature = pnpLock.withLock {
             pnplFeatures[nodeId]?.let { return@withLock it }
 
@@ -154,7 +148,7 @@ class OfficialSdLogEngine @Inject constructor(
 
                 val updateFlow = blueManager.getFeatureUpdates(nodeId, listOf(pnplFeature), true)
 
-                Log.e(TAG, "[$nodeId] SUBSCRIBED TO PnPL FLOW")
+                Log.d(TAG, "[$nodeId] SUBSCRIBED TO PnPL FLOW")
 
                 observeFeatureJobs[nodeId] = scope.launch {
                     updateFlow
@@ -162,31 +156,28 @@ class OfficialSdLogEngine @Inject constructor(
                             Log.e(TAG, "[$nodeId] Erro no stream PnPL", e)
                         }
                         .collect { update ->
-                            Log.e(TAG, "[$nodeId] ENTERED COLLECT")
+                            Log.d(TAG, "[$nodeId] ENTERED COLLECT")
 
                             val rawData = update.rawData
-                            val rawString = rawData.toString(Charsets.UTF_8).trim()
-
-                            Log.e(TAG, "[$nodeId] PnPL RX Raw (hex): ${rawData.joinToString(" ") { "%02X".format(it) }}")
-                            Log.e(TAG, "[$nodeId] PnPL RX Raw (str): $rawString")
-                            Log.e(TAG, "[$nodeId] Update Data Class: ${update.data?.javaClass?.name}")
-
                             val config = update.data as? PnPLConfig
 
-                            if (config?.deviceStatus?.value == null && config?.setCommandResponse?.value == null) {
-                                Log.v(TAG, "[$nodeId] Fragmento PnPL recebido (raw=${rawData.size} bytes), tentando reassemblagem...")
+                            Log.v(
+                                TAG,
+                                "[$nodeId] PnPL RX Raw (hex): ${rawData.joinToString(" ") { "%02X".format(it) }}"
+                            )
 
-                                val extracted = manualExtractPnPL(nodeId, update.rawData)
+                            if (isUsefulPnplConfig(config)) {
+                                Log.d(TAG, "[$nodeId] PnPLConfig final útil recebido")
+                                handleStatusUpdate(nodeId, config!!)
+                                return@collect
+                            }
 
-                                if (extracted != null) {
-                                    Log.i(TAG, "[$nodeId] manualExtractPnPL REASSEMBLED OK")
-                                    handleStatusUpdate(nodeId, extracted)
-                                }
-                            } else if (config != null) {
-                                Log.e(TAG, "[$nodeId] PnPLConfig recebido")
-                                handleStatusUpdate(nodeId, config)
-                            } else {
-                                Log.e(TAG, "[$nodeId] Update recebido mas config continua null")
+                            Log.v(TAG, "[$nodeId] Fragmento PnPL recebido (raw=${rawData.size} bytes), tentando reassemblagem...")
+
+                            val extracted = manualExtractPnPL(nodeId, rawData)
+                            if (extracted != null) {
+                                Log.d(TAG, "[$nodeId] Reassemblagem PnPL completa com sucesso")
+                                handleStatusUpdate(nodeId, extracted)
                             }
                         }
                 }
@@ -198,52 +189,40 @@ class OfficialSdLogEngine @Inject constructor(
         val shouldWaitNow = needsWait && initialSyncAttempted.add(nodeId)
 
         if (shouldWaitNow) {
-            Log.d(TAG, "[$nodeId] Iniciando sincronização inicial (timeout 8s)...")
-
-            // Dispara solicitações de status periódicas até receber o primeiro estado ou dar timeout
-            val syncJob = scope.launch {
-                try {
-                    repeat(5) {
-                        requestStatus(nodeId)
-                        delay(1500)
-                    }
-                } catch (e: Exception) {
-                    Log.v(TAG, "[$nodeId] Cancelando retry de status inicial")
-                }
-            }
-
+            Log.d(TAG, "[$nodeId] Aguardando sincronização inicial do SDK...")
             try {
-                withTimeoutOrNull(8000) {
+                withTimeout(5000) {
                     _states.first { it.containsKey(nodeId) }
-                } ?: Log.w(TAG, "[$nodeId] Sincronização inicial incompleta após 8s. Prosseguindo assim mesmo.")
-            } finally {
-                syncJob.cancel()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "[$nodeId] Timeout na sincronização inicial. Nenhum estado recebido ainda.", e)
             }
         }
     }
 
+    private fun isUsefulPnplConfig(config: PnPLConfig?): Boolean {
+        val deviceStatus = config?.deviceStatus?.value ?: return false
+        return deviceStatus.components.isNotEmpty()
+    }
+
     private fun manualExtractPnPL(
         nodeId: String,
-        rawData: ByteArray,
-        forceEnd: Boolean = false
+        rawData: ByteArray
     ): PnPLConfig? {
         if (rawData.isEmpty()) return null
 
         val header = rawData[0].toInt() and 0xFF
-        val payloadStartIndex = 1
+        val payloadStartIndex = when (header) {
+            0x00, 0x20, 0x80 -> 3
+            0x40 -> 1
+            else -> 1
+        }
 
-        Log.v(TAG, "[$nodeId] manualExtractPnPL header=0x${"%02X".format(header)} size=${rawData.size}")
+        Log.v(TAG, "[$nodeId] manualExtractPnPL header=0x${header.toString(16)} size=${rawData.size}")
 
-        // ST PnPL fragmentation headers:
-        // 0x00: Single/Complete
-        // 0x01: Start of fragmented message (standard)
-        // 0x80: Start of fragmented message (alternative)
-        // 0x02: Middle/Continuation fragment (standard)
-        // 0x40: Middle/Continuation fragment (alternative)
-        // 0x03: End/Last fragment (standard)
-        // 0x20, 0x10: End/Last fragment (alternative)
-        val isStart = (header == 0x00 || header == 0x01 || header == 0x80)
-        val isEnd = forceEnd || (header == 0x00 || header == 0x03 || header == 0x20 || header == 0x10)
+        val isStart = header == 0x00 || header == 0x20
+        val isMiddle = header == 0x40
+        val isEnd = header == 0x80
 
         val buffer = nodeBuffers.getOrPut(nodeId) { ByteArrayOutputStream() }
 
@@ -252,30 +231,61 @@ class OfficialSdLogEngine @Inject constructor(
         }
 
         if (rawData.size > payloadStartIndex) {
-            // Filter null bytes (0x00) which are often added as padding in BLE and break JSON parsing
-            for (i in payloadStartIndex until rawData.size) {
-                if (rawData[i] != 0.toByte()) {
-                    buffer.write(rawData[i].toInt())
-                }
-            }
+            buffer.write(rawData, payloadStartIndex, rawData.size - payloadStartIndex)
         }
 
-        if (!isEnd) return null
-
-        val rawString = buffer.toString(Charsets.UTF_8.name()).trim()
-        val jsonStart = rawString.indexOf('{')
-        if (jsonStart < 0) return null
-
-        val jsonString = rawString.substring(jsonStart)
-
-        // Basic check to see if JSON is likely complete before parsing
-        if (!jsonString.endsWith("}")) {
+        if (!isStart && !isMiddle && !isEnd) {
             return null
         }
 
+        if (!isEnd) {
+            return null
+        }
+
+        val rawString = buffer.toString(Charsets.UTF_8.name())
+            .replace("\u0000", "")
+            .trim()
+
+        val jsonStart = rawString.indexOf('{')
+        if (jsonStart < 0) {
+            return null
+        }
+
+        val jsonString = rawString.substring(jsonStart)
+
         return try {
+            Log.d(TAG, "[$nodeId] JSON reassemblado (${jsonString.length} chars)")
+            Log.d(TAG, "[$nodeId] *** BEGIN REASSEMBLED JSON ***")
+            Log.d(TAG, jsonString)
+            Log.d(TAG, "[$nodeId] *** END REASSEMBLED JSON ***")
+
             val jsonElement = jsonHandler.parseToJsonElement(jsonString)
-            val device = jsonHandler.decodeFromJsonElement<PnPLDevice>(jsonElement)
+            val rootObj = jsonElement.jsonObject
+
+            val devices = rootObj["devices"]
+            val firstDevice = devices
+                ?.let { jsonHandler.parseToJsonElement(it.toString()) }
+                ?.jsonArray
+                ?.firstOrNull()
+                ?.jsonObject
+                ?: return null
+
+            val boardId = firstDevice["board_id"]?.jsonPrimitive?.intOrNull
+            val fwId = firstDevice["fw_id"]?.jsonPrimitive?.intOrNull
+            val serial = firstDevice["sn"]?.jsonPrimitive?.contentOrNull
+            val componentsJson = firstDevice["components"]
+                ?.let { jsonHandler.parseToJsonElement(it.toString()) }
+                ?.jsonArray
+                ?.mapNotNull { it as? JsonObject }
+                ?: emptyList()
+
+            val device = PnPLDevice(
+                boardId = boardId,
+                fwId = fwId,
+                serialNumber = serial,
+                pnplBleResponses = null,
+                components = componentsJson
+            )
 
             PnPLConfig(
                 deviceStatus = FeatureField(
@@ -290,6 +300,8 @@ class OfficialSdLogEngine @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "[$nodeId] manualExtractPnPL falhou", e)
             null
+        } finally {
+            buffer.reset()
         }
     }
 
@@ -308,8 +320,9 @@ class OfficialSdLogEngine @Inject constructor(
         val components = deviceStatus.components
         var sdMounted: Boolean? = null
         var isLogging: Boolean? = null
+        var currentFileName: String? = null
         var bestLogComponent: String? = null
-        var logStatusReady = false
+        var bestControllerComponent: String? = null
 
         fun extractFromObject(obj: JsonObject, componentName: String?) {
             var foundInThis = false
@@ -318,25 +331,23 @@ class OfficialSdLogEngine @Inject constructor(
             if (sdValPrim != null) {
                 sdMounted = sdValPrim.booleanOrNull ?: sdValPrim.intOrNull?.let { it == 1 }
                 foundInThis = true
-                Log.v(
-                    TAG,
-                    "[$nodeId] SD_MOUNTED STRICT em $componentName: $sdMounted (raw=${sdValPrim.content})"
-                )
+                Log.v(TAG, "[$nodeId] SD_MOUNTED em $componentName: $sdMounted (raw=${sdValPrim.content})")
+            }
+
+            val fileNamePrim = obj[FILE_NAME_JSON_KEY]?.jsonPrimitive
+            if (fileNamePrim != null) {
+                currentFileName = fileNamePrim.content
+                foundInThis = true
+                Log.v(TAG, "[$nodeId] FILE_NAME em $componentName: $currentFileName")
             }
 
             val logValPrim = obj[LOG_STATUS_JSON_KEY]?.jsonPrimitive
                 ?: obj["is_logging"]?.jsonPrimitive
                 ?: obj["status"]?.jsonPrimitive
-                ?: obj["logging"]?.jsonPrimitive
-                ?: obj["log"]?.jsonPrimitive
 
             if (logValPrim != null) {
                 val boolVal = logValPrim.booleanOrNull ?: logValPrim.intOrNull?.let { it == 1 }
-                val content = logValPrim.content.lowercase()
-
-                if (content.contains("ready to start") || content.contains("log ready")) {
-                    logStatusReady = true
-                }
+                val content = logValPrim.content.lowercase(Locale.ROOT)
 
                 isLogging = when {
                     boolVal != null -> boolVal
@@ -345,36 +356,55 @@ class OfficialSdLogEngine @Inject constructor(
                     content.contains("recording") -> true
                     content.contains("running") -> true
                     content.contains("acquiring") -> true
-                    content.contains("active") -> true
-                    content.contains("on") -> true
+                    content.contains("ready to start") -> false
                     content.contains("ready") -> false
                     content.contains("stopped") -> false
                     content.contains("idle") -> false
-                    content.contains("off") -> false
                     else -> isLogging
                 }
 
-                // New heuristic: if the log_status is "Ready to start", we are definitely NOT logging yet
-                if (content.contains("ready to start") || content.contains("log ready")) {
-                    isLogging = false
-                }
-
                 foundInThis = true
-                Log.v(
-                    TAG,
-                    "[$nodeId] LOG_STATUS em $componentName: $isLogging (raw=${logValPrim.content})"
-                )
+                Log.v(TAG, "[$nodeId] LOG_STATUS em $componentName: $isLogging (raw=${logValPrim.content})")
             }
 
-            if (foundInThis && componentName != null && componentName != "root") {
+            val runValPrim = obj["is_active"]?.jsonPrimitive
+                ?: obj["enabled"]?.jsonPrimitive
+                ?: obj["running"]?.jsonPrimitive
+                ?: obj["is_running"]?.jsonPrimitive
+
+            if (runValPrim != null) {
+                val boolVal = runValPrim.booleanOrNull ?: runValPrim.intOrNull?.let { it == 1 }
+                if (boolVal != null) {
+                    isLogging = boolVal
+                    foundInThis = true
+                    Log.v(TAG, "[$nodeId] RUN FLAG em $componentName: $isLogging (raw=${runValPrim.content})")
+                }
+            }
+
+            if (
+                componentName != null &&
+                componentName != "root" &&
+                (
+                        componentName == SD_LOG_COMPONENT ||
+                                componentName.contains("sd_log", ignoreCase = true)
+                        )
+            ) {
                 bestLogComponent = componentName
             }
 
-            obj["get_status"]?.jsonPrimitive?.contentOrNull?.let {
-                if (it != "all" && it != "root" && nodeComponentNames[nodeId] == null) {
-                    nodeComponentNames[nodeId] = it
-                    Log.d(TAG, "[$nodeId] Componente inicial via get_status: $it")
-                }
+            if (
+                componentName != null &&
+                componentName != "root" &&
+                (
+                        componentName == LOG_CONTROLLER_COMPONENT ||
+                                componentName.contains("log_controller", ignoreCase = true)
+                        )
+            ) {
+                bestControllerComponent = componentName
+            }
+
+            if (foundInThis) {
+                Log.v(TAG, "[$nodeId] Estado parcial de $componentName processado")
             }
         }
 
@@ -403,14 +433,27 @@ class OfficialSdLogEngine @Inject constructor(
             }
         }
 
+        bestControllerComponent?.let {
+            if (nodeControllerNames[nodeId] != it) {
+                Log.i(TAG, "[$nodeId] Definindo componente de controller prioritário: $it")
+                nodeControllerNames[nodeId] = it
+            }
+        }
+
+        currentFileName?.let {
+            if (nodeFileNames[nodeId] != it) {
+                Log.i(TAG, "[$nodeId] Flow/ficheiro atual reportado pelo device: $it")
+                nodeFileNames[nodeId] = it
+            }
+        }
+
         val prevState = _states.value[nodeId]
-
-        // Se o log está pronto para começar, assumimos que o SD está ok mesmo se sd_mounted não vier no JSON
-        val finalSdMounted = if (logStatusReady) true else (sdMounted ?: prevState?.sdMounted ?: false)
-
         val mergedState = SdLogState(
-            sdMounted = finalSdMounted,
-            isLogging = (isLogging ?: prevState?.isLogging) == true
+            sdMounted = (sdMounted ?: prevState?.sdMounted) == true,
+            isLogging = (isLogging ?: prevState?.isLogging) == true,
+            fileName = currentFileName ?: prevState?.fileName,
+            logComponent = bestLogComponent ?: prevState?.logComponent ?: nodeComponentNames[nodeId],
+            controllerComponent = bestControllerComponent ?: prevState?.controllerComponent ?: nodeControllerNames[nodeId]
         )
 
         if (prevState != mergedState) {
@@ -422,24 +465,23 @@ class OfficialSdLogEngine @Inject constructor(
 
             Log.i(
                 TAG,
-                "[$nodeId] NOVO ESTADO: SD=${mergedState.sdMounted}, LOG=${mergedState.isLogging} " +
-                        "(Componente: ${nodeComponentNames[nodeId] ?: "desconhecido"})"
+                "[$nodeId] NOVO ESTADO: " +
+                        "SD=${mergedState.sdMounted}, " +
+                        "LOG=${mergedState.isLogging}, " +
+                        "FILE=${mergedState.fileName}, " +
+                        "LOG_COMP=${mergedState.logComponent}, " +
+                        "CTRL_COMP=${mergedState.controllerComponent}"
             )
         } else {
             Log.v(
                 TAG,
-                "[$nodeId] Estado inalterado: SD=${mergedState.sdMounted}, LOG=${mergedState.isLogging}"
+                "[$nodeId] Estado inalterado: " +
+                        "SD=${mergedState.sdMounted}, " +
+                        "LOG=${mergedState.isLogging}, " +
+                        "FILE=${mergedState.fileName}, " +
+                        "LOG_COMP=${mergedState.logComponent}, " +
+                        "CTRL_COMP=${mergedState.controllerComponent}"
             )
-        }
-    }
-
-    suspend fun awaitCondition(nodeId: String, timeout: Long = 10000, condition: (SdLogState) -> Boolean): Boolean {
-        return try {
-            withTimeoutOrNull(timeout) {
-                _states.first { it[nodeId]?.let(condition) == true }
-            } != null
-        } catch (e: Exception) {
-            false
         }
     }
 
@@ -450,7 +492,7 @@ class OfficialSdLogEngine @Inject constructor(
             ?: throw IllegalStateException("PnPL feature not initialized for $nodeId")
 
         commandMutex.withLock {
-            Log.v(TAG, "[$nodeId] Escrevendo comando PnPL: ${cmd.command ?: "ALL"}")
+            Log.v(TAG, "[$nodeId] Escrevendo comando PnPL: ${cmd.component}*${cmd.command ?: "ALL"}")
             blueManager.writeFeatureCommand(
                 nodeId,
                 PnPLCommand(pnplFeature, cmd),
@@ -461,13 +503,18 @@ class OfficialSdLogEngine @Inject constructor(
 
     data class SdLogState(
         val sdMounted: Boolean = false,
-        val isLogging: Boolean = false
+        val isLogging: Boolean = false,
+        val fileName: String? = null,
+        val logComponent: String? = null,
+        val controllerComponent: String? = null
     )
 
     companion object {
         private const val TAG = "OfficialSdLogEngine"
         private const val LOG_STATUS_JSON_KEY = "log_status"
         private const val SD_JSON_KEY = "sd_mounted"
+        private const val FILE_NAME_JSON_KEY = "file_name"
         private const val SD_LOG_COMPONENT = "sd_log"
+        private const val LOG_CONTROLLER_COMPONENT = "log_controller"
     }
 }
