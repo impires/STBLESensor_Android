@@ -5,16 +5,19 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.st.multinode.data.MultiNodeRepository
 import com.st.multinode.logging.OfficialSdLogEngine
 import com.st.multinode.logging.SdFlowStarter
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -24,12 +27,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.withTimeout
 
 @AndroidEntryPoint
 class MultiNodeAcquisitionService : Service() {
@@ -58,6 +58,7 @@ class MultiNodeAcquisitionService : Service() {
         notificationManager = NotificationManagerCompat.from(this)
         powerManager = getSystemService(POWER_SERVICE) as PowerManager
         createNotificationChannel()
+
         startForeground(
             NOTIFICATION_ID,
             buildNotification("Ready for multi-device acquisition")
@@ -68,17 +69,44 @@ class MultiNodeAcquisitionService : Service() {
         when (intent?.action) {
             ACTION_START_LOGGING -> {
                 val nodeIds = intent.getStringArrayListExtra(EXTRA_NODE_IDS).orEmpty()
-                val flowFileName = intent.getStringExtra(EXTRA_FLOW_FILE_NAME).orEmpty()
-                    .ifBlank { "defaultAppPro.json" }
+                val flowLocation = intent.getStringExtra(EXTRA_FLOW_FILE_NAME).orEmpty().trim()
+
+                if (flowLocation.isBlank()) {
+                    Log.e(TAG, "Nenhum flow file/path/uri foi fornecido")
+                    nodeIds.forEach { nodeId ->
+                        repository.markError(nodeId, "Nenhum ficheiro de flow foi fornecido")
+                        repository.markLogging(nodeId, false)
+                    }
+                    updateNotification()
+                    maybeStopSelf()
+                    return START_NOT_STICKY
+                }
+
+                val flowJson = runCatching {
+                    readFlowText(flowLocation)
+                }.onFailure { e ->
+                    Log.e(TAG, "Falha a ler flow: $flowLocation", e)
+                    nodeIds.forEach { nodeId ->
+                        repository.markError(
+                            nodeId,
+                            "Falha a ler flow file: $flowLocation - ${e.message}"
+                        )
+                        repository.markLogging(nodeId, false)
+                    }
+                    updateNotification()
+                    maybeStopSelf()
+                }.getOrNull() ?: return START_NOT_STICKY
+
                 val enableServer = intent.getBooleanExtra(EXTRA_ENABLE_SERVER, false)
                 val maxPayloadSize = intent.getIntExtra(EXTRA_MAX_PAYLOAD_SIZE, 150)
                 val maxConnectionRetries = intent.getIntExtra(EXTRA_MAX_CONNECTION_RETRIES, 3)
 
-                Log.d(TAG, "Flow recebido: $flowFileName")
+                Log.d(TAG, "Flow recebido de: $flowLocation")
+                Log.d(TAG, "Flow json size=${flowJson.length}")
 
                 startNodesInBatch(
                     nodeIds = nodeIds,
-                    flowFileName = flowFileName,
+                    flowJson = flowJson,
                     enableServer = enableServer,
                     maxPayloadSize = maxPayloadSize,
                     maxConnectionRetries = maxConnectionRetries
@@ -87,60 +115,101 @@ class MultiNodeAcquisitionService : Service() {
 
             ACTION_STOP_LOGGING -> {
                 val nodeIds = intent.getStringArrayListExtra(EXTRA_NODE_IDS).orEmpty()
-                serviceScope.launch { nodeIds.forEach { stopManagedLogging(it) } }
+                serviceScope.launch {
+                    nodeIds.forEach { stopManagedLogging(it) }
+                }
             }
 
             ACTION_STOP_ALL -> {
-                serviceScope.launch { stopAllManagedLogging() }
+                serviceScope.launch {
+                    stopAllManagedLogging()
+                }
             }
         }
+
         return START_STICKY
+    }
+
+    private fun readFlowText(location: String): String {
+        val trimmed = location.trim()
+
+        if (trimmed.startsWith("content://")) {
+            return contentResolver.openInputStream(Uri.parse(trimmed))
+                ?.bufferedReader()
+                ?.use { it.readText() }
+                ?: error("Nao foi possivel abrir URI: $trimmed")
+        }
+
+        val candidates = mutableListOf<File>()
+
+        if (trimmed.startsWith("/")) {
+            candidates += File(trimmed)
+        } else {
+            candidates += File(trimmed)
+            candidates += File("/sdcard/$trimmed")
+            candidates += File("/storage/emulated/0/$trimmed")
+            candidates += File("/storage/self/primary/$trimmed")
+        }
+
+        val existing = candidates.firstOrNull { it.exists() && it.isFile }
+        if (existing != null) {
+            Log.d(TAG, "Flow encontrado no storage: ${existing.absolutePath}")
+            return existing.bufferedReader().use { it.readText() }
+        }
+
+        return runCatching {
+            applicationContext.assets.open(trimmed)
+                .bufferedReader()
+                .use { it.readText() }
+        }.getOrElse {
+            error(
+                "Flow nao encontrado. location=$trimmed, tentados=${
+                    candidates.joinToString { f -> f.absolutePath }
+                }, assets=$trimmed"
+            )
+        }
     }
 
     private fun startNodesInBatch(
         nodeIds: List<String>,
-        flowFileName: String,
+        flowJson: String,
         enableServer: Boolean,
         maxPayloadSize: Int,
         maxConnectionRetries: Int
     ) {
-        val batchJob = serviceScope.launch {
-            Log.d(TAG, "Iniciando batch para ${nodeIds.size} nós")
+        if (nodeIds.isNotEmpty()) {
+            acquireWakeLockIfNeeded()
+        }
 
-            val preparedNodes = mutableListOf<String>()
-            if (nodeIds.isNotEmpty()) {
-                acquireWakeLockIfNeeded()
+        Log.d(TAG, "Iniciando batch para ${nodeIds.size} nos")
+
+        nodeIds.forEachIndexed { index, nodeId ->
+            if (activeLoggingNodes.contains(nodeId)) {
+                Log.d(TAG, "[$nodeId] Ja esta em logging ativo, a saltar")
+                return@forEachIndexed
             }
 
-            nodeIds.forEach { nodeId ->
-                if (activeLoggingNodes.contains(nodeId)) return@forEach
+            val nodeJob = serviceScope.launch {
+                try {
+                    updateNotification()
 
-                updateNotification()
-                val success = prepareSingleNode(
-                    nodeId = nodeId,
-                    flowFileName = flowFileName,
-                    enableServer = enableServer,
-                    maxPayloadSize = maxPayloadSize,
-                    maxConnectionRetries = maxConnectionRetries
-                )
-                if (success) {
-                    preparedNodes.add(nodeId)
-                }
-            }
+                    val prepared = prepareSingleNode(
+                        nodeId = nodeId,
+                        flowJson = flowJson,
+                        enableServer = enableServer,
+                        maxPayloadSize = maxPayloadSize,
+                        maxConnectionRetries = maxConnectionRetries
+                    )
 
-            if (preparedNodes.isEmpty()) {
-                Log.e(TAG, "Nenhum nó pronto para iniciar flow. Abortando aquisição.")
-                updateNotification()
-                maybeStopSelf()
-                return@launch
-            }
+                    if (!prepared) {
+                        Log.e(TAG, "[$nodeId] Preparacao falhou")
+                        return@launch
+                    }
 
-            Log.d(TAG, "Disparando start do flow para ${preparedNodes.size} nós com stagger")
-            preparedNodes.forEachIndexed { index, nodeId ->
-                launch {
                     delay(index * 2000L)
 
-                    val result = sdFlowStarter.startFlow(nodeId, flowFileName)
+                    Log.d(TAG, "[$nodeId] A iniciar startFlow")
+                    val result = sdFlowStarter.startFlow(nodeId, flowJson)
 
                     if (result.isSuccess) {
                         delay(8000)
@@ -148,69 +217,48 @@ class MultiNodeAcquisitionService : Service() {
                         activeLoggingNodes.add(nodeId)
                         repository.markLogging(nodeId, true)
                         acquireWakeLockIfNeeded()
-                        Log.d(TAG, "[$nodeId] Sequência de start enviada; logging assumido ativo")
+
+                        Log.d(TAG, "[$nodeId] Sequencia de start concluida; logging assumido ativo")
                     } else {
-                        Log.e(TAG, "[$nodeId] Falha no startFlow", result.exceptionOrNull())
+                        val error = result.exceptionOrNull()
+                        Log.e(TAG, "[$nodeId] Falha no startFlow", error)
                         repository.markError(
                             nodeId,
-                            result.exceptionOrNull()?.message ?: "Falha no startFlow"
+                            error?.message ?: "Falha no startFlow"
                         )
+                        repository.markLogging(nodeId, false)
                     }
 
                     updateNotification()
-                }
-            }
-        }
-
-        nodeIds.forEach { nodeId ->
-            nodeJobs[nodeId] = batchJob
-        }
-    }
-
-    private suspend fun waitForLoggingStart(nodeId: String): Boolean {
-        return try {
-            withTimeout(30000) {
-                val pollingJob = launch {
-                    while (true) {
-                        delay(3000)
-                        val currentState = officialSdLogEngine.states.value[nodeId]
-                        Log.d(
-                            TAG,
-                            "[$nodeId] Ainda aguardando logging... estado atual=$currentState. " +
-                                    "Solicitando status novamente."
-                        )
-                        officialSdLogEngine.requestStatus(nodeId)
-                    }
-                }
-
-                try {
-                    officialSdLogEngine.states
-                        .filter { stateMap ->
-                            val state = stateMap[nodeId]
-                            Log.d(TAG, "[$nodeId] state update=$state")
-                            state?.isRunning == true && state.isLogging == true
-                        }
-                        .first()
-                    true
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    Log.w(TAG, "[$nodeId] Job cancelado durante start/acquisition", e)
+                    repository.markLogging(nodeId, false)
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "[$nodeId] Erro inesperado no fluxo de aquisicao", e)
+                    repository.markError(nodeId, e.message ?: "Erro inesperado")
+                    repository.markLogging(nodeId, false)
                 } finally {
-                    pollingJob.cancel()
+                    nodeJobs.remove(nodeId)
+                    updateNotification()
+                    maybeStopSelf()
                 }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "[$nodeId] Timeout à espera de logging", e)
-            false
+
+            nodeJobs[nodeId] = nodeJob
         }
     }
 
     private suspend fun prepareSingleNode(
         nodeId: String,
-        flowFileName: String,
+        flowJson: String,
         enableServer: Boolean,
         maxPayloadSize: Int,
         maxConnectionRetries: Int
     ): Boolean {
         return prepareSemaphore.withPermit {
             Log.d(TAG, "[$nodeId] Preparando...")
+
             val connResult = repository.connectAndAwaitReady(
                 nodeId,
                 maxConnectionRetries,
@@ -220,18 +268,20 @@ class MultiNodeAcquisitionService : Service() {
 
             if (connResult.isFailure) {
                 repository.markError(nodeId, "Connection failed")
+                repository.markLogging(nodeId, false)
                 return@withPermit false
             }
 
-            delay(1000)
+            delay(2500)
 
-            val prepResult = sdFlowStarter.prepareFlow(nodeId, flowFileName)
+            val prepResult = sdFlowStarter.prepareFlow(nodeId, flowJson)
             if (prepResult.isFailure) {
                 Log.e(TAG, "[$nodeId] prepareFlow falhou", prepResult.exceptionOrNull())
                 repository.markError(
                     nodeId,
                     prepResult.exceptionOrNull()?.message ?: "Flow prepare failed"
                 )
+                repository.markLogging(nodeId, false)
                 return@withPermit false
             }
 
@@ -248,16 +298,26 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     private suspend fun stopManagedLogging(nodeId: String) {
-        nodeJobs.remove(nodeId)?.cancelAndJoin()
+        runCatching {
+            nodeJobs.remove(nodeId)?.cancelAndJoin()
+        }.onFailure {
+            Log.w(TAG, "[$nodeId] Falha ao cancelar job", it)
+        }
 
         runCatching { sdFlowStarter.stopFlow(nodeId) }
+            .onFailure { Log.w(TAG, "[$nodeId] stopFlow falhou", it) }
+
         runCatching { officialSdLogEngine.stop(nodeId) }
+            .onFailure { Log.w(TAG, "[$nodeId] officialSdLogEngine.stop falhou", it) }
 
         repository.markLogging(nodeId, false)
         activeLoggingNodes.remove(nodeId)
 
-        officialSdLogEngine.release(nodeId)
-        repository.disconnect(nodeId)
+        runCatching { officialSdLogEngine.release(nodeId) }
+            .onFailure { Log.w(TAG, "[$nodeId] officialSdLogEngine.release falhou", it) }
+
+        runCatching { repository.disconnect(nodeId) }
+            .onFailure { Log.w(TAG, "[$nodeId] disconnect falhou", it) }
 
         releaseWakeLock(force = false)
         updateNotification()
@@ -265,15 +325,19 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     private suspend fun stopAllManagedLogging() {
-        activeLoggingNodes.toList().forEach { stopManagedLogging(it) }
+        val nodes = activeLoggingNodes.toList() + nodeJobs.keys.toList()
+        nodes.distinct().forEach { stopManagedLogging(it) }
     }
 
     private fun maybeStopSelf() {
-        if (activeLoggingNodes.isEmpty() && nodeJobs.isEmpty()) stopSelf()
+        if (activeLoggingNodes.isEmpty() && nodeJobs.isEmpty()) {
+            stopSelf()
+        }
     }
 
     private fun acquireWakeLockIfNeeded() {
         if (wakeLock?.isHeld == true) return
+
         wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
             "$packageName:MultiNodeAcquisition"
@@ -286,7 +350,9 @@ class MultiNodeAcquisitionService : Service() {
     private fun releaseWakeLock(force: Boolean) {
         if (force || activeLoggingNodes.isEmpty()) {
             runCatching {
-                if (wakeLock?.isHeld == true) wakeLock?.release()
+                if (wakeLock?.isHeld == true) {
+                    wakeLock?.release()
+                }
             }
             wakeLock = null
         }
@@ -294,12 +360,13 @@ class MultiNodeAcquisitionService : Service() {
 
     private fun updateNotification() {
         val content = when {
-            activeLoggingNodes.isNotEmpty() -> "Logging em ${activeLoggingNodes.size} nó(s)"
+            activeLoggingNodes.isNotEmpty() -> "Logging em ${activeLoggingNodes.size} no(s)"
             else -> "A preparar/parado"
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            androidx.core.content.ContextCompat.checkSelfPermission(
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
                 this,
                 android.Manifest.permission.POST_NOTIFICATIONS
             ) != android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -313,7 +380,7 @@ class MultiNodeAcquisitionService : Service() {
                 buildNotification(content)
             )
         } catch (e: SecurityException) {
-            Log.e(TAG, "Erro ao enviar notificação", e)
+            Log.e(TAG, "Erro ao enviar notificacao", e)
         }
     }
 
