@@ -143,16 +143,12 @@ class MultiNodeAcquisitionService : Service() {
                     val result = sdFlowStarter.startFlow(nodeId, flowFileName)
 
                     if (result.isSuccess) {
-                        val started = waitForLoggingStart(nodeId)
+                        delay(8000)
 
-                        if (started) {
-                            activeLoggingNodes.add(nodeId)
-                            repository.markLogging(nodeId, true)
-                            acquireWakeLockIfNeeded()
-                        } else {
-                            Log.e(TAG, "[$nodeId] Flow não entrou em RUN")
-                            repository.markError(nodeId, "Flow não iniciou")
-                        }
+                        activeLoggingNodes.add(nodeId)
+                        repository.markLogging(nodeId, true)
+                        acquireWakeLockIfNeeded()
+                        Log.d(TAG, "[$nodeId] Sequência de start enviada; logging assumido ativo")
                     } else {
                         Log.e(TAG, "[$nodeId] Falha no startFlow", result.exceptionOrNull())
                         repository.markError(
@@ -177,13 +173,23 @@ class MultiNodeAcquisitionService : Service() {
                 val pollingJob = launch {
                     while (true) {
                         delay(3000)
-                        Log.d(TAG, "[$nodeId] Ainda aguardando logging... solicitando status novamente.")
+                        val currentState = officialSdLogEngine.states.value[nodeId]
+                        Log.d(
+                            TAG,
+                            "[$nodeId] Ainda aguardando logging... estado atual=$currentState. " +
+                                    "Solicitando status novamente."
+                        )
                         officialSdLogEngine.requestStatus(nodeId)
                     }
                 }
+
                 try {
                     officialSdLogEngine.states
-                        .filter { it[nodeId]?.isLogging == true }
+                        .filter { stateMap ->
+                            val state = stateMap[nodeId]
+                            Log.d(TAG, "[$nodeId] state update=$state")
+                            state?.isRunning == true && state.isLogging == true
+                        }
                         .first()
                     true
                 } finally {
@@ -273,7 +279,7 @@ class MultiNodeAcquisitionService : Service() {
             "$packageName:MultiNodeAcquisition"
         ).apply {
             setReferenceCounted(false)
-            acquire(12 * 60 * 60 * 1000L) // 12 hours timeout
+            acquire(12 * 60 * 60 * 1000L)
         }
     }
 

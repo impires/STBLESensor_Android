@@ -11,6 +11,7 @@ import com.st.blue_sdk.features.extended.pnpl.request.PnPLCmd
 import com.st.blue_sdk.features.extended.pnpl.request.PnPLCommand
 import java.io.ByteArrayOutputStream
 import java.util.Collections
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,24 +20,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import java.util.Locale
 
 @Singleton
 class OfficialSdLogEngine @Inject constructor(
@@ -70,9 +68,13 @@ class OfficialSdLogEngine @Inject constructor(
     }
 
     suspend fun requestStatus(nodeId: String) {
-        val compName = getLogComponentName(nodeId)
-        Log.d(TAG, "[$nodeId] Solicitando status (comp=$compName)")
-        sendCommand(nodeId, PnPLCmd(component = compName, command = "get_status"))
+        val controllerComp = getControllerComponentName(nodeId)
+        val logComp = getLogComponentName(nodeId)
+
+        Log.d(TAG, "[$nodeId] Solicitando status (controller=$controllerComp, log=$logComp)")
+
+        requestStatusFor(nodeId, controllerComp)
+        requestStatusFor(nodeId, logComp)
     }
 
     suspend fun requestStatusFor(nodeId: String, component: String) {
@@ -138,11 +140,12 @@ class OfficialSdLogEngine @Inject constructor(
                 return@withLock feature
             }
 
-            Log.e(TAG, "[$nodeId] Nenhuma feature PnPL encontrada. Features do nó: ${features.map { it.javaClass.name }}")
+            Log.e(
+                TAG,
+                "[$nodeId] Nenhuma feature PnPL encontrada. Features do nó: ${features.map { it.javaClass.name }}"
+            )
             null
         } ?: throw IllegalStateException("[$nodeId] Nenhuma feature PnPL encontrada")
-
-        var needsWait = false
 
         pnpLock.withLock {
             if (observeFeatureJobs[nodeId]?.isActive != true) {
@@ -159,6 +162,9 @@ class OfficialSdLogEngine @Inject constructor(
                         }
                         .collect { update ->
                             Log.d(TAG, "[$nodeId] ENTERED COLLECT")
+                            Log.d(TAG, "[$nodeId] update.data class=${update.data?.javaClass?.name}")
+                            Log.d(TAG, "[$nodeId] update.data value=${update.data}")
+                            Log.d(TAG, "[$nodeId] rawData size=${update.rawData.size}")
 
                             val rawData = update.rawData
                             val config = update.data as? PnPLConfig
@@ -174,31 +180,31 @@ class OfficialSdLogEngine @Inject constructor(
                                 return@collect
                             }
 
-                            Log.v(TAG, "[$nodeId] Fragmento PnPL recebido (raw=${rawData.size} bytes), tentando reassemblagem...")
+                            Log.v(
+                                TAG,
+                                "[$nodeId] Fragmento PnPL recebido (raw=${rawData.size} bytes), tentando reassemblagem..."
+                            )
 
                             val extracted = manualExtractPnPL(nodeId, rawData)
                             if (extracted != null) {
                                 Log.d(TAG, "[$nodeId] Reassemblagem PnPL completa com sucesso")
                                 handleStatusUpdate(nodeId, extracted)
+                            } else {
+                                Log.w(TAG, "[$nodeId] Não foi possível extrair PnPLConfig do rawData")
                             }
                         }
                 }
-
-                needsWait = !_states.value.containsKey(nodeId)
             }
         }
 
-        val shouldWaitNow = needsWait && initialSyncAttempted.add(nodeId)
+        _states.update { current ->
+            if (current.containsKey(nodeId)) current
+            else current + (nodeId to SdLogState())
+        }
 
-        if (shouldWaitNow) {
-            Log.d(TAG, "[$nodeId] Aguardando sincronização inicial do SDK...")
-            try {
-                withTimeout(5000) {
-                    _states.first { it.containsKey(nodeId) }
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "[$nodeId] Timeout na sincronização inicial. Nenhum estado recebido ainda.", e)
-            }
+        if (initialSyncAttempted.add(nodeId)) {
+            Log.d(TAG, "[$nodeId] Observação PnPL iniciada; a prosseguir sem estado inicial confirmado")
+            delay(1000)
         }
     }
 
@@ -264,6 +270,29 @@ class OfficialSdLogEngine @Inject constructor(
             val jsonElement = jsonHandler.parseToJsonElement(jsonString)
             val rootObj = jsonElement.jsonObject
 
+            if (rootObj["devices"] == null) {
+                Log.d(TAG, "[$nodeId] JSON sem envelope devices, a tentar parse direto")
+
+                val fakeDevice = PnPLDevice(
+                    boardId = null,
+                    fwId = null,
+                    serialNumber = null,
+                    pnplBleResponses = null,
+                    components = listOf(rootObj)
+                )
+
+                return PnPLConfig(
+                    deviceStatus = FeatureField(
+                        name = "DeviceStatus",
+                        value = fakeDevice
+                    ),
+                    setCommandResponse = FeatureField(
+                        name = "SetCommandResponse",
+                        value = null
+                    )
+                )
+            }
+
             val devices = rootObj["devices"]
             val firstDevice = devices
                 ?.let { jsonHandler.parseToJsonElement(it.toString()) }
@@ -322,9 +351,49 @@ class OfficialSdLogEngine @Inject constructor(
         val components = deviceStatus.components
         var sdMounted: Boolean? = null
         var isLogging: Boolean? = null
+        var isRunning: Boolean? = null
         var currentFileName: String? = null
         var bestLogComponent: String? = null
         var bestControllerComponent: String? = null
+
+        fun extractBooleanLike(obj: JsonObject, vararg keys: String): Boolean? {
+            keys.forEach { key ->
+                val prim = obj[key]?.jsonPrimitive ?: return@forEach
+                prim.booleanOrNull?.let { return it }
+                prim.intOrNull?.let { return it == 1 }
+
+                val content = prim.content.lowercase(Locale.ROOT)
+                when {
+                    content == "true" -> return true
+                    content == "false" -> return false
+                    content == "1" -> return true
+                    content == "0" -> return false
+                    content.contains("started") -> return true
+                    content.contains("logging") -> return true
+                    content.contains("recording") -> return true
+                    content.contains("running") -> return true
+                    content.contains("acquiring") -> return true
+                    content.contains("stopped") -> return false
+                    content.contains("idle") -> return false
+                    content.contains("ready to start") -> return false
+                    content == "ready" -> return false
+                }
+            }
+            return null
+        }
+
+        fun looksLikeLogComponent(componentName: String?): Boolean {
+            if (componentName == null) return false
+            return componentName == SD_LOG_COMPONENT ||
+                    componentName.contains("sd_log", ignoreCase = true)
+        }
+
+        fun looksLikeControllerComponent(componentName: String?): Boolean {
+            if (componentName == null) return false
+            return componentName == LOG_CONTROLLER_COMPONENT ||
+                    componentName.contains("log_controller", ignoreCase = true) ||
+                    componentName.contains("controller", ignoreCase = true)
+        }
 
         fun extractFromObject(obj: JsonObject, componentName: String?) {
             var foundInThis = false
@@ -343,53 +412,26 @@ class OfficialSdLogEngine @Inject constructor(
                 Log.v(TAG, "[$nodeId] FILE_NAME em $componentName: $currentFileName")
             }
 
-            val logValPrim = obj[LOG_STATUS_JSON_KEY]?.jsonPrimitive
-                ?: obj["is_logging"]?.jsonPrimitive
-                ?: obj["status"]?.jsonPrimitive
-
-            if (logValPrim != null) {
-                val boolVal = logValPrim.booleanOrNull ?: logValPrim.intOrNull?.let { it == 1 }
-                val content = logValPrim.content.lowercase(Locale.ROOT)
-
-                isLogging = when {
-                    boolVal != null -> boolVal
-                    content.contains("started") -> true
-                    content.contains("logging") -> true
-                    content.contains("recording") -> true
-                    content.contains("running") -> true
-                    content.contains("acquiring") -> true
-                    content.contains("ready to start") -> false
-                    content.contains("ready") -> false
-                    content.contains("stopped") -> false
-                    content.contains("idle") -> false
-                    else -> isLogging
+            if (looksLikeLogComponent(componentName)) {
+                extractBooleanLike(obj, LOG_STATUS_JSON_KEY, "is_logging", "status")?.let { parsed ->
+                    isLogging = parsed
+                    foundInThis = true
+                    Log.v(TAG, "[$nodeId] LOG_STATUS em $componentName: $isLogging")
                 }
-
-                foundInThis = true
-                Log.v(TAG, "[$nodeId] LOG_STATUS em $componentName: $isLogging (raw=${logValPrim.content})")
             }
 
-            val runValPrim = obj["is_active"]?.jsonPrimitive
-                ?: obj["enabled"]?.jsonPrimitive
-                ?: obj["running"]?.jsonPrimitive
-                ?: obj["is_running"]?.jsonPrimitive
-
-            if (runValPrim != null) {
-                val boolVal = runValPrim.booleanOrNull ?: runValPrim.intOrNull?.let { it == 1 }
-                if (boolVal != null) {
-                    isLogging = boolVal
+            if (looksLikeControllerComponent(componentName)) {
+                extractBooleanLike(obj, "is_active", "enabled", "running", "is_running", "status")?.let { parsed ->
+                    isRunning = parsed
                     foundInThis = true
-                    Log.v(TAG, "[$nodeId] RUN FLAG em $componentName: $isLogging (raw=${runValPrim.content})")
+                    Log.v(TAG, "[$nodeId] RUN_STATUS em $componentName: $isRunning")
                 }
             }
 
             if (
                 componentName != null &&
                 componentName != "root" &&
-                (
-                        componentName == SD_LOG_COMPONENT ||
-                                componentName.contains("sd_log", ignoreCase = true)
-                        )
+                looksLikeLogComponent(componentName)
             ) {
                 bestLogComponent = componentName
             }
@@ -397,10 +439,7 @@ class OfficialSdLogEngine @Inject constructor(
             if (
                 componentName != null &&
                 componentName != "root" &&
-                (
-                        componentName == LOG_CONTROLLER_COMPONENT ||
-                                componentName.contains("log_controller", ignoreCase = true)
-                        )
+                looksLikeControllerComponent(componentName)
             ) {
                 bestControllerComponent = componentName
             }
@@ -452,6 +491,7 @@ class OfficialSdLogEngine @Inject constructor(
         val prevState = _states.value[nodeId]
         val mergedState = SdLogState(
             sdMounted = (sdMounted ?: prevState?.sdMounted) == true,
+            isRunning = (isRunning ?: prevState?.isRunning) == true,
             isLogging = (isLogging ?: prevState?.isLogging) == true,
             fileName = currentFileName ?: prevState?.fileName,
             logComponent = bestLogComponent ?: prevState?.logComponent ?: nodeComponentNames[nodeId],
@@ -469,6 +509,7 @@ class OfficialSdLogEngine @Inject constructor(
                 TAG,
                 "[$nodeId] NOVO ESTADO: " +
                         "SD=${mergedState.sdMounted}, " +
+                        "RUN=${mergedState.isRunning}, " +
                         "LOG=${mergedState.isLogging}, " +
                         "FILE=${mergedState.fileName}, " +
                         "LOG_COMP=${mergedState.logComponent}, " +
@@ -479,6 +520,7 @@ class OfficialSdLogEngine @Inject constructor(
                 TAG,
                 "[$nodeId] Estado inalterado: " +
                         "SD=${mergedState.sdMounted}, " +
+                        "RUN=${mergedState.isRunning}, " +
                         "LOG=${mergedState.isLogging}, " +
                         "FILE=${mergedState.fileName}, " +
                         "LOG_COMP=${mergedState.logComponent}, " +
@@ -505,6 +547,7 @@ class OfficialSdLogEngine @Inject constructor(
 
     data class SdLogState(
         val sdMounted: Boolean = false,
+        val isRunning: Boolean = false,
         val isLogging: Boolean = false,
         val fileName: String? = null,
         val logComponent: String? = null,
