@@ -15,6 +15,7 @@ class AcquisitionServiceControllerImpl @Inject constructor(
 
     override fun startLogging(
         nodeIds: List<String>,
+        flowFileName: String,
         enableServer: Boolean,
         maxPayloadSize: Int,
         maxConnectionRetries: Int
@@ -24,6 +25,10 @@ class AcquisitionServiceControllerImpl @Inject constructor(
             putStringArrayListExtra(
                 MultiNodeAcquisitionService.EXTRA_NODE_IDS,
                 ArrayList(nodeIds)
+            )
+            putExtra(
+                MultiNodeAcquisitionService.EXTRA_FLOW_FILE_NAME,
+                flowFileName
             )
             putExtra(
                 MultiNodeAcquisitionService.EXTRA_ENABLE_SERVER,

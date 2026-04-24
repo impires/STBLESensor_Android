@@ -2,10 +2,20 @@ package com.st.multinode.logging
 
 import android.util.Log
 import com.st.blue_sdk.BlueManager
+import com.st.blue_sdk.features.Feature
+import com.st.blue_sdk.features.FeatureField
+import com.st.blue_sdk.features.extended.ext_configuration.ExtConfiguration
+import com.st.blue_sdk.features.extended.ext_configuration.request.ExtConfigCommands
+import com.st.blue_sdk.features.extended.ext_configuration.request.ExtendedFeatureCommand
 import com.st.blue_sdk.features.extended.pnpl.PnPL
 import com.st.blue_sdk.features.extended.pnpl.PnPLConfig
+import com.st.blue_sdk.features.extended.pnpl.model.PnPLDevice
 import com.st.blue_sdk.features.extended.pnpl.request.PnPLCmd
 import com.st.blue_sdk.features.extended.pnpl.request.PnPLCommand
+import java.io.ByteArrayOutputStream
+import java.util.Collections
+import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -15,353 +25,560 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.launch
-import com.st.blue_sdk.features.Feature
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.util.Date
 
 @Singleton
 class OfficialSdLogEngine @Inject constructor(
     private val blueManager: BlueManager
-) {
+) : NodeLogEngine {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val enabledFeatures = ConcurrentHashMap<String, List<Feature<*>>>()
-    private val shouldInitDemo = ConcurrentHashMap<String, Boolean>()
-
     private val observeFeatureJobs = ConcurrentHashMap<String, Job>()
     private val pnplFeatures = ConcurrentHashMap<String, PnPL>()
-    // Altere a declaração do seu mapa para isto:
-    private val featureListeners = ConcurrentHashMap<String, com.st.blue_sdk.features.Feature.FeatureListener>()
+    private val nodeBuffers = ConcurrentHashMap<String, ByteArrayOutputStream>()
+    private val nodeComponentNames = ConcurrentHashMap<String, String>()
+    private val initialSyncAttempted = Collections.synchronizedSet(mutableSetOf<String>())
+    private val nodeControllerNames = ConcurrentHashMap<String, String>()
+    private val nodeFileNames = ConcurrentHashMap<String, String>()
 
     private val pnpLock = Mutex()
+    private val commandMutex = Mutex()
 
     private val _states = MutableStateFlow<Map<String, SdLogState>>(emptyMap())
+    val states = _states
 
-    suspend fun start(nodeId: String): Result<Unit> {
-        return runCatching {
-            ensureDemoStarted(nodeId)
-
-            // 1. Polling de montagem do SD
-            withTimeout(20000) {
-                while (_states.value[nodeId]?.sdMounted != true) {
-                    Log.d(TAG, "Checando SD...")
-                    sendGetLogControllerCommand(nodeId)
-                    delay(3000) // Delay alto é amigo do firmware
-                }
-            }
-
-            // 2. Configurações pré-log (Sempre com delay entre elas)
-            Log.d(TAG, "Configurando Nome...")
-            sendSetNameCommand(nodeId)
-            delay(1500)
-
-            Log.d(TAG, "Configurando Hora...")
-            sendSetTimeCommand(nodeId)
-            delay(1500)
-
-            // 3. Comando de Start Real
-            Log.d(TAG, "Enviando START_LOG...")
-            val startCmd = PnPLCmd(
-                component = "log_controller",
-                command = "start_log",
-                fields = mapOf("interface" to 2) // 2 = SD Card
-            )
-            sendCommand(nodeId, startCmd)
-
-            // 4. Verificação final
-            waitForLoggingState(nodeId, true)
-        }
+    private val jsonHandler = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
     }
 
-    suspend fun stop(nodeId: String): Result<Unit> {
-        return runCatching {
-            ensureDemoStarted(nodeId)
-
-            sendCommand(
-                nodeId = nodeId,
-                cmd = PnPLCmd.STOP_LOG
-            )
-
-            shouldInitDemo[nodeId] = true
-
-            delay(500)
-
-            waitForLoggingState(nodeId = nodeId, expected = false)
-
-            delay(3000)
-
-            Log.d(TAG, "SD log stopped for nodeId=$nodeId")
-            Unit
-        }.onFailure {
-            Log.e(TAG, "SD log stop failed for nodeId=$nodeId", it)
-        }
+    override suspend fun prepareFlow(nodeId: String, flowJson: String) {
+        ensurePnplReady(nodeId)
+        requestStatus(nodeId)
+        delay(500)
     }
 
-    suspend fun release(nodeId: String) {
+    override suspend fun startFlow(nodeId: String, flowJson: String) {
+        ensurePnplReady(nodeId)
+
+        val state = _states.value[nodeId]
+        if (state?.isLogging == true) {
+            Log.d(TAG, "[$nodeId] Já está a gravar, não envio start_stop")
+            return
+        }
+
+        Log.d(TAG, "[$nodeId] A enviar sd_log*start_stop")
+        sendCommand(
+            nodeId,
+            PnPLCmd(
+                component = SD_LOG_COMPONENT,
+                command = START_STOP_COMMAND
+            )
+        )
+    }
+
+    override suspend fun stopFlow(nodeId: String) {
+        ensurePnplReady(nodeId)
+
+        val state = _states.value[nodeId]
+        if (state?.isLogging != true) {
+            Log.d(TAG, "[$nodeId] Não está a gravar, não envio start_stop para parar")
+            return
+        }
+
+        Log.d(TAG, "[$nodeId] A enviar sd_log*start_stop para parar")
+        sendCommand(
+            nodeId,
+            PnPLCmd(
+                component = SD_LOG_COMPONENT,
+                command = START_STOP_COMMAND
+            )
+        )
+    }
+
+    override suspend fun requestStatus(nodeId: String) {
+        Log.d(TAG, "[$nodeId] Solicitando status global")
+        sendGlobalGetStatus(nodeId)
+    }
+
+    private suspend fun sendGlobalGetStatus(nodeId: String) {
+        Log.v(TAG, "[$nodeId] Escrevendo comando PnPL global: get_status=all")
+        blueManager.writeDebugMessage(
+            nodeId = nodeId,
+            msg = "{\"get_status\":\"all\"}"
+        )
+    }
+
+    suspend fun requestPnplStatus(nodeId: String) {
+        requestStatus(nodeId)
+    }
+
+    override suspend fun release(nodeId: String) {
         observeFeatureJobs.remove(nodeId)?.cancelAndJoin()
-
-        enabledFeatures.remove(nodeId)?.let { features ->
-            runCatching {
-                if (features.isNotEmpty()) {
-                    blueManager.disableFeatures(nodeId = nodeId, features = features)
-                }
-            }.onFailure {
-                Log.w(TAG, "disableFeatures failed for nodeId=$nodeId", it)
-            }
-        }
-
         pnplFeatures.remove(nodeId)
-        shouldInitDemo.remove(nodeId)
+        nodeBuffers.remove(nodeId)
+        nodeComponentNames.remove(nodeId)
+        initialSyncAttempted.remove(nodeId)
+        nodeControllerNames.remove(nodeId)
+        nodeFileNames.remove(nodeId)
 
         _states.update { current ->
-            current - nodeId
+            current.toMutableMap().apply {
+                remove(nodeId)
+            }
         }
     }
 
-    private suspend fun ensureDemoStarted(nodeId: String) {
+    override fun getLogComponentName(nodeId: String): String {
+        return nodeComponentNames[nodeId] ?: SD_LOG_COMPONENT
+    }
+
+    override fun getControllerComponentName(nodeId: String): String {
+        return nodeControllerNames[nodeId] ?: LOG_CONTROLLER_COMPONENT
+    }
+
+    suspend fun ensurePnplReady(nodeId: String) {
+        val pnplFeature = pnpLock.withLock {
+            pnplFeatures[nodeId]?.let { return@withLock it }
+
+            val features = blueManager.nodeFeatures(nodeId = nodeId)
+            Log.d(TAG, "[$nodeId] Features disponíveis: ${features.map { it.javaClass.name }}")
+
+            val feature = features.filterIsInstance<PnPL>().firstOrNull()
+
+            if (feature != null) {
+                runCatching {
+                    val field = Feature::class.java.getDeclaredField("isDataNotifyFeature")
+                    field.isAccessible = true
+                    field.set(feature, true)
+                }
+
+                feature.setMaxPayLoadSize(150)
+                pnplFeatures[nodeId] = feature
+                return@withLock feature
+            }
+
+            Log.e(
+                TAG,
+                "[$nodeId] Nenhuma feature PnPL encontrada. Features do nó: ${features.map { it.javaClass.name }}"
+            )
+            null
+        } ?: throw IllegalStateException("[$nodeId] Nenhuma feature PnPL encontrada")
+
         pnpLock.withLock {
-            if (observeFeatureJobs[nodeId]?.isActive == true) return
+            if (observeFeatureJobs[nodeId]?.isActive != true) {
+                Log.d(TAG, "[$nodeId] (Re)Iniciando observação PnPL...")
 
-            val pnplFeature = blueManager.nodeFeatures(nodeId = nodeId)
-                .filterIsInstance<PnPL>()
-                .firstOrNull() ?: return
+                val updateFlow = blueManager.getFeatureUpdates(nodeId, listOf(pnplFeature), true)
 
-            pnplFeatures[nodeId] = pnplFeature
+                observeFeatureJobs[nodeId] = scope.launch {
+                    updateFlow
+                        .catch { e ->
+                            Log.e(TAG, "[$nodeId] Erro no stream PnPL", e)
+                        }
+                        .collect { update ->
+                            val rawData = update.rawData
+                            val config = update.data as? PnPLConfig
 
-            // Configuração de MTU/Payload
-            pnplFeature.setMaxPayLoadSize(20)
+                            Log.v(
+                                TAG,
+                                "[$nodeId] PnPL RX Raw (hex): ${rawData.joinToString(" ") { "%02X".format(it) }}"
+                            )
 
-            // 1. Registra o listener primeiro (Função não-suspend)
-            startObservingPnPL(nodeId, pnplFeature)
+                            if (isUsefulPnplConfig(config)) {
+                                handleStatusUpdate(nodeId, config!!)
+                                return@collect
+                            }
 
-            // 2. Ativa as notificações (Função suspend)
-            // Certifique-se que o blueManager.enableFeatures está sendo chamado diretamente
-            blueManager.enableFeatures(nodeId = nodeId, features = listOf(pnplFeature))
-
-            delay(2000)
-
-            // Pergunta o status inicial
-            sendGetLogControllerCommand(nodeId)
-        }
-    }
-
-    private fun startObservingPnPL(nodeId: String, pnplFeature: PnPL) {
-        // 1. Remover listener antigo se existir
-        featureListeners[nodeId]?.let { oldListener ->
-            pnplFeature.removeFeatureListener(oldListener)
-        }
-
-        // 2. Criar o Listener com tipos explícitos para evitar "Cannot infer type"
-        val newListener = com.st.blue_sdk.features.Feature.FeatureListener { _, sample ->
-            // No SDK da ST, sample.value contém o dado processado
-            val pnpData = sample.value as? PnPLConfig
-            if (pnpData != null) {
-                handleStatusUpdate(nodeId, pnpData)
-            }
-        }
-
-        // 3. Salvar e Adicionar
-        featureListeners[nodeId] = newListener
-        pnplFeature.addFeatureListener(newListener)
-    }
-
-    private fun onFeaturesEnabled(nodeId: String) {
-        scope.launch(Dispatchers.IO) { // Garante que não trava a UI
-            val pnplFeature = pnplFeatures[nodeId] ?: return@launch
-
-            // LIMITAÇÃO MÁXIMA DE DADOS
-            pnplFeature.setMaxPayLoadSize(20)
-
-            Log.d(TAG, "Aguardando estabilização do PRO...")
-            delay(4000) // O PRO precisa de tempo após o handshake inicial
-
-            // Pergunta o status
-            sendGetLogControllerCommand(nodeId)
-        }
-    }
-
-    private suspend fun waitForSdMounted(nodeId: String) {
-        // 5000ms (5s) é muito pouco para o PRO ler o SD. Aumentamos para 15s.
-        withTimeout(20000) {
-            while (true) {
-                Log.d(TAG, "Checando SD no PRO...")
-                sendGetLogControllerCommand(nodeId)
-
-                if (_states.value[nodeId]?.sdMounted == true) {
-                    Log.i(TAG, "SD Montado e pronto!")
-                    return@withTimeout
-                }
-                // Delay de 2s para não "afogar" o processador do sensor
-                delay(2000)
-            }
-        }
-    }
-
-    private suspend fun initDemo(nodeId: String) {
-        val mustInit = shouldInitDemo[nodeId] ?: true
-        val currentState = _states.value[nodeId] ?: SdLogState()
-
-        if (!mustInit) return
-        if (currentState.isLogging) return
-
-        shouldInitDemo[nodeId] = false
-
-        sendSetNameCommand(nodeId)
-        delay(500)
-        sendGetAllCommand(nodeId)
-    }
-
-    private fun handleStatusUpdate(nodeId: String, data: PnPLConfig) {
-        runCatching {
-            val components = data.deviceStatus.value?.components ?: return
-
-            // Procura pelo log_controller ou sdlog
-            val logControllerJson = components.find {
-                it.containsKey(LOG_CONTROLLER_JSON_KEY) || it.containsKey("sdlog")
-            }?.values?.firstOrNull()?.jsonObject ?: return
-
-            val sdMounted = parseJsonBoolean(logControllerJson, SD_JSON_KEY)
-            val isLogging = parseJsonBoolean(logControllerJson, LOG_STATUS_JSON_KEY)
-
-            _states.update { current ->
-                val old = current[nodeId]
-                if (old?.sdMounted != sdMounted || old?.isLogging != isLogging) {
-                    Log.i(TAG, ">>> STATUS [$nodeId]: SD=$sdMounted, LOG=$isLogging")
-                    current + (nodeId to SdLogState(sdMounted = sdMounted, isLogging = isLogging))
-                } else {
-                    current
+                            val extracted = manualExtractPnPL(nodeId, rawData)
+                            if (extracted != null) {
+                                handleStatusUpdate(nodeId, extracted)
+                            }
+                        }
                 }
             }
-        }.onFailure { e ->
-            Log.e(TAG, "Erro ao processar status JSON: ${e.message}")
+        }
+
+        _states.update { current ->
+            if (current.containsKey(nodeId)) current
+            else current + (nodeId to SdLogState())
+        }
+
+        if (initialSyncAttempted.add(nodeId)) {
+            Log.d(TAG, "[$nodeId] Observação PnPL iniciada; a prosseguir sem estado inicial confirmado")
+            delay(1000)
         }
     }
 
-    private fun parseJsonBoolean(
-        json: kotlinx.serialization.json.JsonObject,
-        key: String
-    ): Boolean {
-        val primitive = json[key]?.jsonPrimitive ?: return false
-        val raw = primitive.content.trim()
+    suspend fun syncClock(nodeId: String) {
+        val now = java.util.Calendar.getInstance()
 
-        return when {
-            raw.equals("true", ignoreCase = true) -> true
-            raw.equals("false", ignoreCase = true) -> false
-            raw == "1" -> true
-            raw == "0" -> false
-            else -> false
+        val hh = now.get(java.util.Calendar.HOUR_OF_DAY).toString().padStart(2, '0')
+        val mi = now.get(java.util.Calendar.MINUTE).toString().padStart(2, '0')
+        val ss = now.get(java.util.Calendar.SECOND).toString().padStart(2, '0')
+
+        val ww = when (now.get(java.util.Calendar.DAY_OF_WEEK)) {
+            java.util.Calendar.SUNDAY -> "01"
+            java.util.Calendar.MONDAY -> "02"
+            java.util.Calendar.TUESDAY -> "03"
+            java.util.Calendar.WEDNESDAY -> "04"
+            java.util.Calendar.THURSDAY -> "05"
+            java.util.Calendar.FRIDAY -> "06"
+            java.util.Calendar.SATURDAY -> "07"
+            else -> "01"
         }
+
+        val dd = now.get(java.util.Calendar.DAY_OF_MONTH).toString().padStart(2, '0')
+        val mm = (now.get(java.util.Calendar.MONTH) + 1).toString().padStart(2, '0')
+        val yy = (now.get(java.util.Calendar.YEAR) % 100).toString().padStart(2, '0')
+
+        sendExtConfigCommand(
+            nodeId = nodeId,
+            command = ExtConfigCommands.SET_TIME,
+            argString = "$hh:$mi:$ss"
+        )
+
+        sendExtConfigCommand(
+            nodeId = nodeId,
+            command = ExtConfigCommands.SET_DATE,
+            argString = "$ww/$dd/$mm/$yy"
+        )
+
     }
 
-    private suspend fun sendCommand(
+    private suspend fun sendExtConfigCommand(
         nodeId: String,
-        cmd: PnPLCmd
+        command: com.st.blue_sdk.features.extended.ext_configuration.request.CommandName,
+        argString: String
     ) {
-        val pnplFeature = pnplFeatures[nodeId]
-            ?: throw IllegalStateException("PnPL feature not initialized for nodeId=$nodeId")
+        val extConfig = blueManager.nodeFeatures(nodeId)
+            .filterIsInstance<ExtConfiguration>()
+            .firstOrNull()
+            ?: throw IllegalStateException("[$nodeId] ExtConfiguration não encontrada")
 
         blueManager.writeFeatureCommand(
             responseTimeout = 0,
             nodeId = nodeId,
-            featureCommand = PnPLCommand(
-                feature = pnplFeature,
-                cmd = cmd
+            featureCommand = ExtendedFeatureCommand(
+                feature = extConfig,
+                extendedCommand = ExtConfigCommands.buildConfigCommand(
+                    command = command,
+                    argString = argString
+                )
             )
         )
     }
 
-    private suspend fun sendGetAllCommand(nodeId: String) {
-        sendCommand(
-            nodeId = nodeId,
-            cmd = PnPLCmd.ALL
-        )
+    private fun isUsefulPnplConfig(config: PnPLConfig?): Boolean {
+        val deviceStatus = config?.deviceStatus?.value ?: return false
+        return deviceStatus.components.isNotEmpty()
     }
 
-    private suspend fun sendGetLogControllerCommand(nodeId: String) {
-        sendCommand(
-            nodeId = nodeId,
-            cmd = PnPLCmd.LOG_CONTROLLER // Use a constante oficial do SDK
-        )
-    }
-
-    private suspend fun sendSetNameCommand(nodeId: String) {
-        sendCommand(
-            nodeId = nodeId,
-            cmd = PnPLCmd(
-                component = "log_controller", // O PRO costuma centralizar aqui
-                command = "set_filename",     // O comando correto costuma ser set_filename e não acquisition_info
-                fields = mapOf("name" to "L")
-            )
-        )
-    }
-
-    private suspend fun sendSetTimeCommand(nodeId: String) {
-        val sdf = SimpleDateFormat("yyyyMMddHHmmss", Locale.ROOT) // Sem underline
-        val datetime = sdf.format(Date())
-
-        sendCommand(
-            nodeId = nodeId,
-            cmd = PnPLCmd(
-                component = "", // Global
-                command = "set_time",
-                fields = mapOf("datetime" to datetime)
-            )
-        )
-    }
-
-    private suspend fun waitForLoggingState(
+    private fun manualExtractPnPL(
         nodeId: String,
-        expected: Boolean
-    ) {
-        withTimeout(15000) { // Increased to 15s for stability
-            _states
-                .map { it[nodeId]?.isLogging }
-                .filter { it == expected }
-                .onEach { Log.d(TAG, "Success: log_status=$it confirmed") }
-                .first() // This suspends until the condition is met
+        rawData: ByteArray
+    ): PnPLConfig? {
+        if (rawData.isEmpty()) return null
+
+        val header = rawData[0].toInt() and 0xFF
+        val payloadStartIndex = when (header) {
+            0x00, 0x20, 0x80 -> 3
+            0x40 -> 1
+            else -> 1
+        }
+
+        val isStart = header == 0x00 || header == 0x20
+        val isMiddle = header == 0x40
+        val isEnd = header == 0x80
+
+        val buffer = nodeBuffers.getOrPut(nodeId) { ByteArrayOutputStream() }
+
+        if (isStart) {
+            buffer.reset()
+        }
+
+        if (rawData.size > payloadStartIndex) {
+            buffer.write(rawData, payloadStartIndex, rawData.size - payloadStartIndex)
+        }
+
+        if (!isStart && !isMiddle && !isEnd) {
+            return null
+        }
+
+        if (!isEnd) {
+            return null
+        }
+
+        val rawString = buffer.toString(Charsets.UTF_8.name())
+            .replace("\u0000", "")
+            .trim()
+
+        val jsonStart = rawString.indexOf('{')
+        if (jsonStart < 0) {
+            return null
+        }
+
+        val jsonString = rawString.substring(jsonStart)
+
+        return try {
+            val jsonElement = jsonHandler.parseToJsonElement(jsonString)
+            val rootObj = jsonElement.jsonObject
+
+            if (rootObj["devices"] == null) {
+                val fakeDevice = PnPLDevice(
+                    boardId = null,
+                    fwId = null,
+                    serialNumber = null,
+                    pnplBleResponses = null,
+                    components = listOf(rootObj)
+                )
+
+                return PnPLConfig(
+                    deviceStatus = FeatureField(
+                        name = "DeviceStatus",
+                        value = fakeDevice
+                    ),
+                    setCommandResponse = FeatureField(
+                        name = "SetCommandResponse",
+                        value = null
+                    )
+                )
+            }
+
+            val devices = rootObj["devices"]
+            val firstDevice = devices
+                ?.let { jsonHandler.parseToJsonElement(it.toString()) }
+                ?.jsonArray
+                ?.firstOrNull()
+                ?.jsonObject
+                ?: return null
+
+            val boardId = firstDevice["board_id"]?.jsonPrimitive?.intOrNull
+            val fwId = firstDevice["fw_id"]?.jsonPrimitive?.intOrNull
+            val serial = firstDevice["sn"]?.jsonPrimitive?.contentOrNull
+            val componentsJson = firstDevice["components"]
+                ?.let { jsonHandler.parseToJsonElement(it.toString()) }
+                ?.jsonArray
+                ?.mapNotNull { it as? JsonObject }
+                ?: emptyList()
+
+            val device = PnPLDevice(
+                boardId = boardId,
+                fwId = fwId,
+                serialNumber = serial,
+                pnplBleResponses = null,
+                components = componentsJson
+            )
+
+            PnPLConfig(
+                deviceStatus = FeatureField(
+                    name = "DeviceStatus",
+                    value = device
+                ),
+                setCommandResponse = FeatureField(
+                    name = "SetCommandResponse",
+                    value = null
+                )
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "[$nodeId] manualExtractPnPL falhou", e)
+            null
+        } finally {
+            buffer.reset()
         }
     }
 
-    private data class SdLogState(
+    private fun handleStatusUpdate(nodeId: String, data: PnPLConfig) {
+        val deviceStatus = data.deviceStatus.value ?: run {
+            Log.e(TAG, "[$nodeId] PnPLConfig sem deviceStatus")
+            return
+        }
+
+        val components = deviceStatus.components
+        var sdMounted: Boolean? = true
+        var isLogging: Boolean? = null
+        var isRunning: Boolean? = null
+        var currentFileName: String? = null
+        var bestLogComponent: String? = null
+        var bestControllerComponent: String? = null
+
+        fun extractBooleanLike(obj: JsonObject, vararg keys: String): Boolean? {
+            keys.forEach { key ->
+                val prim = obj[key]?.jsonPrimitive ?: return@forEach
+                prim.booleanOrNull?.let { return it }
+                prim.intOrNull?.let { return it == 1 }
+
+                val content = prim.content.lowercase(Locale.ROOT)
+                when {
+                    content == "true" -> return true
+                    content == "false" -> return false
+                    content == "1" -> return true
+                    content == "0" -> return false
+                    content.contains("started") -> return true
+                    content.contains("logging") -> return true
+                    content.contains("recording") -> return true
+                    content.contains("running") -> return true
+                    content.contains("acquiring") -> return true
+                    content.contains("stopped") -> return false
+                    content.contains("idle") -> return false
+                    content.contains("ready to start") -> return false
+                    content == "ready" -> return false
+                }
+            }
+            return null
+        }
+
+        fun looksLikeLogComponent(componentName: String?): Boolean {
+            if (componentName == null) return false
+            return componentName == SD_LOG_COMPONENT ||
+                    componentName.contains("sd_log", ignoreCase = true)
+        }
+
+        fun looksLikeControllerComponent(componentName: String?): Boolean {
+            if (componentName == null) return false
+            return componentName == LOG_CONTROLLER_COMPONENT ||
+                    componentName.contains("log_controller", ignoreCase = true) ||
+                    componentName.contains("controller", ignoreCase = true)
+        }
+
+        fun extractFromObject(obj: JsonObject, componentName: String?) {
+            val sdValPrim = obj[SD_JSON_KEY]?.jsonPrimitive
+            if (sdValPrim != null) {
+                sdMounted = sdValPrim.booleanOrNull ?: sdValPrim.intOrNull?.let { it == 1 }
+            }
+
+            val fileNamePrim = obj[FILE_NAME_JSON_KEY]?.jsonPrimitive
+            if (fileNamePrim != null) {
+                currentFileName = fileNamePrim.content
+            }
+
+            if (looksLikeLogComponent(componentName)) {
+                extractBooleanLike(obj, LOG_STATUS_JSON_KEY, "is_logging", "status")?.let { parsed ->
+                    isLogging = parsed
+                }
+            }
+
+            if (looksLikeControllerComponent(componentName)) {
+                extractBooleanLike(obj, "is_active", "enabled", "running", "is_running", "status")?.let { parsed ->
+                    isRunning = parsed
+                }
+            }
+
+            if (
+                componentName != null &&
+                componentName != "root" &&
+                looksLikeLogComponent(componentName)
+            ) {
+                bestLogComponent = componentName
+            }
+
+            if (
+                componentName != null &&
+                componentName != "root" &&
+                looksLikeControllerComponent(componentName)
+            ) {
+                bestControllerComponent = componentName
+            }
+        }
+
+        components.forEach { compMap ->
+            val rootObj = compMap as? JsonObject ?: return@forEach
+
+            extractFromObject(rootObj, "root")
+
+            rootObj.forEach { (componentName, componentValue) ->
+                if (componentValue is JsonObject) {
+                    extractFromObject(componentValue, componentName)
+
+                    componentValue.forEach { (_, nestedValue) ->
+                        if (nestedValue is JsonObject) {
+                            extractFromObject(nestedValue, componentName)
+                        }
+                    }
+                }
+            }
+        }
+
+        bestLogComponent?.let { nodeComponentNames[nodeId] = it }
+        bestControllerComponent?.let { nodeControllerNames[nodeId] = it }
+        currentFileName?.let { nodeFileNames[nodeId] = it }
+
+        val prevState = _states.value[nodeId]
+        val mergedState = SdLogState(
+            sdMounted = (sdMounted ?: prevState?.sdMounted) == true,
+            isRunning = (isRunning ?: prevState?.isRunning ?: isLogging) == true,
+            isLogging = (isLogging ?: prevState?.isLogging) == true,
+            fileName = currentFileName ?: prevState?.fileName,
+            logComponent = bestLogComponent ?: prevState?.logComponent ?: nodeComponentNames[nodeId],
+            controllerComponent = bestControllerComponent ?: prevState?.controllerComponent ?: nodeControllerNames[nodeId]
+        )
+
+        if (prevState != mergedState) {
+            _states.update { current ->
+                current.toMutableMap().apply {
+                    this[nodeId] = mergedState
+                }
+            }
+
+            Log.i(
+                TAG,
+                "[$nodeId] NOVO ESTADO: " +
+                        "SD=${mergedState.sdMounted}, " +
+                        "RUN=${mergedState.isRunning}, " +
+                        "LOG=${mergedState.isLogging}, " +
+                        "FILE=${mergedState.fileName}, " +
+                        "LOG_COMP=${mergedState.logComponent}, " +
+                        "CTRL_COMP=${mergedState.controllerComponent}"
+            )
+        }
+    }
+
+    private suspend fun sendCommand(nodeId: String, cmd: PnPLCmd) {
+        ensurePnplReady(nodeId)
+
+        val pnplFeature = pnplFeatures[nodeId]
+            ?: throw IllegalStateException("PnPL feature not initialized for $nodeId")
+
+        commandMutex.withLock {
+            Log.v(TAG, "[$nodeId] Escrevendo comando PnPL: ${cmd.component ?: "GLOBAL"}*${cmd.command ?: "ALL"}")
+            blueManager.writeFeatureCommand(
+                nodeId,
+                PnPLCommand(pnplFeature, cmd),
+                0L
+            )
+        }
+    }
+
+    data class SdLogState(
         val sdMounted: Boolean = false,
-        val isLogging: Boolean = false
+        val isRunning: Boolean = false,
+        val isLogging: Boolean = false,
+        val fileName: String? = null,
+        val logComponent: String? = null,
+        val controllerComponent: String? = null
     )
 
     companion object {
         private const val TAG = "OfficialSdLogEngine"
-
         private const val LOG_STATUS_JSON_KEY = "log_status"
         private const val SD_JSON_KEY = "sd_mounted"
-        private const val LOG_CONTROLLER_JSON_KEY = "log_controller"
-
-        private const val ACQUISITION_INFO_JSON_KEY = "acquisition_info"
-        private const val DESC_JSON_KEY = "description"
-        private const val NAME_JSON_KEY = "name"
-
-        private const val DEFAULT_DATALOG_NAME_FORMAT = "EEE MMM d yyyy HH:mm:ss"
+        private const val FILE_NAME_JSON_KEY = "file_name"
+        private const val SD_LOG_COMPONENT = "sd_log"
+        private const val LOG_CONTROLLER_COMPONENT = "log_controller"
+        private const val START_STOP_COMMAND = "start_stop"
     }
 }

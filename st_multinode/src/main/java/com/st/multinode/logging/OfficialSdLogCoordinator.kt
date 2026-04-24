@@ -15,6 +15,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -32,37 +33,26 @@ import kotlinx.serialization.json.booleanOrNull
 class OfficialSdLogCoordinator @Inject constructor(
     private val blueManager: BlueManager
 ) {
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    val observeJobs = ConcurrentHashMap<String, Job>()
+    val pnplFeatures = ConcurrentHashMap<String, PnPL>()
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    private val observeJobs = ConcurrentHashMap<String, Job>()
-    private val pnplFeatures = ConcurrentHashMap<String, PnPL>()
-
-    private val _states =
-        MutableStateFlow<Map<String, HsdlLogControllerState>>(emptyMap())
+    private val _states = MutableStateFlow<Map<String, HsdlLogControllerState>>(emptyMap())
 
     suspend fun start(nodeId: String): Result<Unit> {
         return runCatching {
+            delay(1000)
             ensurePnplObservation(nodeId)
-
-            // 1. Initial Sync
+            delay(1000)
             sendGetAllCommand(nodeId)
-            delay(1000) // Give more time for the initial heavy sync
-
-            // 2. Single Refresh instead of repeat(3)
+            delay(1000)
             sendGetLogControllerCommand(nodeId)
-
-            // 3. Wait for SD with longer polling
             waitForSdMounted(nodeId)
-
-            // 4. Time Sync (Critical)
             sendSetTimeCommand(nodeId)
-            delay(600) // Increase spacing
+            delay(600)
 
-            // 5. Start Logging
+            // Aqui chamamos o engine ou a função interna corrigida
             sendStartLogCommand(nodeId)
-
-            // 6. Verify
             waitForLoggingState(nodeId = nodeId, expected = true)
         }
     }
@@ -99,144 +89,88 @@ class OfficialSdLogCoordinator @Inject constructor(
     }
 
     private suspend fun ensurePnplObservation(nodeId: String) {
-        if (observeJobs[nodeId]?.isActive == true && pnplFeatures[nodeId] != null) {
-            return
-        }
+        if (observeJobs[nodeId]?.isActive == true && pnplFeatures[nodeId] != null) return
 
         val pnplFeature = blueManager.nodeFeatures(nodeId)
             .firstOrNull { it.name == PnPL.NAME } as? PnPL
-            ?: throw IllegalStateException("PnPL feature not found for nodeId=$nodeId")
+            ?: throw IllegalStateException("PnPL not found")
 
         pnplFeatures[nodeId] = pnplFeature
 
         val job = scope.launch {
-            blueManager.getFeatureUpdates(
-                nodeId = nodeId,
-                features = listOf(pnplFeature),
-                autoEnable = true
-            ).collect { update ->
-                val pnplConfig = update.data as? PnPLConfig ?: return@collect
-                handlePnplConfig(nodeId = nodeId, data = pnplConfig)
+            blueManager.getFeatureUpdates(nodeId, listOf(pnplFeature), true).collect { update ->
+                (update.data as? PnPLConfig)?.let { handlePnplConfig(nodeId, it) }
             }
         }
-
         observeJobs[nodeId] = job
-        delay(600)
     }
 
-    private fun handlePnplConfig(
-        nodeId: String,
-        data: PnPLConfig
-    ) {
+    private fun handlePnplConfig(nodeId: String, data: PnPLConfig) {
         data.deviceStatus.value?.components?.let { json ->
             json.find { it.containsKey(LOG_CONTROLLER_JSON_KEY) }
-                ?.get(LOG_CONTROLLER_JSON_KEY)
-                ?.jsonObject
-                ?.let { logControllerJson ->
-
-                    val sdMounted =
-                        logControllerJson[SD_JSON_KEY]?.jsonPrimitive?.booleanOrNull ?: false
-
-                    val isLogging =
-                        logControllerJson[LOG_STATUS_JSON_KEY]?.jsonPrimitive?.booleanOrNull
-                            ?: false
-
+                ?.get(LOG_CONTROLLER_JSON_KEY)?.jsonObject?.let { logJson ->
                     updateState(
-                        nodeId = nodeId,
-                        sdMounted = sdMounted,
-                        isLogging = isLogging
-                    )
-
-                    Log.d(
-                        TAG,
-                        "PnPL status nodeId=$nodeId sdMounted=$sdMounted isLogging=$isLogging"
+                        nodeId,
+                        sdMounted = logJson[SD_JSON_KEY]?.jsonPrimitive?.booleanOrNull ?: false,
+                        isLogging = logJson[LOG_STATUS_JSON_KEY]?.jsonPrimitive?.booleanOrNull ?: false
                     )
                 }
         }
     }
 
-    private suspend fun sendCommand(
-        nodeId: String,
-        cmd: PnPLCmd
-    ) {
-        val pnplFeature = pnplFeatures[nodeId]
-            ?: throw IllegalStateException("PnPL feature not initialized for nodeId=$nodeId")
-
-        blueManager.writeFeatureCommand(
-            responseTimeout = 0,
-            nodeId = nodeId,
-            featureCommand = PnPLCommand(
-                feature = pnplFeature,
-                cmd = cmd
-            )
-        )
-    }
-
-    private suspend fun sendGetAllCommand(nodeId: String) {
-        Log.d(TAG, "sendGetAllCommand nodeId=$nodeId")
-
+    // Tornamos esta função pública ou acessível para o Engine se necessário
+    suspend fun sendStartLogCommand(nodeId: String) {
+        val pnpl = pnplFeatures[nodeId] ?: return
+        // O SDK espera fields mapOf("interface" to 2) para Custom App no SD
         sendCommand(
-            nodeId = nodeId,
-            cmd = PnPLCmd.ALL
+            nodeId,
+            PnPLCmd(LOG_CONTROLLER_JSON_KEY, "start_log", fields = mapOf("interface" to 2))
         )
     }
 
-    private suspend fun sendGetLogControllerCommand(nodeId: String) {
-        Log.d(TAG, "sendGetLogControllerCommand nodeId=$nodeId")
-
-        sendCommand(
-            nodeId = nodeId,
-            cmd = PnPLCmd.LOG_CONTROLLER
-        )
+    private suspend fun sendCommand(nodeId: String, cmd: PnPLCmd) {
+        val pnpl = pnplFeatures[nodeId] ?: return
+        // CORREÇÃO: writeFeatureCommand(nodeId, PnPLCommand(feature, cmd), timeout)
+        blueManager.writeFeatureCommand(nodeId, PnPLCommand(pnpl, cmd), 0L)
     }
+
+    private suspend fun sendGetAllCommand(nodeId: String) = sendCommand(nodeId, PnPLCmd.ALL)
+    private suspend fun sendGetLogControllerCommand(nodeId: String) = sendCommand(nodeId, PnPLCmd.LOG_CONTROLLER)
 
     private suspend fun sendSetTimeCommand(nodeId: String) {
-        val datetime = SimpleDateFormat(
-            "yyyyMMdd_HH_mm_ss",
-            Locale.ROOT
-        ).format(Date())
-
-        Log.d(TAG, "sendSetTimeCommand nodeId=$nodeId datetime=$datetime")
-
+        val datetime = SimpleDateFormat("yyyyMMdd_HH_mm_ss", Locale.ROOT).format(Date())
         sendCommand(
-            nodeId = nodeId,
-            cmd = PnPLCmd(
-                component = LOG_CONTROLLER_JSON_KEY,
-                command = "set_time",
-                fields = mapOf("datetime" to datetime)
-            )
+            nodeId,
+            PnPLCmd(LOG_CONTROLLER_JSON_KEY, "set_time", fields = mapOf("datetime" to datetime))
         )
     }
 
-    private suspend fun sendSetNameCommand(nodeId: String) {
-        val acquisitionName = SimpleDateFormat(
-            "EEE_MMM_d_yyyy_HH_mm_ss",
-            Locale.UK
-        ).format(Date())
-
-        Log.d(TAG, "sendSetNameCommand nodeId=$nodeId acquisitionName=$acquisitionName")
-
-        // Em algumas firmwares isto funciona como set de propriedades em acquisition_info.
-        sendCommand(
-            nodeId = nodeId,
-            cmd = PnPLCmd(
-                command = ACQUISITION_INFO_JSON_KEY,
-                fields = mapOf(NAME_JSON_KEY to acquisitionName)
-            )
-        )
+    private suspend fun waitForSdMounted(nodeId: String) {
+        withTimeout(25000) {
+            _states.map { it[nodeId]?.sdMounted }.filter { it == true }.first()
+        }
     }
 
-    private suspend fun sendStartLogCommand(nodeId: String) {
-        Log.d(TAG, "sendStartLogCommand nodeId=$nodeId")
+    private suspend fun waitForLoggingState(nodeId: String, expected: Boolean) {
+        withTimeout(25000) {
+            _states.map { it[nodeId]?.isLogging }.filter { it == expected }.first()
+        }
+    }
 
-        sendCommand(
-            nodeId = nodeId,
-            cmd = PnPLCmd(
-                component = LOG_CONTROLLER_JSON_KEY,
-                command = "start_log",
-                fields = mapOf("interface" to 2)
-            )
-        )
+    private fun updateState(nodeId: String, sdMounted: Boolean, isLogging: Boolean) {
+        _states.update { it + (nodeId to HsdlLogControllerState(sdMounted, isLogging)) }
+    }
+
+    private data class HsdlLogControllerState(val sdMounted: Boolean = false, val isLogging: Boolean = false)
+
+    companion object {
+        // Removido PRIVATE para o Engine conseguir aceder
+        const val TAG = "OfficialSdLogCoord"
+        const val LOG_CONTROLLER_JSON_KEY = "log_controller"
+        const val LOG_STATUS_JSON_KEY = "log_status"
+        const val SD_JSON_KEY = "sd_mounted"
+        const val ACQUISITION_INFO_JSON_KEY = "acquisition_info"
+        const val NAME_JSON_KEY = "name"
     }
 
     private suspend fun sendStopLogCommand(nodeId: String) {
@@ -257,75 +191,5 @@ class OfficialSdLogCoordinator @Inject constructor(
             sendGetLogControllerCommand(nodeId)
             delay(300)
         }
-    }
-
-    private suspend fun waitForSdMounted(nodeId: String) {
-        withTimeout(8000) {
-            while (true) {
-                sendGetLogControllerCommand(nodeId)
-                val mounted = _states
-                    .map { it[nodeId]?.sdMounted == true }
-                    .first()
-
-                if (mounted) {
-                    Log.d(TAG, "SD mounted confirmed for nodeId=$nodeId")
-                    return@withTimeout
-                }
-
-                delay(400)
-            }
-        }
-    }
-
-    private suspend fun waitForLoggingState(
-        nodeId: String,
-        expected: Boolean
-    ) {
-        withTimeout(12000) {
-            while (true) {
-                sendGetLogControllerCommand(nodeId)
-                val current = _states
-                    .map { it[nodeId]?.isLogging == expected }
-                    .first()
-
-                if (current) {
-                    Log.d(TAG, "log_status=$expected confirmed for nodeId=$nodeId")
-                    return@withTimeout
-                }
-
-                delay(500)
-            }
-        }
-    }
-
-    private fun updateState(
-        nodeId: String,
-        sdMounted: Boolean,
-        isLogging: Boolean
-    ) {
-        _states.update { current ->
-            current + (
-                    nodeId to HsdlLogControllerState(
-                        sdMounted = sdMounted,
-                        isLogging = isLogging
-                    )
-                    )
-        }
-    }
-
-    private data class HsdlLogControllerState(
-        val sdMounted: Boolean = false,
-        val isLogging: Boolean = false
-    )
-
-    companion object {
-        private const val TAG = "OfficialSdLogCoord"
-
-        private const val LOG_CONTROLLER_JSON_KEY = "log_controller"
-        private const val LOG_STATUS_JSON_KEY = "log_status"
-        private const val SD_JSON_KEY = "sd_mounted"
-
-        private const val ACQUISITION_INFO_JSON_KEY = "acquisition_info"
-        private const val NAME_JSON_KEY = "name"
     }
 }

@@ -17,6 +17,8 @@ interface MultiNodeRepository {
 
     fun markError(nodeId: String, message: String?)
 
+    fun markStatus(nodeId: String, message: String?)
+
     suspend fun connectAndAwaitReady(
         nodeId: String,
         maxConnectionRetries: Int = 3,

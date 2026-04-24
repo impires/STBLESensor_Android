@@ -17,10 +17,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -30,6 +32,14 @@ fun MultiNodeScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    val view = LocalView.current
+    DisposableEffect(view) {
+        view.keepScreenOn = true
+        onDispose {
+            view.keepScreenOn = false
+        }
+    }
 
     Column(
         modifier = modifier
@@ -88,7 +98,7 @@ fun MultiNodeScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedButton(
-            onClick = { onBack() },
+            onClick = onBack,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Back")
@@ -133,17 +143,20 @@ private fun MultiNodeRow(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = node.name,
+                    text = node.name ?: "Unknown node",
                     style = MaterialTheme.typography.titleMedium
                 )
+
                 Text(
-                    text = "MAC: ${node.mac}",
+                    text = "MAC: ${node.mac ?: "-"}",
                     style = MaterialTheme.typography.bodySmall
                 )
+
                 Text(
                     text = buildNodeStatus(node),
                     style = MaterialTheme.typography.bodySmall
                 )
+
                 node.error?.let { err ->
                     Text(
                         text = "Erro: $err",
@@ -157,11 +170,12 @@ private fun MultiNodeRow(
 }
 
 private fun buildNodeStatus(node: ManagedNode): String {
-    return when {
-        node.error != null -> "Error"
-        node.isLogging -> "Logging"
-        node.isReady -> "Ready"
-        node.isConnected -> "Connected"
-        else -> "Discovered"
-    }
+    return node.statusMessage
+        ?: when {
+            node.error != null -> "Erro"
+            node.isLogging -> "A gravar"
+            node.isReady -> "Pronto"
+            node.isConnected -> "Ligado"
+            else -> "Não está a gravar"
+        }
 }

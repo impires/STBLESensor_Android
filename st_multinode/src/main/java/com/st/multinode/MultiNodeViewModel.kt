@@ -46,9 +46,13 @@ class MultiNodeViewModel @Inject constructor(
         repository.clearSelection()
     }
 
+    fun updateFlowFileName(newName: String) {
+        _uiState.update { it.copy(flowFileName = newName) }
+    }
+
     fun prepareSelected(
         enableServer: Boolean = false,
-        maxPayloadSize: Int = 248,
+        maxPayloadSize: Int = 150, // Reduzido de 248
         maxConnectionRetries: Int = 3
     ) {
         val selectedNodeIds = _uiState.value.discovered
@@ -60,27 +64,25 @@ class MultiNodeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isConnecting = true) }
 
-            val semaphore = Semaphore(2)
+            // Mudar para 1 garante que uma board termina de conectar/negociar MTU
+            // antes da próxima começar. Isso evita ruído no rádio.
+            val semaphore = Semaphore(1)
 
-            coroutineScope {
-                selectedNodeIds.map { nodeId ->
-                    launch {
-                        semaphore.withPermit {
-                            val result = repository.connectAndAwaitReady(
-                                nodeId = nodeId,
-                                maxConnectionRetries = maxConnectionRetries,
-                                maxPayloadSize = maxPayloadSize,
-                                enableServer = enableServer
-                            )
-                            if (result.isFailure) {
-                                repository.markError(
-                                    nodeId = nodeId,
-                                    message = result.exceptionOrNull()?.message ?: "Node not ready"
-                                )
-                            }
-                        }
+            selectedNodeIds.forEach { nodeId -> // Usa forEach em vez de launch paralelo
+                semaphore.withPermit {
+                    val result = repository.connectAndAwaitReady(
+                        nodeId = nodeId,
+                        maxConnectionRetries = maxConnectionRetries,
+                        maxPayloadSize = maxPayloadSize,
+                        enableServer = enableServer
+                    )
+                    if (result.isFailure) {
+                        repository.markError(
+                            nodeId = nodeId,
+                            message = result.exceptionOrNull()?.message ?: "Node not ready"
+                        )
                     }
-                }.joinAll()
+                }
             }
 
             _uiState.update { it.copy(isConnecting = false) }
@@ -118,7 +120,7 @@ class MultiNodeViewModel @Inject constructor(
 
     fun startAll(
         enableServer: Boolean = false,
-        maxPayloadSize: Int = 248,
+        maxPayloadSize: Int = 150, // MUDAR DE 248 PARA 150 (Igual ao prepareSelected)
         maxConnectionRetries: Int = 3
     ) {
         val nodesToStart = _uiState.value.discovered
@@ -129,10 +131,13 @@ class MultiNodeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isStartingAll = true) }
 
+            // Aqui é onde o Service recebe a instrução fatal.
+            // Se passar 248 aqui, a board bloqueia no momento do log.
             acquisitionServiceController.startLogging(
                 nodeIds = nodesToStart.map { it.id },
+                flowFileName = _uiState.value.flowFileName,
                 enableServer = enableServer,
-                maxPayloadSize = maxPayloadSize,
+                maxPayloadSize = maxPayloadSize, // Agora vai usar 150
                 maxConnectionRetries = maxConnectionRetries
             )
 

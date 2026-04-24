@@ -25,7 +25,7 @@ android {
     compileSdk = (rootProject.findProperty("stCompileSdk")?.toString() ?: "36").toInt()
 
     defaultConfig {
-        applicationId = "com.st.bluems"
+        applicationId = "com.st.bluems.custom"
         minSdk = (rootProject.findProperty("stMinSdk")?.toString() ?: "26").toInt()
         targetSdk = (rootProject.findProperty("stTargetSdk")?.toString() ?: "36").toInt()
         versionCode = 365

@@ -40,7 +40,7 @@ class NodeSessionManager @Inject constructor(
         maxConnectionRetries: Int = 3,
         maxPayloadSize: Int = 248,
         enableServer: Boolean = false,
-        readyTimeoutMillis: Long = 15_000L
+        readyTimeoutMillis: Long = 25_000L
     ): Result<Unit> {
         val current = _states.value[nodeId]
         if (current?.phase == NodeSessionPhase.Ready || current?.phase == NodeSessionPhase.Logging) {

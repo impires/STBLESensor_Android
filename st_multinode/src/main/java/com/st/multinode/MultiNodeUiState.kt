@@ -2,6 +2,7 @@ package com.st.multinode
 
 data class MultiNodeUiState(
     val discovered: List<ManagedNode> = emptyList(),
+    val flowFileName: String = "defaultAppPro.json",
     val isConnecting: Boolean = false,
     val isStartingAll: Boolean = false,
     val isStoppingAll: Boolean = false
