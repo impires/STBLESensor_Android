@@ -4,6 +4,9 @@ import android.util.Log
 import com.st.blue_sdk.BlueManager
 import com.st.blue_sdk.features.Feature
 import com.st.blue_sdk.features.FeatureField
+import com.st.blue_sdk.features.extended.ext_configuration.ExtConfiguration
+import com.st.blue_sdk.features.extended.ext_configuration.request.ExtConfigCommands
+import com.st.blue_sdk.features.extended.ext_configuration.request.ExtendedFeatureCommand
 import com.st.blue_sdk.features.extended.pnpl.PnPL
 import com.st.blue_sdk.features.extended.pnpl.PnPLConfig
 import com.st.blue_sdk.features.extended.pnpl.model.PnPLDevice
@@ -35,6 +38,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.Date
 
 @Singleton
 class OfficialSdLogEngine @Inject constructor(
@@ -227,25 +231,54 @@ class OfficialSdLogEngine @Inject constructor(
         val mi = now.get(java.util.Calendar.MINUTE).toString().padStart(2, '0')
         val ss = now.get(java.util.Calendar.SECOND).toString().padStart(2, '0')
 
+        val ww = when (now.get(java.util.Calendar.DAY_OF_WEEK)) {
+            java.util.Calendar.SUNDAY -> "01"
+            java.util.Calendar.MONDAY -> "02"
+            java.util.Calendar.TUESDAY -> "03"
+            java.util.Calendar.WEDNESDAY -> "04"
+            java.util.Calendar.THURSDAY -> "05"
+            java.util.Calendar.FRIDAY -> "06"
+            java.util.Calendar.SATURDAY -> "07"
+            else -> "01"
+        }
+
         val dd = now.get(java.util.Calendar.DAY_OF_MONTH).toString().padStart(2, '0')
         val mm = (now.get(java.util.Calendar.MONTH) + 1).toString().padStart(2, '0')
         val yy = (now.get(java.util.Calendar.YEAR) % 100).toString().padStart(2, '0')
 
-        sendCommand(
-            nodeId,
-            PnPLCmd(
-                component = "log_controller",
-                command = "set_time",
-                fields = mapOf("time" to "$hh:$mi:$ss")
-            )
+        sendExtConfigCommand(
+            nodeId = nodeId,
+            command = ExtConfigCommands.SET_TIME,
+            argString = "$hh:$mi:$ss"
         )
 
-        sendCommand(
-            nodeId,
-            PnPLCmd(
-                component = "log_controller",
-                command = "set_date",
-                fields = mapOf("date" to "$dd/$mm/$yy")
+        sendExtConfigCommand(
+            nodeId = nodeId,
+            command = ExtConfigCommands.SET_DATE,
+            argString = "$ww/$dd/$mm/$yy"
+        )
+
+    }
+
+    private suspend fun sendExtConfigCommand(
+        nodeId: String,
+        command: com.st.blue_sdk.features.extended.ext_configuration.request.CommandName,
+        argString: String
+    ) {
+        val extConfig = blueManager.nodeFeatures(nodeId)
+            .filterIsInstance<ExtConfiguration>()
+            .firstOrNull()
+            ?: throw IllegalStateException("[$nodeId] ExtConfiguration não encontrada")
+
+        blueManager.writeFeatureCommand(
+            responseTimeout = 0,
+            nodeId = nodeId,
+            featureCommand = ExtendedFeatureCommand(
+                feature = extConfig,
+                extendedCommand = ExtConfigCommands.buildConfigCommand(
+                    command = command,
+                    argString = argString
+                )
             )
         )
     }
