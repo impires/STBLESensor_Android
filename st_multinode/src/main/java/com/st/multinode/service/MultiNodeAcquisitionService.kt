@@ -20,6 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -76,6 +77,7 @@ class MultiNodeAcquisitionService : Service() {
                     nodeIds.forEach { nodeId ->
                         repository.markError(nodeId, "Nenhum ficheiro de flow foi fornecido")
                         repository.markLogging(nodeId, false)
+                        repository.markStatus(nodeId, "Flow em falta")
                     }
                     updateNotification()
                     maybeStopSelf()
@@ -92,6 +94,7 @@ class MultiNodeAcquisitionService : Service() {
                             "Falha a ler flow file: $flowLocation - ${e.message}"
                         )
                         repository.markLogging(nodeId, false)
+                        repository.markStatus(nodeId, "Falha a ler flow")
                     }
                     updateNotification()
                     maybeStopSelf()
@@ -208,35 +211,58 @@ class MultiNodeAcquisitionService : Service() {
 
                     delay(index * 2000L)
 
+                    repository.markStatus(nodeId, "A arrancar")
                     Log.d(TAG, "[$nodeId] A iniciar startFlow")
+
                     val result = sdFlowStarter.startFlow(nodeId, flowJson)
 
                     if (result.isSuccess) {
-                        delay(8000)
+                        val confirmed = waitForLoggingStart(nodeId)
 
-                        activeLoggingNodes.add(nodeId)
-                        repository.markLogging(nodeId, true)
-                        acquireWakeLockIfNeeded()
-
-                        Log.d(TAG, "[$nodeId] Sequencia de start concluida; logging assumido ativo")
+                        if (confirmed) {
+                            activeLoggingNodes.add(nodeId)
+                            repository.markLogging(nodeId, true)
+                            repository.markStatus(nodeId, "A gravar")
+                            acquireWakeLockIfNeeded()
+                            Log.d(TAG, "[$nodeId] Logging confirmado")
+                        } else {
+                            Log.e(TAG, "[$nodeId] Logging não confirmado pelo device")
+                            repository.markError(nodeId, "Arranque não confirmado pelo device")
+                            repository.markStatus(nodeId, "Não está a gravar")
+                            repository.markLogging(nodeId, false)
+                        }
                     } else {
                         val error = result.exceptionOrNull()
                         Log.e(TAG, "[$nodeId] Falha no startFlow", error)
-                        repository.markError(
-                            nodeId,
-                            error?.message ?: "Falha no startFlow"
-                        )
+
+                        val message = error?.message ?: "Falha no startFlow"
+                        repository.markError(nodeId, message)
+
+                        if (
+                            message.contains("SensorTile legacy", ignoreCase = true) ||
+                            message.contains("START ainda não está implementado", ignoreCase = true)
+                        ) {
+                            repository.markStatus(
+                                nodeId,
+                                "SensorTile legacy detetado; comando START em falta"
+                            )
+                        } else {
+                            repository.markStatus(nodeId, "Falha ao arrancar")
+                        }
+
                         repository.markLogging(nodeId, false)
                     }
 
                     updateNotification()
-                } catch (e: kotlinx.coroutines.CancellationException) {
+                } catch (e: CancellationException) {
                     Log.w(TAG, "[$nodeId] Job cancelado durante start/acquisition", e)
                     repository.markLogging(nodeId, false)
+                    repository.markStatus(nodeId, "Cancelado")
                     throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "[$nodeId] Erro inesperado no fluxo de aquisicao", e)
                     repository.markError(nodeId, e.message ?: "Erro inesperado")
+                    repository.markStatus(nodeId, "Erro")
                     repository.markLogging(nodeId, false)
                 } finally {
                     nodeJobs.remove(nodeId)
@@ -258,6 +284,7 @@ class MultiNodeAcquisitionService : Service() {
     ): Boolean {
         return prepareSemaphore.withPermit {
             Log.d(TAG, "[$nodeId] Preparando...")
+            repository.markStatus(nodeId, "A preparar")
 
             val connResult = repository.connectAndAwaitReady(
                 nodeId,
@@ -267,12 +294,21 @@ class MultiNodeAcquisitionService : Service() {
             )
 
             if (connResult.isFailure) {
-                repository.markError(nodeId, "Connection failed")
+                repository.markError(nodeId, "Ligação falhou")
+                repository.markStatus(nodeId, "Falha de ligação")
                 repository.markLogging(nodeId, false)
                 return@withPermit false
             }
 
-            delay(2500)
+            delay(2000)
+
+            runCatching {
+                officialSdLogEngine.syncClock(nodeId)
+            }.onFailure { e ->
+                Log.w(TAG, "[$nodeId] Falha ao sincronizar clock por PnPL", e)
+            }
+
+            delay(500)
 
             val prepResult = sdFlowStarter.prepareFlow(nodeId, flowJson)
             if (prepResult.isFailure) {
@@ -281,12 +317,47 @@ class MultiNodeAcquisitionService : Service() {
                     nodeId,
                     prepResult.exceptionOrNull()?.message ?: "Flow prepare failed"
                 )
+                repository.markStatus(nodeId, "Preparação falhou")
                 repository.markLogging(nodeId, false)
                 return@withPermit false
             }
 
+            repository.markStatus(nodeId, "Pronto para arrancar")
             true
         }
+    }
+
+    private suspend fun waitForLoggingStart(nodeId: String): Boolean {
+        repeat(8) { attempt ->
+            val statusResult = sdFlowStarter.requestStatus(nodeId)
+            if (statusResult.isFailure) {
+                Log.w(
+                    TAG,
+                    "[$nodeId] requestStatus falhou na tentativa ${attempt + 1}",
+                    statusResult.exceptionOrNull()
+                )
+            }
+
+            delay(1500)
+
+            val state = officialSdLogEngine.states.value[nodeId]
+            Log.d(
+                TAG,
+                "[$nodeId] Estado observado: " +
+                        "sd=${state?.sdMounted}, run=${state?.isRunning}, log=${state?.isLogging}, file=${state?.fileName}"
+            )
+
+            if (state?.isLogging == true) {
+                return true
+            }
+
+            val statusText = state?.fileName
+            if (state?.sdMounted == true && state.fileName != null) {
+                Log.d(TAG, "[$nodeId] SD montado e ficheiro presente, a aguardar só confirmação final")
+            }
+        }
+
+        return false
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -298,26 +369,41 @@ class MultiNodeAcquisitionService : Service() {
     }
 
     private suspend fun stopManagedLogging(nodeId: String) {
+        repository.markStatus(nodeId, "A parar")
+
         runCatching {
             nodeJobs.remove(nodeId)?.cancelAndJoin()
         }.onFailure {
             Log.w(TAG, "[$nodeId] Falha ao cancelar job", it)
         }
 
-        runCatching { sdFlowStarter.stopFlow(nodeId) }
-            .onFailure { Log.w(TAG, "[$nodeId] stopFlow falhou", it) }
-
-        runCatching { officialSdLogEngine.stop(nodeId) }
-            .onFailure { Log.w(TAG, "[$nodeId] officialSdLogEngine.stop falhou", it) }
+        runCatching {
+            sdFlowStarter.stopFlow(nodeId)
+        }.onFailure {
+            Log.w(TAG, "[$nodeId] stopFlow falhou", it)
+        }
 
         repository.markLogging(nodeId, false)
+        repository.markStatus(nodeId, "Parado")
         activeLoggingNodes.remove(nodeId)
 
-        runCatching { officialSdLogEngine.release(nodeId) }
-            .onFailure { Log.w(TAG, "[$nodeId] officialSdLogEngine.release falhou", it) }
+        runCatching {
+            sdFlowStarter.release(nodeId)
+        }.onFailure {
+            Log.w(TAG, "[$nodeId] sdFlowStarter.release falhou", it)
+        }
 
-        runCatching { repository.disconnect(nodeId) }
-            .onFailure { Log.w(TAG, "[$nodeId] disconnect falhou", it) }
+        runCatching {
+            officialSdLogEngine.release(nodeId)
+        }.onFailure {
+            Log.w(TAG, "[$nodeId] officialSdLogEngine.release falhou", it)
+        }
+
+        runCatching {
+            repository.disconnect(nodeId)
+        }.onFailure {
+            Log.w(TAG, "[$nodeId] disconnect falhou", it)
+        }
 
         releaseWakeLock(force = false)
         updateNotification()
@@ -361,7 +447,7 @@ class MultiNodeAcquisitionService : Service() {
     private fun updateNotification() {
         val content = when {
             activeLoggingNodes.isNotEmpty() -> "Logging em ${activeLoggingNodes.size} no(s)"
-            else -> "A preparar/parado"
+            else -> "Parado ou a preparar"
         }
 
         if (

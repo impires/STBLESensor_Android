@@ -66,8 +66,9 @@ class MultiNodeRepositoryImpl @Inject constructor(
                 if (node.id == nodeId) {
                     node.copy(
                         isLogging = isLogging,
-                        isReady = !isLogging,
-                        error = null
+                        isReady = isLogging,
+                        error = null,
+                        statusMessage = if (isLogging) "A gravar" else node.statusMessage
                     )
                 } else {
                     node
@@ -82,7 +83,27 @@ class MultiNodeRepositoryImpl @Inject constructor(
         _managedNodes.update { current ->
             current.map { node ->
                 if (node.id == nodeId) {
-                    node.copy(error = message)
+                    node.copy(
+                        error = message,
+                        isLogging = false,
+                        isReady = false,
+                        statusMessage = if (message != null) "Erro" else node.statusMessage
+                    )
+                } else {
+                    node
+                }
+            }
+        }
+    }
+
+    override fun markStatus(nodeId: String, message: String?) {
+        _managedNodes.update { current ->
+            current.map { node ->
+                if (node.id == nodeId) {
+                    node.copy(
+                        statusMessage = message,
+                        isReady = node.isLogging
+                    )
                 } else {
                     node
                 }
@@ -109,14 +130,16 @@ class MultiNodeRepositoryImpl @Inject constructor(
                     if (result.isSuccess) {
                         node.copy(
                             isConnected = true,
-                            isReady = true,
-                            error = null
+                            isReady = false,
+                            error = null,
+                            statusMessage = "Ligado"
                         )
                     } else {
                         node.copy(
                             isConnected = false,
                             isReady = false,
-                            error = result.exceptionOrNull()?.message
+                            error = result.exceptionOrNull()?.message,
+                            statusMessage = "Falha de ligação"
                         )
                     }
                 } else {
@@ -142,6 +165,11 @@ class MultiNodeRepositoryImpl @Inject constructor(
                             result.exceptionOrNull()?.message
                         } else {
                             null
+                        },
+                        statusMessage = if (result.isFailure) {
+                            "Erro ao desligar"
+                        } else {
+                            "Desligado"
                         }
                     )
                 } else {

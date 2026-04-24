@@ -33,7 +33,6 @@ fun MultiNodeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Mantém a tela ligada enquanto esta tela estiver visível
     val view = LocalView.current
     DisposableEffect(view) {
         view.keepScreenOn = true
@@ -99,7 +98,7 @@ fun MultiNodeScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedButton(
-            onClick = { onBack() },
+            onClick = onBack,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Back")
@@ -144,17 +143,20 @@ private fun MultiNodeRow(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = node.name,
+                    text = node.name ?: "Unknown node",
                     style = MaterialTheme.typography.titleMedium
                 )
+
                 Text(
-                    text = "MAC: ${node.mac}",
+                    text = "MAC: ${node.mac ?: "-"}",
                     style = MaterialTheme.typography.bodySmall
                 )
+
                 Text(
                     text = buildNodeStatus(node),
                     style = MaterialTheme.typography.bodySmall
                 )
+
                 node.error?.let { err ->
                     Text(
                         text = "Erro: $err",
@@ -168,11 +170,12 @@ private fun MultiNodeRow(
 }
 
 private fun buildNodeStatus(node: ManagedNode): String {
-    return when {
-        node.error != null -> "Error"
-        node.isLogging -> "Logging"
-        node.isReady -> "Ready"
-        node.isConnected -> "Connected"
-        else -> "Discovered"
-    }
+    return node.statusMessage
+        ?: when {
+            node.error != null -> "Erro"
+            node.isLogging -> "A gravar"
+            node.isReady -> "Pronto"
+            node.isConnected -> "Ligado"
+            else -> "Não está a gravar"
+        }
 }

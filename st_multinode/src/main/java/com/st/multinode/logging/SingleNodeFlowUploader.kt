@@ -8,11 +8,8 @@ import com.st.blue_sdk.features.extended.pnpl.request.PnPLCommand
 import java.nio.charset.StandardCharsets
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
 @Singleton
@@ -39,25 +36,22 @@ class SingleNodeFlowUploader @Inject constructor(
 
         Log.d(TAG, "[$nodeId] uploadAndStart bytes=${flowBytes.size}")
 
-        var bytesSent = 0
-
-        fun prepareNextMessage(lengthAck: Int): ByteArray? {
-            bytesSent += lengthAck
-            if (bytesSent > flowBytes.size) return null
-
-            val last = minOf(bytesSent + CHUNK_SIZE, flowBytes.size)
-            val len = last - bytesSent
-            if (len <= 0) return null
-
-            val out = ByteArray(len)
-            flowBytes.copyInto(out, 0, bytesSent, last)
-            return out
-        }
+        var offset = 0
+        var parsingStarted = false
+        var finished = false
 
         suspend fun sendMessage(message: ByteArray) {
             val payload = String(message, StandardCharsets.ISO_8859_1)
             blueManager.writeDebugMessage(nodeId = nodeId, msg = payload)
             Log.d(TAG, "[$nodeId] sent debug chunk size=${message.size}")
+        }
+
+        fun nextChunk(): ByteArray? {
+            if (offset >= flowBytes.size) return null
+            val end = minOf(offset + CHUNK_SIZE, flowBytes.size)
+            val out = flowBytes.copyOfRange(offset, end)
+            offset = end
+            return out
         }
 
         suspend fun waitDebugMessage(timeoutMs: Long = 5000): String {
@@ -69,12 +63,8 @@ class SingleNodeFlowUploader @Inject constructor(
             }
         }
 
-        // 1. envia header SF + size + timestamp
         sendMessage(startFlowMessage(flowBytes.size))
         Log.d(TAG, "[$nodeId] SF header enviado")
-
-        var finished = false
-        var parsingStarted = false
 
         while (!finished) {
             val msg = waitDebugMessage()
@@ -83,20 +73,20 @@ class SingleNodeFlowUploader @Inject constructor(
 
             when {
                 msg.startsWith(SEND_FLOW_RESPONSE) -> {
-                    bytesSent = 0
-                    val next = prepareNextMessage(0)
-                    require(next != null) { "[$nodeId] Primeiro chunk nulo" }
-                    sendMessage(next)
-                }
-
-                msg.startsWith(FLOW_PARSED_MESSAGE_OK) -> {
-                    finished = true
-                    Log.d(TAG, "[$nodeId] Flow parse OK")
+                    offset = 0
+                    val firstChunk = nextChunk()
+                    require(firstChunk != null) { "[$nodeId] Primeiro chunk nulo" }
+                    sendMessage(firstChunk)
                 }
 
                 msg.startsWith(SEND_PARSING_FLOW_RESPONSE) -> {
                     parsingStarted = true
                     Log.d(TAG, "[$nodeId] Flow recebido, parsing a decorrer")
+                }
+
+                msg.startsWith(FLOW_PARSED_MESSAGE_OK) -> {
+                    finished = true
+                    Log.d(TAG, "[$nodeId] Flow parse OK")
                 }
 
                 msg.startsWith(FLOW_ERROR_MESSAGE) -> {
@@ -105,22 +95,23 @@ class SingleNodeFlowUploader @Inject constructor(
 
                 else -> {
                     if (!parsingStarted) {
-                        val next = prepareNextMessage(msg.length)
+                        val next = nextChunk()
                         if (next != null) {
                             sendMessage(next)
                         } else {
-                            Log.d(TAG, "[$nodeId] Sem mais chunks para enviar")
+                            Log.d(TAG, "[$nodeId] Sem mais chunks para enviar; a aguardar parse")
                         }
                     }
                 }
             }
         }
 
-        // 2. só depois do parse OK, start_log
-        val pnpl = blueManager.nodeFeatures(nodeId).filterIsInstance<PnPL>().firstOrNull()
+        val pnpl = blueManager.nodeFeatures(nodeId)
+            .filterIsInstance<PnPL>()
+            .firstOrNull()
             ?: throw IllegalStateException("[$nodeId] Feature PnPL não encontrada")
 
-        val cmd = PnPLCmd(
+        val startLogCmd = PnPLCmd(
             component = "sd_log",
             command = "start_log",
             fields = mapOf("interface" to 2)
@@ -128,11 +119,24 @@ class SingleNodeFlowUploader @Inject constructor(
 
         blueManager.writeFeatureCommand(
             nodeId,
-            PnPLCommand(pnpl, cmd),
+            PnPLCommand(pnpl, startLogCmd),
             0L
         )
 
         Log.d(TAG, "[$nodeId] start_log enviado após Flow_parse_ok")
+
+        val startControllerCmd = PnPLCmd(
+            component = "log_controller",
+            command = "start"
+        )
+
+        blueManager.writeFeatureCommand(
+            nodeId,
+            PnPLCommand(pnpl, startControllerCmd),
+            0L
+        )
+
+        Log.d(TAG, "[$nodeId] log_controller.start enviado após start_log")
     }
 
     private fun startFlowMessage(flowLength: Int): ByteArray {
@@ -141,7 +145,6 @@ class SingleNodeFlowUploader @Inject constructor(
         val sf = SEND_FLOW_REQUEST.toByteArray()
         System.arraycopy(sf, 0, message, 0, sf.size)
 
-        // big endian int32
         message[2] = ((flowLength shr 24) and 0xFF).toByte()
         message[3] = ((flowLength shr 16) and 0xFF).toByte()
         message[4] = ((flowLength shr 8) and 0xFF).toByte()
