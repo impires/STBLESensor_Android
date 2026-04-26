@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.sensor_fusion.SensorFusionViewModel
+-keep,allowobfuscation,allowshrinking class com.st.sensor_fusion.SensorFusionViewModel

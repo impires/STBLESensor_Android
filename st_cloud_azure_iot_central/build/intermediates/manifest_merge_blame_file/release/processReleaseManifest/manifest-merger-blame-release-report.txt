@@ -1,0 +1,29 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<!--
+3  ~ Copyright (c) 2022(-0001) STMicroelectronics.
+4  ~ All rights reserved.
+5  ~ This software is licensed under terms that can be found in the LICENSE file in
+6  ~ the root directory of this software component.
+7  ~ If no LICENSE file comes with this software, it is provided AS-IS.
+8-->
+9<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+10    xmlns:tools="http://schemas.android.com/tools"
+11    package="com.st.cloud_azure_iot_central" >
+12
+13    <uses-sdk android:minSdkVersion="26" />
+14
+15    <uses-feature android:name="android.hardware.camera" />
+15-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:11:1-55
+15-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:11:15-53
+16    <uses-feature
+16-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:12:1-13:32
+17        android:name="android.hardware.camera.autofocus"
+17-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:12:15-63
+18        android:required="false" />
+18-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:13:5-29
+19
+20    <uses-permission android:name="android.permission.CAMERA" />
+20-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:14:1-60
+20-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:14:18-58
+21
+22</manifest>

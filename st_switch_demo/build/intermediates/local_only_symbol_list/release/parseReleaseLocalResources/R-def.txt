@@ -1,0 +1,5 @@
+R_DEF: Internal format may change without notice
+local
+drawable switch_demo_icon
+drawable switch_off
+drawable switch_on

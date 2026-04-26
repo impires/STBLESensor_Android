@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.catalog.CatalogViewModel
+-keep,allowobfuscation,allowshrinking class com.st.catalog.CatalogViewModel

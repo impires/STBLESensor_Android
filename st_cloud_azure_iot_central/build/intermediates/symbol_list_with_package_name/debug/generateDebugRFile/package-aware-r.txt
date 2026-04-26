@@ -1,0 +1,12 @@
+com.st.cloud_azure_iot_central
+drawable cloud_app_config
+drawable cloud_azure_iot_central_icon
+drawable cloud_config
+drawable cloud_dev_upload
+drawable cloud_key
+drawable cloud_token
+drawable cloud_token_expired
+drawable cloud_write
+string navigation_tab_cloud_config
+string navigation_tab_device_config
+string navigation_tab_device_connection

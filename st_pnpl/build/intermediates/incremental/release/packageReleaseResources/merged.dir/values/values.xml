@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="st_pnpl_addMapEntryBtn">Add a map entry:</string>
+    <string name="st_pnpl_sendCommandBtn">Send</string>
+    <string name="st_pnpl_uploadDtmiFile">Upload\nCustom DTMI</string>
+</resources>

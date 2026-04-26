@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.cloud_azure_iot_central.CloudAzureIotCentralViewModel
+-keep,allowobfuscation,allowshrinking class com.st.cloud_azure_iot_central.CloudAzureIotCentralViewModel

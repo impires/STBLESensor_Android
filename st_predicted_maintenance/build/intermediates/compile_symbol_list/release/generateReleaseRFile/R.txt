@@ -1,0 +1,5 @@
+int drawable predicted_maintenance_icon 0x0
+int drawable predictive_status_bad 0x0
+int drawable predictive_status_good 0x0
+int drawable predictive_status_unknown 0x0
+int drawable predictive_status_warnings 0x0

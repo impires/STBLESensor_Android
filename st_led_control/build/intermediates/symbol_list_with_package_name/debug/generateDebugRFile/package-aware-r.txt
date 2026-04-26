@@ -1,0 +1,6 @@
+com.st.led_control
+drawable bell_ring
+drawable led_control_icon
+drawable stm32wb_led_off
+drawable stm32wb_led_on
+drawable stm32wb_signal_strength

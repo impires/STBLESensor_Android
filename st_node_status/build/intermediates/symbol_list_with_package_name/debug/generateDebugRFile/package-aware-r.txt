@@ -1,0 +1,18 @@
+com.st.node_status
+drawable battery_00
+drawable battery_00c
+drawable battery_100
+drawable battery_100c
+drawable battery_20
+drawable battery_20c
+drawable battery_40
+drawable battery_40c
+drawable battery_60
+drawable battery_60c
+drawable battery_80
+drawable battery_80c
+drawable battery_missing
+drawable battery_percentage
+drawable battery_voltage
+drawable node_status_icon
+drawable signal_strenght

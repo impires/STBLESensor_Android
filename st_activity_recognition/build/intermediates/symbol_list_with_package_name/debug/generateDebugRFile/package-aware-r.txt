@@ -1,0 +1,13 @@
+com.st.activity_recognition
+drawable activity_adult_in_car
+drawable activity_adult_not_in_car
+drawable activity_biking
+drawable activity_driving
+drawable activity_driving_new
+drawable activity_fastwalking
+drawable activity_jogging
+drawable activity_recognition_icon
+drawable activity_stairs
+drawable activity_stationary
+drawable activity_unknown
+drawable activity_walking

@@ -1,0 +1,14 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<!--
+3  ~ Copyright (c) 2022(-0001) STMicroelectronics.
+4  ~ All rights reserved.
+5  ~ This software is licensed under terms that can be found in the LICENSE file in
+6  ~ the root directory of this software component.
+7  ~ If no LICENSE file comes with this software, it is provided AS-IS.
+8-->
+9<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+10    package="com.st.pedometer" >
+11
+12    <uses-sdk android:minSdkVersion="26" />
+13
+14</manifest>

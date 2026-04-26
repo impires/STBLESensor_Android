@@ -1,0 +1,6 @@
+int drawable ic_info 0x0
+int drawable ic_info_outline 0x0
+int drawable ic_photo_camera 0x0
+int drawable ic_settings 0x0
+int drawable ic_tools 0x0
+int drawable plot_icon 0x0

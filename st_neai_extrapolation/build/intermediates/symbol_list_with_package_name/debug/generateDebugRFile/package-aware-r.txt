@@ -1,0 +1,9 @@
+com.st.neai_extrapolation
+drawable ic_arrow_down
+drawable ic_arrow_up
+drawable ic_article
+drawable ic_gear_ai
+drawable ic_info
+drawable neai_icon
+drawable neai_logo_dark
+drawable neai_logo_white

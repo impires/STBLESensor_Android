@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.activity_recognition.ActivityRecognitionViewModel
+-keep,allowobfuscation,allowshrinking class com.st.activity_recognition.ActivityRecognitionViewModel

@@ -1,0 +1,6 @@
+com.st.tof_objects_detection
+drawable tof_not_presence
+drawable tof_obj_found
+drawable tof_obj_search
+drawable tof_objects_detection_icon
+drawable tof_presence

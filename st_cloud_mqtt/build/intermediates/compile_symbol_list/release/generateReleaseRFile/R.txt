@@ -1,0 +1,5 @@
+int drawable cloud_app_config 0x0
+int drawable cloud_dev_upload 0x0
+int drawable cloud_mqtt_icon 0x0
+int string navigation_tab_cloud_config 0x0
+int string navigation_tab_device_connection 0x0

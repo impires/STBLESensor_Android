@@ -1,0 +1,2 @@
+com.st.medical_signal
+drawable medical_signal_icon

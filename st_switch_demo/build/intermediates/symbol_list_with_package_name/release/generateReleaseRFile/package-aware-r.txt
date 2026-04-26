@@ -1,0 +1,4 @@
+com.st.switch_demo
+drawable switch_demo_icon
+drawable switch_off
+drawable switch_on

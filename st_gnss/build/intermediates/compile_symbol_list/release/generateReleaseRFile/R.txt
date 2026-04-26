@@ -1,0 +1,5 @@
+int drawable gnss_icon_demo 0x0
+int drawable ic_gnss_gps_coordinates 0x0
+int drawable ic_gnss_satellite 0x0
+int drawable ic_gps_fixed_24 0x0
+int drawable ic_gps_not_fixed_24 0x0

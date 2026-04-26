@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.textual_monitor.TextualMonitorViewModel
+-keep,allowobfuscation,allowshrinking class com.st.textual_monitor.TextualMonitorViewModel

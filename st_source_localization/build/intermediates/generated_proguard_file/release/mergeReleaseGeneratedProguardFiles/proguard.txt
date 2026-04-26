@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.source_localization.SourceLocalizationViewModel
+-keep,allowobfuscation,allowshrinking class com.st.source_localization.SourceLocalizationViewModel

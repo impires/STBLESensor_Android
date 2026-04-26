@@ -1,0 +1,2 @@
+com.st.raw_pnpl
+drawable ic_rule

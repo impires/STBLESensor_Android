@@ -1,0 +1,52 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<!--
+3  ~ Copyright (c) 2022(-0001) STMicroelectronics.
+4  ~ All rights reserved.
+5  ~ This software is licensed under terms that can be found in the LICENSE file in
+6  ~ the root directory of this software component.
+7  ~ If no LICENSE file comes with this software, it is provided AS-IS.
+8-->
+9<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+10    xmlns:tools="http://schemas.android.com/tools"
+11    package="com.st.login" >
+12
+13    <uses-sdk android:minSdkVersion="26" />
+14
+15    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+15-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:11:5-79
+15-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:11:22-76
+16
+17    <application>
+17-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:13:5-33:19
+18        <activity android:name="com.st.login.LoginActivity" />
+18-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:15:9-51
+18-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:15:19-48
+19        <activity
+19-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:17:9-31:20
+20            android:name="net.openid.appauth.RedirectUriReceiverActivity"
+20-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:18:13-74
+21            android:exported="true"
+21-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:19:13-36
+22            tools:node="replace" >
+22-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:20:13-33
+23            <intent-filter>
+23-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:22:13-29:29
+24                <action android:name="android.intent.action.VIEW" />
+24-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:23:17-69
+24-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:23:25-66
+25
+26                <category android:name="android.intent.category.DEFAULT" />
+26-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:25:17-76
+26-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:25:27-73
+27                <category android:name="android.intent.category.BROWSABLE" />
+27-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:26:17-78
+27-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:26:27-75
+28
+29                <data android:scheme="stblesensor" />
+29-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:28:17-54
+29-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_login/src/main/AndroidManifest.xml:28:23-51
+30            </intent-filter>
+31        </activity>
+32    </application>
+33
+34</manifest>

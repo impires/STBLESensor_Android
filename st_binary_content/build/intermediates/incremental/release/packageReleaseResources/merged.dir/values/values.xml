@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="st_loadFromFile">Load\nfrom File</string>
+    <string name="st_pnpl_addMapEntryBtn">Add a map entry:</string>
+    <string name="st_pnpl_uploadDtmiFile">Upload\nCustom DTMI</string>
+    <string name="st_saveToFile">Save\nto File</string>
+    <string name="st_sendToBoard">Send\nto Board</string>
+</resources>

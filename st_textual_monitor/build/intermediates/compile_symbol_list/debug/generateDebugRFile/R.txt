@@ -1,0 +1,4 @@
+int drawable baseline_terminal_24 0x0
+int drawable ic_play_arrow 0x0
+int drawable ic_stop 0x0
+int drawable textual_monitor_icon 0x0

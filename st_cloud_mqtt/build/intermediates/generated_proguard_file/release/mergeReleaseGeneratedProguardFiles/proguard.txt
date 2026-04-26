@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.cloud_mqtt.CloudMqttViewModel
+-keep,allowobfuscation,allowshrinking class com.st.cloud_mqtt.CloudMqttViewModel

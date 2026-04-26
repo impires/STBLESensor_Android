@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.heart_rate_demo.HeartRateDemoViewModel
+-keep,allowobfuscation,allowshrinking class com.st.heart_rate_demo.HeartRateDemoViewModel

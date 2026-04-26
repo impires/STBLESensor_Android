@@ -1,0 +1,2 @@
+com.st.motion_intensity
+drawable motion_intensity_icon

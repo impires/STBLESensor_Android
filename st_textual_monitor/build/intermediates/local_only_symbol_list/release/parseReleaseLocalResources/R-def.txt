@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+drawable baseline_terminal_24
+drawable ic_play_arrow
+drawable ic_stop
+drawable textual_monitor_icon

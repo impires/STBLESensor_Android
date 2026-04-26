@@ -1,0 +1,5 @@
+int drawable ic_board_bluecoin_bg 0x0
+int drawable ic_board_nucleo_bg 0x0
+int drawable mic_on 0x0
+int drawable source_loc_needle 0x0
+int drawable source_localization_icon 0x0

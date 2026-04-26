@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.pedometer.PedometerViewModel
+-keep,allowobfuscation,allowshrinking class com.st.pedometer.PedometerViewModel

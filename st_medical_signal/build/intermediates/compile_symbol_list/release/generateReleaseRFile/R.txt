@@ -1,0 +1,1 @@
+int drawable medical_signal_icon 0x0

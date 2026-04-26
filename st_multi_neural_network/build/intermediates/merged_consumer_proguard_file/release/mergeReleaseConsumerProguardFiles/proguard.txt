@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.multi_neural_network.MultiNeuralNetworkViewModel
+-keep,allowobfuscation,allowshrinking class com.st.multi_neural_network.MultiNeuralNetworkViewModel

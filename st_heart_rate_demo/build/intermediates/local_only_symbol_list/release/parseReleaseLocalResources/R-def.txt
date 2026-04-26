@@ -1,0 +1,11 @@
+R_DEF: Internal format may change without notice
+local
+drawable heart_rate_body_circle_background
+drawable heart_rate_demo_icon
+drawable ic_baseline_block_24
+drawable ic_baseline_check_24
+drawable ic_baseline_close_24
+drawable ic_calories
+drawable ic_circle
+drawable ic_heart_rate
+drawable ic_standing_human_body_silhouette_svgrepo_com

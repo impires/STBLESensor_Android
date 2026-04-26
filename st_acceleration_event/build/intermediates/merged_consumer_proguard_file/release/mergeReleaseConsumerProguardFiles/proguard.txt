@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.acceleration_event.AccelerationEventViewModel
+-keep,allowobfuscation,allowshrinking class com.st.acceleration_event.AccelerationEventViewModel

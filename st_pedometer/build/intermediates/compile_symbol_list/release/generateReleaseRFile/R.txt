@@ -1,0 +1,2 @@
+int drawable pedometer_icon 0x0
+int drawable pedometer_step_image 0x0

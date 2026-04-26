@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.tof_objects_detection.TofObjectsDetectionViewModel
+-keep,allowobfuscation,allowshrinking class com.st.tof_objects_detection.TofObjectsDetectionViewModel

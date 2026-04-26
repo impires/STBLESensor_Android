@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.neai_extrapolation.NeaiExtrapolationViewModel
+-keep,allowobfuscation,allowshrinking class com.st.neai_extrapolation.NeaiExtrapolationViewModel

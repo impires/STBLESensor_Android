@@ -1,0 +1,6 @@
+com.st.predicted_maintenance
+drawable predicted_maintenance_icon
+drawable predictive_status_bad
+drawable predictive_status_good
+drawable predictive_status_unknown
+drawable predictive_status_warnings

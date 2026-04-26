@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.smart_motor_control.SmartMotorControlViewModel
+-keep,allowobfuscation,allowshrinking class com.st.smart_motor_control.SmartMotorControlViewModel

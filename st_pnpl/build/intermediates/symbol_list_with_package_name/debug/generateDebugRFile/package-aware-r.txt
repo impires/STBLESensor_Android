@@ -1,0 +1,5 @@
+com.st.pnpl
+drawable pnpl_icon
+string st_pnpl_addMapEntryBtn
+string st_pnpl_sendCommandBtn
+string st_pnpl_uploadDtmiFile

@@ -1,0 +1,25 @@
+R_DEF: Internal format may change without notice
+local
+drawable desktop_type_sitting
+drawable desktop_type_standing
+drawable motion_algo_pose_lying_down
+drawable motion_algo_pose_sitting
+drawable motion_algo_pose_standing
+drawable motion_algo_unknown
+drawable motion_algo_vertical_elevator
+drawable motion_algo_vertical_escalator
+drawable motion_algo_vertical_floor
+drawable motion_algo_vertical_stairs
+drawable motion_algo_vertical_updown
+drawable motion_algorithms_icon
+string motionAlgo_desktop_sitting
+string motionAlgo_desktop_standing
+string motionAlgo_pose_layingDown
+string motionAlgo_pose_sitting
+string motionAlgo_pose_standing
+string motionAlgo_unknown
+string motionAlgo_vertical_elevator
+string motionAlgo_vertical_escalator
+string motionAlgo_vertical_floor
+string motionAlgo_vertical_stairs
+string motionAlgo_vertical_upDown

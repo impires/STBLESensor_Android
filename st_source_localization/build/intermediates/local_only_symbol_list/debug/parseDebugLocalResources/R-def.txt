@@ -1,0 +1,7 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_board_bluecoin_bg
+drawable ic_board_nucleo_bg
+drawable mic_on
+drawable source_loc_needle
+drawable source_localization_icon

@@ -1,0 +1,2 @@
+com.st.fft_amplitude
+drawable fft_amplitude_icon

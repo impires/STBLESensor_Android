@@ -1,0 +1,8 @@
+com.st.carry_position
+drawable carry_arm
+drawable carry_desk
+drawable carry_hand
+drawable carry_head
+drawable carry_position_icon
+drawable carry_shirt
+drawable carry_trousers

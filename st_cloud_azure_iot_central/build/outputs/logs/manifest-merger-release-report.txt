@@ -1,0 +1,32 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:8:1-16:12
+INJECTED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:8:1-16:12
+	package
+		INJECTED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml
+	xmlns:tools
+		ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:9:5-51
+	xmlns:android
+		ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:8:11-69
+uses-feature#android.hardware.camera
+ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:11:1-55
+	android:name
+		ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:11:15-53
+uses-feature#android.hardware.camera.autofocus
+ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:12:1-13:32
+	android:required
+		ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:13:5-29
+	android:name
+		ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:12:15-63
+uses-permission#android.permission.CAMERA
+ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:14:1-60
+	android:name
+		ADDED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml:14:18-58
+uses-sdk
+INJECTED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml
+INJECTED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_cloud_azure_iot_central/src/main/AndroidManifest.xml

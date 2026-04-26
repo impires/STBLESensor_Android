@@ -1,0 +1,7 @@
+com.st.plot
+drawable ic_info
+drawable ic_info_outline
+drawable ic_photo_camera
+drawable ic_settings
+drawable ic_tools
+drawable plot_icon

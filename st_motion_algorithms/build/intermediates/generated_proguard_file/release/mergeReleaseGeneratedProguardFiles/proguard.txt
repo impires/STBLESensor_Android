@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.motion_algorithms.MotionAlgorithmsViewModel
+-keep,allowobfuscation,allowshrinking class com.st.motion_algorithms.MotionAlgorithmsViewModel

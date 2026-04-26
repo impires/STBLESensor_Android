@@ -1,0 +1,4 @@
+int drawable pnpl_icon 0x0
+int string st_pnpl_addMapEntryBtn 0x0
+int string st_pnpl_sendCommandBtn 0x0
+int string st_pnpl_uploadDtmiFile 0x0

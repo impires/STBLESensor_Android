@@ -1,0 +1,4 @@
+R_DEF: Internal format may change without notice
+local
+drawable pedometer_icon
+drawable pedometer_step_image

@@ -1,0 +1,3 @@
+com.st.pedometer
+drawable pedometer_icon
+drawable pedometer_step_image

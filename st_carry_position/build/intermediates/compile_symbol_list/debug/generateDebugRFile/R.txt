@@ -1,0 +1,7 @@
+int drawable carry_arm 0x0
+int drawable carry_desk 0x0
+int drawable carry_hand 0x0
+int drawable carry_head 0x0
+int drawable carry_position_icon 0x0
+int drawable carry_shirt 0x0
+int drawable carry_trousers 0x0

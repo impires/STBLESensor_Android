@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.predicted_maintenance.PredictedMaintenanceViewModel
+-keep,allowobfuscation,allowshrinking class com.st.predicted_maintenance.PredictedMaintenanceViewModel

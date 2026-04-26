@@ -1,0 +1,16 @@
+R_DEF: Internal format may change without notice
+local
+drawable baseline_device_unknown_24
+drawable box_pro_case_top
+drawable calibration
+drawable ic_board_bluecoin_bg
+drawable ic_board_bluenrgtile
+drawable ic_board_nucleo_bg
+drawable ic_board_sensortile_bg
+drawable ic_sensortile_box
+drawable sensor_fusion_icon
+drawable texture_cube
+drawable texture_cube_new
+drawable texture_cube_new_alpha
+raw per_pixel_fragment_shader
+raw per_pixel_vertex_shader

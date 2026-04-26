@@ -1,0 +1,3 @@
+int drawable ic_arrow_rounded 0x0
+int drawable proximity_gesture_recognition_icon 0x0
+int drawable tap_icon 0x0

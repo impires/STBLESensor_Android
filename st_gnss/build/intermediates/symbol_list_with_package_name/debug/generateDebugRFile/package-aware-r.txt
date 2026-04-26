@@ -1,0 +1,6 @@
+com.st.gnss
+drawable gnss_icon_demo
+drawable ic_gnss_gps_coordinates
+drawable ic_gnss_satellite
+drawable ic_gps_fixed_24
+drawable ic_gps_not_fixed_24

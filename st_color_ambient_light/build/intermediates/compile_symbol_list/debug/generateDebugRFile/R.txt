@@ -1,0 +1,2 @@
+int drawable circle 0x0
+int drawable color_ambient_light_icon 0x0

@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.raw_pnpl.RawPnplViewModel
+-keep,allowobfuscation,allowshrinking class com.st.raw_pnpl.RawPnplViewModel

@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.registers_demo.RegistersDemoViewModel
+-keep,allowobfuscation,allowshrinking class com.st.registers_demo.RegistersDemoViewModel

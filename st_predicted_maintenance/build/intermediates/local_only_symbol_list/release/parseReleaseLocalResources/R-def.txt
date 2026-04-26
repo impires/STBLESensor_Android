@@ -1,0 +1,7 @@
+R_DEF: Internal format may change without notice
+local
+drawable predicted_maintenance_icon
+drawable predictive_status_bad
+drawable predictive_status_good
+drawable predictive_status_unknown
+drawable predictive_status_warnings

@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.nfc_writing.NfcWritingViewModel
+-keep,allowobfuscation,allowshrinking class com.st.nfc_writing.NfcWritingViewModel

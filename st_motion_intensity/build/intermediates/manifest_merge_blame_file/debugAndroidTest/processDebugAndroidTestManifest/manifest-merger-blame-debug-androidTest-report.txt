@@ -1,0 +1,297 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.st.motion_intensity.test" >
+4
+5    <uses-sdk
+5-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:5:5-74
+6        android:minSdkVersion="26"
+6-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:5:15-41
+7        android:targetSdkVersion="26" />
+7-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:5:42-71
+8
+9    <instrumentation
+9-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:11:5-15:78
+10        android:name="androidx.test.runner.AndroidJUnitRunner"
+10-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:11:22-76
+11        android:functionalTest="false"
+11-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:14:22-52
+12        android:handleProfiling="false"
+12-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:13:22-53
+13        android:label="Tests for com.st.motion_intensity.test"
+13-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:15:22-76
+14        android:targetPackage="com.st.motion_intensity.test" />
+14-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:12:22-74
+15
+16    <uses-permission android:name="android.permission.REORDER_TASKS" />
+16-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:24:5-72
+16-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:24:22-69
+17
+18    <queries>
+18-->[androidx.test:runner:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/3f238cd51a1a28510f44c35a8997b84a/transformed/runner-1.7.0/AndroidManifest.xml:24:5-28:15
+19        <package android:name="androidx.test.orchestrator" />
+19-->[androidx.test:runner:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/3f238cd51a1a28510f44c35a8997b84a/transformed/runner-1.7.0/AndroidManifest.xml:25:9-62
+19-->[androidx.test:runner:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/3f238cd51a1a28510f44c35a8997b84a/transformed/runner-1.7.0/AndroidManifest.xml:25:18-59
+20        <package android:name="androidx.test.services" />
+20-->[androidx.test:runner:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/3f238cd51a1a28510f44c35a8997b84a/transformed/runner-1.7.0/AndroidManifest.xml:26:9-58
+20-->[androidx.test:runner:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/3f238cd51a1a28510f44c35a8997b84a/transformed/runner-1.7.0/AndroidManifest.xml:26:18-55
+21        <package android:name="com.google.android.apps.common.testing.services" />
+21-->[androidx.test:runner:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/3f238cd51a1a28510f44c35a8997b84a/transformed/runner-1.7.0/AndroidManifest.xml:27:9-83
+21-->[androidx.test:runner:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/3f238cd51a1a28510f44c35a8997b84a/transformed/runner-1.7.0/AndroidManifest.xml:27:18-80
+22
+23        <intent>
+23-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:25:9-31:18
+24            <action android:name="android.intent.action.VIEW" />
+24-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:26:13-65
+24-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:26:21-62
+25
+26            <category android:name="android.intent.category.BROWSABLE" />
+26-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:28:13-74
+26-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:28:23-71
+27
+28            <data android:scheme="https" />
+28-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:30:13-44
+28-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:30:19-41
+29        </intent>
+30    </queries>
+31
+32    <uses-permission android:name="android.permission.INTERNET" />
+32-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:22:5-67
+32-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:22:22-64
+33
+34    <permission
+34-->[androidx.core:core:1.16.0] /Users/ivan/.gradle/caches/8.13/transforms/1d7e34feea40a06328f6fc0fe085f425/transformed/core-1.16.0/AndroidManifest.xml:22:5-24:47
+35        android:name="com.st.motion_intensity.test.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+35-->[androidx.core:core:1.16.0] /Users/ivan/.gradle/caches/8.13/transforms/1d7e34feea40a06328f6fc0fe085f425/transformed/core-1.16.0/AndroidManifest.xml:23:9-81
+36        android:protectionLevel="signature" />
+36-->[androidx.core:core:1.16.0] /Users/ivan/.gradle/caches/8.13/transforms/1d7e34feea40a06328f6fc0fe085f425/transformed/core-1.16.0/AndroidManifest.xml:24:9-44
+37
+38    <uses-permission android:name="com.st.motion_intensity.test.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+38-->[androidx.core:core:1.16.0] /Users/ivan/.gradle/caches/8.13/transforms/1d7e34feea40a06328f6fc0fe085f425/transformed/core-1.16.0/AndroidManifest.xml:26:5-97
+38-->[androidx.core:core:1.16.0] /Users/ivan/.gradle/caches/8.13/transforms/1d7e34feea40a06328f6fc0fe085f425/transformed/core-1.16.0/AndroidManifest.xml:26:22-94
+39    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+39-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:14:5-79
+39-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:14:22-76
+40    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+40-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:16:5-79
+40-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:16:22-76
+41    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+41-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:17:5-81
+41-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:17:22-78
+42    <uses-permission android:name="android.permission.BLUETOOTH" />
+42-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:18:5-68
+42-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:18:22-65
+43    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+43-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:19:5-74
+43-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:19:22-71
+44    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+44-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:20:5-73
+44-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:20:22-70
+45    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+45-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:21:5-76
+45-->[com.st.blue.sdk:st-blue-sdk:1.2.18] /Users/ivan/.gradle/caches/8.13/transforms/184a878bdd3c1456d8d30c157f372191/transformed/st-blue-sdk-1.2.18/AndroidManifest.xml:21:22-73
+46
+47    <application
+47-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:7:5-9:19
+48        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+48-->[androidx.core:core:1.16.0] /Users/ivan/.gradle/caches/8.13/transforms/1d7e34feea40a06328f6fc0fe085f425/transformed/core-1.16.0/AndroidManifest.xml:28:18-86
+49        android:debuggable="true"
+50        android:extractNativeLibs="false" >
+51        <uses-library android:name="android.test.runner" />
+51-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:8:9-60
+51-->/Users/ivan/Downloads/GitHub/STBLESensor_Android_impires/st_motion_intensity/build/intermediates/tmp/manifest/androidTest/debug/tempFile1ProcessTestManifest14573747757704068526.xml:8:23-57
+52
+53        <activity
+53-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:27:9-34:20
+54            android:name="androidx.test.core.app.InstrumentationActivityInvoker$BootstrapActivity"
+54-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:28:13-99
+55            android:exported="true"
+55-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:29:13-36
+56            android:theme="@style/WhiteBackgroundTheme" >
+56-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:30:13-56
+57            <intent-filter android:priority="-100" >
+57-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:31:13-33:29
+57-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:31:28-51
+58                <category android:name="android.intent.category.LAUNCHER" />
+58-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:32:17-77
+58-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:32:27-74
+59            </intent-filter>
+60        </activity>
+61        <activity
+61-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:35:9-42:20
+62            android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity"
+62-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:36:13-95
+63            android:exported="true"
+63-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:37:13-36
+64            android:theme="@style/WhiteBackgroundTheme" >
+64-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:38:13-56
+65            <intent-filter android:priority="-100" >
+65-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:31:13-33:29
+65-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:31:28-51
+66                <category android:name="android.intent.category.LAUNCHER" />
+66-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:32:17-77
+66-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:32:27-74
+67            </intent-filter>
+68        </activity>
+69        <activity
+69-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:43:9-50:20
+70            android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyFloatingActivity"
+70-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:44:13-103
+71            android:exported="true"
+71-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:45:13-36
+72            android:theme="@style/WhiteBackgroundDialogTheme" >
+72-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:46:13-62
+73            <intent-filter android:priority="-100" >
+73-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:31:13-33:29
+73-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:31:28-51
+74                <category android:name="android.intent.category.LAUNCHER" />
+74-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:32:17-77
+74-->[androidx.test:core:1.7.0] /Users/ivan/.gradle/caches/8.13/transforms/8422d93d6c8d24c6bafd703215f16aaa/transformed/core-1.7.0/AndroidManifest.xml:32:27-74
+75            </intent-filter>
+76        </activity>
+77        <activity
+77-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:35:9-40:77
+78            android:name="net.openid.appauth.AuthorizationManagementActivity"
+78-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:36:13-78
+79            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboard|keyboardHidden"
+79-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:37:13-115
+80            android:exported="false"
+80-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:38:13-37
+81            android:launchMode="singleTask"
+81-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:39:13-44
+82            android:theme="@style/Theme.AppCompat.Translucent.NoTitleBar" />
+82-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:40:13-74
+83        <activity
+83-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:41:9-52:20
+84            android:name="net.openid.appauth.RedirectUriReceiverActivity"
+84-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:42:13-74
+85            android:exported="true" >
+85-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:43:13-36
+86            <intent-filter>
+86-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:44:13-51:29
+87                <action android:name="android.intent.action.VIEW" />
+87-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:26:13-65
+87-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:26:21-62
+88
+89                <category android:name="android.intent.category.DEFAULT" />
+89-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:47:17-76
+89-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:47:27-73
+90                <category android:name="android.intent.category.BROWSABLE" />
+90-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:28:13-74
+90-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:28:23-71
+91
+92                <data android:scheme="stblesensor" />
+92-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:30:13-44
+92-->[net.openid:appauth:0.11.1] /Users/ivan/.gradle/caches/8.13/transforms/6158c9e1a5c890b5ad36feadd7081ccf/transformed/appauth-0.11.1/AndroidManifest.xml:30:19-41
+93            </intent-filter>
+94        </activity>
+95        <activity
+95-->[androidx.compose.ui:ui-test-manifest:1.10.2] /Users/ivan/.gradle/caches/8.13/transforms/f1c34909b2b8052ff0eb7a0739fb70cc/transformed/ui-test-manifest-1.10.2/AndroidManifest.xml:23:9-26:79
+96            android:name="androidx.activity.ComponentActivity"
+96-->[androidx.compose.ui:ui-test-manifest:1.10.2] /Users/ivan/.gradle/caches/8.13/transforms/f1c34909b2b8052ff0eb7a0739fb70cc/transformed/ui-test-manifest-1.10.2/AndroidManifest.xml:24:13-63
+97            android:exported="true"
+97-->[androidx.compose.ui:ui-test-manifest:1.10.2] /Users/ivan/.gradle/caches/8.13/transforms/f1c34909b2b8052ff0eb7a0739fb70cc/transformed/ui-test-manifest-1.10.2/AndroidManifest.xml:25:13-36
+98            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+98-->[androidx.compose.ui:ui-test-manifest:1.10.2] /Users/ivan/.gradle/caches/8.13/transforms/f1c34909b2b8052ff0eb7a0739fb70cc/transformed/ui-test-manifest-1.10.2/AndroidManifest.xml:26:13-76
+99        <activity
+99-->[androidx.compose.ui:ui-tooling-android:1.10.2] /Users/ivan/.gradle/caches/8.13/transforms/3f6a4ce3ca664b723c95f97f3a34951d/transformed/ui-tooling/AndroidManifest.xml:23:9-25:39
+100            android:name="androidx.compose.ui.tooling.PreviewActivity"
+100-->[androidx.compose.ui:ui-tooling-android:1.10.2] /Users/ivan/.gradle/caches/8.13/transforms/3f6a4ce3ca664b723c95f97f3a34951d/transformed/ui-tooling/AndroidManifest.xml:24:13-71
+101            android:exported="true" />
+101-->[androidx.compose.ui:ui-tooling-android:1.10.2] /Users/ivan/.gradle/caches/8.13/transforms/3f6a4ce3ca664b723c95f97f3a34951d/transformed/ui-tooling/AndroidManifest.xml:25:13-36
+102
+103        <provider
+103-->[androidx.emoji2:emoji2:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/b2a87d65b1c3d813233cf239cf903d9d/transformed/emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
+104            android:name="androidx.startup.InitializationProvider"
+104-->[androidx.emoji2:emoji2:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/b2a87d65b1c3d813233cf239cf903d9d/transformed/emoji2-1.4.0/AndroidManifest.xml:25:13-67
+105            android:authorities="com.st.motion_intensity.test.androidx-startup"
+105-->[androidx.emoji2:emoji2:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/b2a87d65b1c3d813233cf239cf903d9d/transformed/emoji2-1.4.0/AndroidManifest.xml:26:13-68
+106            android:exported="false" >
+106-->[androidx.emoji2:emoji2:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/b2a87d65b1c3d813233cf239cf903d9d/transformed/emoji2-1.4.0/AndroidManifest.xml:27:13-37
+107            <meta-data
+107-->[androidx.emoji2:emoji2:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/b2a87d65b1c3d813233cf239cf903d9d/transformed/emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
+108                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+108-->[androidx.emoji2:emoji2:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/b2a87d65b1c3d813233cf239cf903d9d/transformed/emoji2-1.4.0/AndroidManifest.xml:30:17-75
+109                android:value="androidx.startup" />
+109-->[androidx.emoji2:emoji2:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/b2a87d65b1c3d813233cf239cf903d9d/transformed/emoji2-1.4.0/AndroidManifest.xml:31:17-49
+110            <meta-data
+110-->[androidx.lifecycle:lifecycle-process:2.10.0] /Users/ivan/.gradle/caches/8.13/transforms/8993050a826c26fd5fca8a0fa8ca3994/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:29:13-31:52
+111                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+111-->[androidx.lifecycle:lifecycle-process:2.10.0] /Users/ivan/.gradle/caches/8.13/transforms/8993050a826c26fd5fca8a0fa8ca3994/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:30:17-78
+112                android:value="androidx.startup" />
+112-->[androidx.lifecycle:lifecycle-process:2.10.0] /Users/ivan/.gradle/caches/8.13/transforms/8993050a826c26fd5fca8a0fa8ca3994/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:31:17-49
+113            <meta-data
+113-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+114                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+114-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+115                android:value="androidx.startup" />
+115-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+116            <meta-data
+116-->[com.squareup.okhttp3:okhttp-android:5.3.2] /Users/ivan/.gradle/caches/8.13/transforms/c5ffe77e89dd5b2e46ec8aed4361c3bf/transformed/okhttp-release/AndroidManifest.xml:16:13-18:52
+117                android:name="okhttp3.internal.platform.PlatformInitializer"
+117-->[com.squareup.okhttp3:okhttp-android:5.3.2] /Users/ivan/.gradle/caches/8.13/transforms/c5ffe77e89dd5b2e46ec8aed4361c3bf/transformed/okhttp-release/AndroidManifest.xml:17:17-77
+118                android:value="androidx.startup" />
+118-->[com.squareup.okhttp3:okhttp-android:5.3.2] /Users/ivan/.gradle/caches/8.13/transforms/c5ffe77e89dd5b2e46ec8aed4361c3bf/transformed/okhttp-release/AndroidManifest.xml:18:17-49
+119        </provider>
+120
+121        <uses-library
+121-->[androidx.window:window:1.5.0] /Users/ivan/.gradle/caches/8.13/transforms/2b1088347ba894d35dd5a3b5e63a47bc/transformed/window-1.5.0/AndroidManifest.xml:23:9-25:40
+122            android:name="androidx.window.extensions"
+122-->[androidx.window:window:1.5.0] /Users/ivan/.gradle/caches/8.13/transforms/2b1088347ba894d35dd5a3b5e63a47bc/transformed/window-1.5.0/AndroidManifest.xml:24:13-54
+123            android:required="false" />
+123-->[androidx.window:window:1.5.0] /Users/ivan/.gradle/caches/8.13/transforms/2b1088347ba894d35dd5a3b5e63a47bc/transformed/window-1.5.0/AndroidManifest.xml:25:13-37
+124        <uses-library
+124-->[androidx.window:window:1.5.0] /Users/ivan/.gradle/caches/8.13/transforms/2b1088347ba894d35dd5a3b5e63a47bc/transformed/window-1.5.0/AndroidManifest.xml:26:9-28:40
+125            android:name="androidx.window.sidecar"
+125-->[androidx.window:window:1.5.0] /Users/ivan/.gradle/caches/8.13/transforms/2b1088347ba894d35dd5a3b5e63a47bc/transformed/window-1.5.0/AndroidManifest.xml:27:13-51
+126            android:required="false" />
+126-->[androidx.window:window:1.5.0] /Users/ivan/.gradle/caches/8.13/transforms/2b1088347ba894d35dd5a3b5e63a47bc/transformed/window-1.5.0/AndroidManifest.xml:28:13-37
+127
+128        <receiver
+128-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+129            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+129-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+130            android:directBootAware="false"
+130-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+131            android:enabled="true"
+131-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+132            android:exported="true"
+132-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+133            android:permission="android.permission.DUMP" >
+133-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+134            <intent-filter>
+134-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+135                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+135-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+135-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+136            </intent-filter>
+137            <intent-filter>
+137-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+138                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+138-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+138-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+139            </intent-filter>
+140            <intent-filter>
+140-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+141                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+141-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+141-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+142            </intent-filter>
+143            <intent-filter>
+143-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+144                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+144-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+144-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/ivan/.gradle/caches/8.13/transforms/4c84e025389bd4553e7e9ce4445b438f/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+145            </intent-filter>
+146        </receiver>
+147
+148        <service
+148-->[androidx.room:room-runtime-android:2.7.1] /Users/ivan/.gradle/caches/8.13/transforms/530d3e1f21c5a13d1b57a8d6b12c9719/transformed/room-runtime-release/AndroidManifest.xml:24:9-28:63
+149            android:name="androidx.room.MultiInstanceInvalidationService"
+149-->[androidx.room:room-runtime-android:2.7.1] /Users/ivan/.gradle/caches/8.13/transforms/530d3e1f21c5a13d1b57a8d6b12c9719/transformed/room-runtime-release/AndroidManifest.xml:25:13-74
+150            android:directBootAware="true"
+150-->[androidx.room:room-runtime-android:2.7.1] /Users/ivan/.gradle/caches/8.13/transforms/530d3e1f21c5a13d1b57a8d6b12c9719/transformed/room-runtime-release/AndroidManifest.xml:26:13-43
+151            android:exported="false" />
+151-->[androidx.room:room-runtime-android:2.7.1] /Users/ivan/.gradle/caches/8.13/transforms/530d3e1f21c5a13d1b57a8d6b12c9719/transformed/room-runtime-release/AndroidManifest.xml:27:13-37
+152    </application>
+153
+154</manifest>

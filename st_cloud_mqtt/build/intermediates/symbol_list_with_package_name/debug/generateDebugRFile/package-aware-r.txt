@@ -1,0 +1,6 @@
+com.st.cloud_mqtt
+drawable cloud_app_config
+drawable cloud_dev_upload
+drawable cloud_mqtt_icon
+string navigation_tab_cloud_config
+string navigation_tab_device_connection

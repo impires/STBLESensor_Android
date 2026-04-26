@@ -1,0 +1,8 @@
+-keep,allowobfuscation,allowshrinking class com.st.ext_config.ui.cert.CertViewModel
+-keep,allowobfuscation,allowshrinking class com.st.ext_config.ui.cert.CertViewModel
+-keep,allowobfuscation,allowshrinking class com.st.ext_config.ui.ext_config.ExtConfigViewModel
+-keep,allowobfuscation,allowshrinking class com.st.ext_config.ui.ext_config.ExtConfigViewModel
+-keep,allowobfuscation,allowshrinking class com.st.ext_config.ui.fw_download.FwDownloadViewModel
+-keep,allowobfuscation,allowshrinking class com.st.ext_config.ui.fw_download.FwDownloadViewModel
+-keep,allowobfuscation,allowshrinking class com.st.ext_config.ui.fw_upgrade.FwUpgradeViewModel
+-keep,allowobfuscation,allowshrinking class com.st.ext_config.ui.fw_upgrade.FwUpgradeViewModel

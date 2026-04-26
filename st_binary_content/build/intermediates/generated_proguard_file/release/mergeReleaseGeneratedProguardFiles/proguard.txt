@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.binary_content.BinaryContentViewModel
+-keep,allowobfuscation,allowshrinking class com.st.binary_content.BinaryContentViewModel

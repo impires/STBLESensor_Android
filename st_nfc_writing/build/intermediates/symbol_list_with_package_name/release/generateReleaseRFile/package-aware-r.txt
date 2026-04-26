@@ -1,0 +1,9 @@
+com.st.nfc_writing
+drawable connectivity_nfc
+drawable ic_collaps_view
+drawable ic_expand_view
+drawable link_fields
+drawable send_to_nfc
+drawable text_fields
+drawable vcard_fields
+drawable wifi_fields

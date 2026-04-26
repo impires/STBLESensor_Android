@@ -1,0 +1,8 @@
+com.st.audio_classification_demo
+drawable audio_classification_demo_icon
+drawable audio_scene_babycrying
+drawable audio_scene_babynotcrying
+drawable audio_scene_in_vehicle
+drawable audio_scene_inside
+drawable audio_scene_outside
+drawable audio_scene_unkown

@@ -1,0 +1,7 @@
+int drawable audio_classification_demo_icon 0x0
+int drawable audio_scene_babycrying 0x0
+int drawable audio_scene_babynotcrying 0x0
+int drawable audio_scene_in_vehicle 0x0
+int drawable audio_scene_inside 0x0
+int drawable audio_scene_outside 0x0
+int drawable audio_scene_unkown 0x0

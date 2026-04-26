@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.node_status.NodeStatusViewModel
+-keep,allowobfuscation,allowshrinking class com.st.node_status.NodeStatusViewModel

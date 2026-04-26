@@ -1,0 +1,4 @@
+int drawable mems_gesture_glance 0x0
+int drawable mems_gesture_icon 0x0
+int drawable mems_gesture_pick_up 0x0
+int drawable mems_gesture_wake_up 0x0

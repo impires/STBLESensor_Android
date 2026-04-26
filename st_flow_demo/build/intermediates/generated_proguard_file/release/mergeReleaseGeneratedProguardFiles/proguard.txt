@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.flow_demo.FlowDemoViewModel
+-keep,allowobfuscation,allowshrinking class com.st.flow_demo.FlowDemoViewModel

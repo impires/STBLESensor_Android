@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.fft_amplitude.FFTAmplitudeViewModel
+-keep,allowobfuscation,allowshrinking class com.st.fft_amplitude.FFTAmplitudeViewModel

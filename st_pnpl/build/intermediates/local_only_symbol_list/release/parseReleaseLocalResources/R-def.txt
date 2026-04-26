@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+drawable pnpl_icon
+string st_pnpl_addMapEntryBtn
+string st_pnpl_sendCommandBtn
+string st_pnpl_uploadDtmiFile

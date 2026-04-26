@@ -1,0 +1,19 @@
+R_DEF: Internal format may change without notice
+local
+drawable shopping_icon
+drawable wiki_icon
+string st_catalog_boardList_filterDialog_okBtn
+string st_catalog_boardList_filterDialog_title
+string st_catalog_boardList_orderDialog_title
+string st_catalog_boardList_title
+string st_catalog_board_demoListLabel
+string st_catalog_board_dsBtn
+string st_catalog_board_fwBtn
+string st_catalog_board_orderBtn
+string st_catalog_board_orderShortBtn
+string st_catalog_board_title
+string st_catalog_board_videoLabel
+string st_catalog_board_wikiBtn
+string st_catalog_board_wikiShortBtn
+string st_catalog_fwList_description
+string st_catalog_fwList_title

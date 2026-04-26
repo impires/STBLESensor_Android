@@ -1,0 +1,5 @@
+int drawable bell_ring 0x0
+int drawable led_control_icon 0x0
+int drawable stm32wb_led_off 0x0
+int drawable stm32wb_led_on 0x0
+int drawable stm32wb_signal_strength 0x0

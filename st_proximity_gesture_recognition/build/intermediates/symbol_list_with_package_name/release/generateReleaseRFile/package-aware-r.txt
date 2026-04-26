@@ -1,0 +1,4 @@
+com.st.proximity_gesture_recognition
+drawable ic_arrow_rounded
+drawable proximity_gesture_recognition_icon
+drawable tap_icon

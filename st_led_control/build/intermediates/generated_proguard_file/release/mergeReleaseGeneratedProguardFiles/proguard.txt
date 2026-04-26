@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.led_control.LedControlViewModel
+-keep,allowobfuscation,allowshrinking class com.st.led_control.LedControlViewModel

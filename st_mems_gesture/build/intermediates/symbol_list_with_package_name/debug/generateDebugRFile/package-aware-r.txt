@@ -1,0 +1,5 @@
+com.st.mems_gesture
+drawable mems_gesture_glance
+drawable mems_gesture_icon
+drawable mems_gesture_pick_up
+drawable mems_gesture_wake_up

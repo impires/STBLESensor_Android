@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.carry_position.CarryPositionViewModel
+-keep,allowobfuscation,allowshrinking class com.st.carry_position.CarryPositionViewModel

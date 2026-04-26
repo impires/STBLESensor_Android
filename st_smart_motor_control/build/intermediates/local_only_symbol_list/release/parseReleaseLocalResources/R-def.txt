@@ -1,0 +1,27 @@
+R_DEF: Internal format may change without notice
+local
+drawable cubeai_icon
+drawable ic_bus_voltage_telemetry
+drawable ic_close
+drawable ic_fault_running
+drawable ic_motor_control
+drawable ic_no_fault_running
+drawable ic_settings
+drawable ic_speed_telemetry
+drawable ic_tags
+drawable ic_temperature_telemetry
+drawable neai_icon
+drawable smart_motor_control_icon
+string st_motor_control
+string st_motor_control_configuration
+string st_motor_control_datalog_stopDialogClose
+string st_motor_control_datalog_stopDialogMessage
+string st_motor_control_datalog_stopDialogTitle
+string st_motor_control_logging
+string st_motor_control_missingSdCard
+string st_motor_control_tags
+string st_motor_control_tags_acquisitionTitle
+string st_motor_control_tags_description1
+string st_motor_control_tags_description2
+string st_motor_control_tags_description3
+string st_motor_control_tags_tagsTitle

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="assetTracking_invalidPasswordError">Invalid password</string>
+    <string name="assetTracking_invalidUserError">Invalid user name</string>
+    <string name="assetTracking_loggingButton">Logging…</string>
+    <string name="assetTracking_loginButton">Login</string>
+    <string name="assetTracking_loginError">Error during the login procedure</string>
+    <string name="assetTracking_registerButton">Create account</string>
+    <string name="assetTracking_wrongCredentialsError">Wrong credentials</string>
+    <string name="retry_label" translatable="false">Retry</string>
+    <string name="sign_in_with_keycloak">Sign in with Keycloak</string>
+    <string name="sign_in_with_myst">Sign in with MyST</string>
+</resources>

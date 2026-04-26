@@ -1,0 +1,12 @@
+R_DEF: Internal format may change without notice
+local
+drawable binary_content_icon
+drawable ic_bluetooth
+drawable ic_file_download
+drawable ic_file_upload
+drawable ic_load_dtdl
+string st_loadFromFile
+string st_pnpl_addMapEntryBtn
+string st_pnpl_uploadDtmiFile
+string st_saveToFile
+string st_sendToBoard

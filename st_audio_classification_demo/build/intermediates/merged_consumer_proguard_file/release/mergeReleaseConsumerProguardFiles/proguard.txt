@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.audio_classification_demo.AudioClassificationDemoViewModel
+-keep,allowobfuscation,allowshrinking class com.st.audio_classification_demo.AudioClassificationDemoViewModel

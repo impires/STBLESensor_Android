@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.st.switch_demo.SwitchDemoViewModel
+-keep,allowobfuscation,allowshrinking class com.st.switch_demo.SwitchDemoViewModel
